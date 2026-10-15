@@ -2,7 +2,9 @@
 
 固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。  
 审查日期：2026-10-10；OpenReader 源码基线：`9cb6a030b9b2c6c5e6f55d2b19dcc719b554571a`。  
-状态：**inventory-complete / red-tests-pending / implementation-pending**。
+状态：**inventory-complete / initial-red-tests-confirmed / implementation-pending**。
+
+初始合同段落保留为历史；第8节记录独立合同推送后的真实红测，不将初轮覆盖等同于全部测试完成。
 
 本提交只盘点合同，不修改应用或测试。源码窗口不是已复现漏洞，也不是生产故障结论。
 已恢复的原书事件保持关闭；stage 应用 b2b32f7 已发布，不等于本项持久提交已签收。
@@ -160,3 +162,46 @@ trusted Actions正式镜像→独立OCI→设备验收。故意 red 只放 featu
 cardinality/depth/FD 总预算、桌面 click/wheel、dependency advisory、整体审计仍未完成。
 本盘点时 Git 9cb6a03、已发布 Docker b2b32f7/index ed57cc69…、生产最近只读 db1ea21 分别记录；
 没有生产升级/写入，原已恢复阅读故障不重开。
+
+## 8. 独立初轮实际红测与工作树恢复（2026-10-15）
+
+合同 `477587fa1cb7d88843a34780ffc4aec2a030395f` 六文档独立提交，官方 Git API 对象 SHA 和
+远端 `codex/import-durability-inventory` 均精确核验后才添加测试；main 保持9cb6a03，应用仍b2。
+本轮没有修改 application/helper/hook，全部实际失败使用 GORM 既有 callback 和自有临时文件。
+
+旧 `/private/tmp/openreader-import-durability/OpenReader-dev` 的 `.git` 和 handoff 已缺失，Git 将
+其标为失联；没有据此推断清理原因，也未 prune/delete/reset 旧目录。由仍在本地对象库和远端的
+精确477提交新建受管理 worktree，重新读取 AGENTS/九个匹配 skills，确认同 SHA、clean、空
+submodule、应用相对b2无差异；已有 stage collision 控制通过1.434s。这是已提交状态恢复，不能
+声称未提交文件或临时日志完整连续。
+
+`backend/api/local_import_durable_commit_lifecycle_contract_test.go` 在未修复应用运行：
+`go test ./api -run '^TestLocalImportDurableCommit' -count=1 -v`，终态exit1/API10.787s，
+**128个 leaf 行为失败 +8个独立正常控制通过**，无编译失败、panic 或未触发 fixture：
+
+-48：4confirm routes × raw/token × new/placeholder × 所选第一/第二关系create或关系delete失败，
+  当前仍成功响应、留 Book/Chapter/不完整关系/归档并广播，token路径还被consume。注入按实际
+  CategoryID 身份而非 Create调用次数，不冻结未来单条/批量SQL实现。
+-16：同入口组合，在实际 Book create/update 边界移开本请求归档、建立同名 unknown directory，
+  再注入SQL失败；legacy absolute RemoveAll 删除 newcomer，而 held原文件保持。
+-48：4routes × raw/token × new/placeholder × library/data/user初始symlink，外部自有bait目录
+  被写入归档或被接受为持久Book；sentinel/link保持检查和数据库/通知/token断言实际失败。
+-16：4routes × raw/token × new/placeholder，在真实 Chapter create 完成后取消 caller ctx，当前
+  仍提交后续状态/归档/通知，不符合本项固定取消响应。不是只测 pre-canceled 或最后ctx检查。
+-8正常控制：4routes × raw/token 的新书多分组/primary、实际Go Reader精确正文、一条成功事件和
+  durable stage consume 全通过；它们不是红灯，也不证明完整 placeholder/资源/并发生命周期。
+
+最终日志 `/private/tmp/openreader-import-durable-final-initial-red.log`，首轮64反例日志和中间128
+日志分别保留，不用其旧耗时冒充最终测试源码。只使用test-owned roots/SQLite/accounts，无生产
+写入或用户书库操作。此提交只可feature推送；故意red不能推main触发发布。初始所有权collision、
+partial原文件/JSON/资源实际I/O取消、admission后ancestor/entry替换、unknown成员补偿、SQL最终
+reload/primary失败、placeholder并发列/删除重绑定、earlier batch成功、FD/native/卷等门仍需继续。
+
+同最终测试源码 `-race` 终态exit1/API78.770s，仍精确128行为失败/8控制通过，无 DATA RACE、
+panic、编译或fixture未触发；它是race仪器下的真实red，不是应用race全绿。独立只跑8正常导入+
+旧stage collision控制exit0（API1.500s/importstage1.308s）。本轮尚无应用实现或发布候选，因此
+未把有意红灯的fullGo/frontend/browser/volume/OCI门写为通过；实现后必须重新完成全部门。
+
+另独立只读生产health本日返回完整 `b2b32f7b40bb8cefc18d316aefb29865aede9872`、status ok、
+build2026-10-10T09:13:53Z；此前db1ea21是历史事实，不能继续当当前运行值。本项尚未实现，故
+生产已升级stage镜像不等于持久提交问题已解决；原已恢复书事件不重开，整体审计保持未完成。

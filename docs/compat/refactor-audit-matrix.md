@@ -5,13 +5,22 @@
 固定 upstream saveBook 的成功包含 Book/group/本地资源保存；next boundary 完整枚举新 archive
 allocation、raw/body/EPUB-CBZ resources、source/TOC、Book/Chapter/selected category transaction、
 failure compensation、durable-only consume/response/event，四 confirm 路由 raw/token/new/placeholder。
-状态 **inventory-complete / red-tests-pending / implementation-pending**，见
+状态 **inventory-complete / initial-red-tests-confirmed / implementation-pending**，见
 [`local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md`](local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md)。
 ignored post-commit category errors、contextless durable work和 absolute archive RemoveAll 属源码
 must-fix，尚非 actual red/生产复现。不能只补 handler 错误检查，也不能以 db.WithContext 或末尾
 ctx guard 签收完整原实体 I/O。stage b2b32f7/已导入 archive125fd93/PUT-batch-category 既有完成保持。
 合同独立提交推送后再实际红测；无应用/测试改变、迁移或生产写入。Git基线9cb6a03，已发布应用
 b2b32f7/index ed57cc69…；生产最近独立只读db1ea21，原书已恢复事件关闭，整体重构仍未完成。
+
+2026-10-15后续：独立合同477587f远端精确确认后才加测试；旧临时worktree失联，从保存的同SHA
+恢复到受管理目录，不prune/delete/reset旧树、不宣称未提交状态已恢复。初轮真实红测128叶失败
+（分组48、误删unknown回收16、初始library/data/user link48、实际Chapter SQL后取消16），
+8正常新书分组/Reader/token/event控制全通过；最终API10.787s/exit1，无编译或fixture失败。
+应用仍b2，尚未实施；资源/partial/collision/晚期replacement/native/完整回归门仍待办。独立生产
+GET health现已返回完整b2b32f7/statusok，取代上文旧db1记录；不是本项持久提交修复或设备验收。
+最终同源码race78.770s保持128行为red/8控制通过，无data race；独立正常控制API1.500s与stage
+collision1.308s通过。全量应用/浏览器/镜像卷门待实现后再跑，不把初轮red当实现或正式候选。
 
 ## 2026-10-04 当前切片：WebDAV PUT 生命周期与进度接收
 
