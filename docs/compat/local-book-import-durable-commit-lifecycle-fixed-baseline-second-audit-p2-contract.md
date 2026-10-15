@@ -2,9 +2,9 @@
 
 固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。  
 审查日期：2026-10-10；OpenReader 源码基线：`9cb6a030b9b2c6c5e6f55d2b19dcc719b554571a`。  
-状态：**inventory-complete / initial-red-tests-confirmed / implementation-pending**。
+状态：**implemented / validation-in-progress / Docker-not-published**。
 
-初始合同段落保留为历史；第8节记录独立合同推送后的真实红测，不将初轮覆盖等同于全部测试完成。
+初始合同段落保留为历史；第8–9节记录独立红测，第10节为当前实施证据，仍不等同于全部门已完成。
 
 本提交只盘点合同，不修改应用或测试。源码窗口不是已复现漏洞，也不是生产故障结论。
 已恢复的原书事件保持关闭；stage 应用 b2b32f7 已发布，不等于本项持久提交已签收。
@@ -240,3 +240,47 @@ CBZ包显示no tests to run，不计覆盖，另真正的CBZ immutable generatio
 写成207条API或全合同覆盖。完整actual-chunk ctx/预算、原始source打开竞态、native FD与partial
 mkdir回收、元数据/分组最终重载、placeholder并发删除/列、batch早项成功和正式全量/卷/发布门
 仍需继续；不从这些追加red或15控制推导完整模块已实现。
+
+## 10. 共享实现及本地验证 checkpoint（2026-10-15，未发布）
+
+独立合同477587f、初轮red38c8f07、追加red09d9fd6均精确推送核验后才实施。新增
+`rootedfs.OwnedTree` 持有原configured/library/data/user/book目录链，exclusive/no-replace子目录、
+32KiB bounded实际读写/源ReaderAt、owned文件补偿及empty-owned目录回收；不再按当前pathname
+RemoveAll。未知replacement/member保留，所有自有scopes/readers关闭。公开目录/文件755/644，
+derived completion marker仍600；stage沿用同native底层但仍700/600，不chmod已有实体。
+
+engine新归档wrapper保留签名/友好suffix规则，Importer接收尚未handoff的原session；新建与
+RestoreExisting收敛同一persist路径。EPUB/CBZ从同session已打开的regular source计算fingerprint、
+有界ZIP读写和原格式marker，不重新按path接收资源根。Book/Chapter/selected memberships在同
+caller-context transaction；category复验、placeholder owner/URL/archive guard、显式owned列更新、
+进度/书签重绑和最终Book/relations重载全部在tx内。无Save/fallback resurrection、无ignored分组
+follow-up。stage把最终原bundle guard带入commit；四confirm路由只做输入/错误映射和权威结果
+投影，durable后才consume/通知，后项失败保留前项成功。
+
+207实际反例与原正常控制初轮贯通全绿（API13.601s、service4.242s、engine2.370s、EPUB2.840s、
+CBZ3.321s；该选择命令stage包no tests to run不计stage覆盖）。另新增实现控制：32个tx category
+recheck/final Book reload真实失败回滚，8个placeholder未提交intro/canUpdate列合并及权威事件，
+8个两个storage raw/token后项SQL失败/取消保留前项，API5.156s全过。这些是新实现控制，不冒充
+旧实现red。native控制实际raw/chapter/JSON/EPUB/CBZ分块Read/Write中取消、source Read/ReadAt
+取消、partial mkdir/unknown保留、精确/+1/MaxInt64、marker权限和120轮成功/取消FD释放均通过。
+首个/dev/fd目录枚举夹具在macOS报bad file descriptor，不计产品失败/绿灯；改有界fcntl测量后
+native/root2.537s、stage1.491s、EPUB1.796s、CBZ2.133s、localbook5.622s全通过。
+
+最终源码完整Go终态通过（API118.894s），vet exit0；较早108.767s保留为中间版本，不替代最终。
+frontend762/762（零skip）、Vite build、Compose通过；离线npm ci没有改lock或依赖版本。
+源构建Go+SQLite隔离三账号HTTP：旧admin根/两普通用户、双storage、源删除后同token改规则/确认、
+精确Reader正文/foreign404、Basic/curl和LocalStore邻接全通过。真实Chromium1228在1440×900、
+390×844、360×800确认取消/单本改规则/分组/批量/逐本后，直接打开numeric Book Reader读取精确
+正文，无章节mock/错误/横溢出；preview延迟fixture仍真实fetch/取消。自有server/browser均已关闭，
+保留自有浏览器数据根，不操作生产书库。
+
+同native测试Linux双架构静态编译成功；在已有Alpine3.22非root65532、断网/只读根/私有tmp中
+Linuxarm64全包终态PASS。它不是新应用Go1.24/CGO candidate镜像证明；amd64目前仅编译，不
+冒充runtime。完整API+localbook/stage/native/resource/engine race在25m预算真实运行（进程/handle
+已核验live），尚未终态，不称全绿。候选同SHA Docker新旧卷/portable/backup/restart、trusted
+Actions双架构发布与独立OCI仍待办，不能从旧stage镜像b2推导本项发布。
+
+本机构建Go1.26.5/darwin-arm64；正式Go1.24/CGO Linux由candidate/trusted门另验。未加schema、
+URL、服务环境变量、backup member或浏览器key。安全差异仅owned/ctx/固定内部错误/unknown
+保留；纯parser CPU/regex/DOM、跨进程exactly-once、scan/peakFD预算、desktopclick/wheel、advisory
+和整体审计仍未签收。生产再只读health仍完整b2b32f7/statusok，无生产写入或升级。

@@ -2,9 +2,10 @@
 
 Status: working compatibility ledger; implemented migrations and remaining action-level audits are recorded below.
 
-## 2026-10-10 local-import durable commit inventory (no migration)
+## 2026-10-15 local-import durable commit implementation (no migration)
 
 See [`local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md`](local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md).
+The initial inventory paragraph is retained as historical; current implementation evidence follows it.
 Initial archive allocation, raw/body/resources/source/TOC, per-item Book/Chapter/category transaction,
 owned failure compensation and durable token/event handoff form the next complete boundary. Existing
 library/data/safe-user/friendly suffixes, public755/644, relative archive fields, numeric URLs, format/
@@ -12,6 +13,17 @@ resource markers, placeholder progress/bookmarks and portable consumers remain u
 inventory: no new tests/application/schema/scan/chmod/cleanup of user data, no claim that signed stageb2
 or already-imported archive125fd93 covers initial allocation/rollback. Unknown newcomer entities must
 be retained; SQL rollback cannot justify absolute RemoveAll or a full filesystem atomicity claim.
+
+Implementation now retains one native owned tree through initial raw/body/resource/JSON and item SQL
+durability; public755/644 and existing marker600 remain, stage defaults700/600 are unchanged. New and
+placeholder imports share guarded owned-column/Chapter/category persistence and authoritative results;
+failed compensation removes only original owned entries/empty dirs, retaining unknown residue. No schema,
+stored path, resource marker, portable/backup or browser-key migration.207 actual reds and new chunk/FD/
+SQL/batch controls, final fullGo/vet, frontend762, real three-account HTTP and Readerthree-viewports pass.
+NativeLinuxarm64 passes nonroot/networknone/read-only runtime; amd64 compiles only. Fullrace and same-SHA
+Go1.24/CGO candidate/fresh/historical/portable/backup/publication are pending, not inferred from oldb2.
+Production current readonlyhealth is fullb2b32f7healthy; no remote mutation/upgrade. FullparserCPU,
+exactly-once, scan/peakFD budgets and overall audit remain independently open.
 
 ## 2026-10-08 read/list lifecycle inventory (no migration)
 

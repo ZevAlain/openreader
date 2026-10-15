@@ -5,7 +5,7 @@
 固定 upstream saveBook 的成功包含 Book/group/本地资源保存；next boundary 完整枚举新 archive
 allocation、raw/body/EPUB-CBZ resources、source/TOC、Book/Chapter/selected category transaction、
 failure compensation、durable-only consume/response/event，四 confirm 路由 raw/token/new/placeholder。
-状态 **inventory-complete / initial-red-tests-confirmed / implementation-pending**，见
+状态 **implemented / validation-in-progress / Docker-not-published**，见
 [`local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md`](local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md)。
 ignored post-commit category errors、contextless durable work和 absolute archive RemoveAll 属源码
 must-fix，尚非 actual red/生产复现。不能只补 handler 错误检查，也不能以 db.WithContext 或末尾
@@ -28,6 +28,14 @@ new/restore晚期book/user replacement48、实际work取消后继续13、unknown
 复核同数，无竞争或未触发fixture。超长中文名称未触发的初版夹具不计red，已改真实非rootEACCES。
 累计207是128 API+79跨层，不是207 API/完整合同签收；初始allocation→资源→SQL/category→owned
 compensation共享实现尚未开始，全部正式回归/卷/发布门仍待办，main和生产b2不变。
+
+后续实现checkpoint（以上初始/追加red描述保留历史）：09d9fd6远端确认后才建立OwnedTree及共同
+Importer持久路径；原scope有界raw/正文/ZIP/JSON、exclusive目录/owned补偿、同ctx Book/Chapter/
+所选分组tx、placeholder guarded列/重绑/权威重载、stage commit guard与薄API全部落地。207真实
+反例和新增nativechunk/partial/FD/权限、32晚期SQL+8列合并+8前项成功控制通过。最终fullGo
+API118.894s/vet、frontend762/build/Compose、三账号HTTP、confirmed Reader三视口和非rootLinux
+native全包通过，Linuxamd64编译。完整race真实live/终态待定；同SHA Go1.24/CGO candidate与
+fresh/historical/portable/backup、trusted双架构发布/OCI尚未通过，不称生产修复或整体完成。
 
 ## 2026-10-04 当前切片：WebDAV PUT 生命周期与进度接收
 

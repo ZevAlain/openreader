@@ -4,19 +4,26 @@ Use this checklist for security-sensitive changes and release reviews.
 
 ## P2 local-import durable commit (2026-10-10 inventory, not signed off)
 
-- [ ] Bind initial LibraryDir/data/user/new-book allocation and actual raw/body/metadata/resource work to
+- [x] Bind initial LibraryDir/data/user/new-book allocation and actual raw/body/metadata/resource work to
       one original opened session, exclusive creation and request ctx; do not re-admit replacements.
-- [ ] Own every rollback entity; preserve unknown newcomers, external bait and historical archives.
-- [ ] Commit Book/Chapter/requested memberships together with owner validation, guarded placeholder
+- [x] Own every rollback entity; preserve unknown newcomers, external bait and historical archives.
+- [x] Commit Book/Chapter/requested memberships together with owner validation, guarded placeholder
       columns and authoritative projection; no ignored category errors or fallback resurrection.
-- [ ] Consume/notify only after the entire item commits; preserve retry stage on failure and earlier
+- [x] Consume/notify only after the entire item commits; preserve retry stage on failure and earlier
       batch successes on later cancellation, with fixed path/SQLite-free durability errors.
 - [ ] Add actual fired old-app reds before implementation, then full/race/native/HTTP/browser and
       exact-SHA fresh/historical/portable/backup/trusted-publication gates; no migration/production writes.
 
 Target: [`compat/local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md`](compat/local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md).
-Current source windows are inventory only. Signed stageb2 and already-imported archive125fd93 controls
+Initial source windows were inventory only. Signed stageb2 and already-imported archive125fd93 controls
 do not prove new archive initialization or SQL/category durability; full parserCPU/exactly-once remains open.
+
+Superseding implementation evidence: independent477contract→38c8f07/09d9fd6 actual207reds→shared
+OwnedTree/importer/itemtx/thinAPI. All207 now green plus actualchunk/source cancellation, partialmkdir,
+unknownpreservation,120-cycleFD/marker600, lateSQL/column/batch controls. FinalfullGo/vet/frontend762,
+three-accountHTTP/three-viewReader/nonrootLinuxnative pass. Fullrace stilllive; exactcandidate Go1.24/CGO
+volumes/backup/trustedpublication/OCI remain unchecked. No migration, newenvironmentvariable, production
+write or upgrade. FullparserCPU, exactly-once and scan/peakFD/overall audit remain open.
 
 ## P2 trusted proxy and rate-limit identity (2026-08-25 implementation)
 

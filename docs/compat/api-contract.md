@@ -2,17 +2,25 @@
 
 Status: working contract. Keep this file updated when endpoint semantics change.
 
-## 2026-10-10 local-import durable commit (inventory only)
+## 2026-10-15 local-import durable commit (implemented, release pending)
 
+The initial contract-only inventory below is historical; implementation evidence follows it.
 The four direct/TXT-alias/LocalStore/WebDAV confirm routes are inventoried in
 [`local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md`](local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md).
 Normal auth/body/limits/201 direct and 200 storage item schemas remain unchanged. The entire item must
-include archive/resources, Book/Chapter and requested memberships before success/consume/event; current
-post-commit ignored category errors and pathname archive rollback are source-level must-fix, not yet reds.
+include archive/resources, Book/Chapter and requested memberships before success/consume/event; at the
+initial baseline, ignored category errors and pathname archive rollback were source-level must-fix, not yet reds.
 Target internal durability errors are fixed `failed to import book` (direct500/storage200-item); actual
 archive/SQL cancellation terminates with500 `local book import canceled`, distinct from stage cancellation.
 Previously committed batch items retain success/notification. No499, whole-batch rollback, migration,
-exactly-once or production-upgrade claim. Contract-only checkpoint precedes tests and implementation.
+exactly-once or production-upgrade claim. Independent477587f contract and38c8f07/09d9fd6 actual reds
+preceded implementation. Four handlers now pass caller ctx/full selected memberships to one owned archive+
+Book/Chapter/category transaction and use authoritative committed Book/relations. Placeholder updates
+only owned columns; failure retains retry tokens and unknown filesystem entities. The stage guard is
+checked before commit; consumption and scoped success events are post-durable only.207 reds, additional
+late-SQL/column/batch/native controls, fullGo/vet/frontend762/build, three-user HTTP and Chromiumthree
+viewports pass. Complete fullrace, exact-candidate volumes and trusted publication remain pending;
+production read-only health is b2b32f7, not this unpublished implementation. See focused contract section10.
 
 ## 2026-10-08 read/list lifecycle (implemented and Docker-published)
 
