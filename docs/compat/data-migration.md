@@ -36,6 +36,12 @@ the post-external-change snapshot; never undo or resurrect the target, touch an 
 consume a failed token or claim full cross-process atomicity. Both automatic and explicit portable
 RestoreExisting need controls. No application/schema/path/backup/production change in this inventory.
 
+That independent87e5a72 inventory is now supplemented by48API/36service actual independent-pool SQL
+mutation controls, all ordinary/race PASS. FullGo/API119.156s and vet pass. External committed snapshots,
+old bait hashes, retry stage and zero success events are preserved; both auto and explicitRestore covered
+for TXT/EPUB/CBZ. No application or migration was needed. This does not establish late in-tx external
+concurrency, full parserCPU, scan/peakFD or cross-process exactly-once, and is not a new volume release.
+
 ## 2026-10-08 read/list lifecycle inventory (no migration)
 
 The implemented and Docker-published

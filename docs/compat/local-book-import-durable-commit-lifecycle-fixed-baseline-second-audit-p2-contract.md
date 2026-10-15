@@ -344,7 +344,7 @@ manifest header digest、两真实 Linux platform 的 manifest/config、OS/arch 
 完整 parser CPU、scan/峰值FD、跨进程 exactly-once、设备反馈/advisory/整体审计继续开放，不能
 将发布状态改写成全部合同或整体重构已完成。
 
-## 13. 下一轮占位书目标身份控制盘点（2026-10-15，仅合同）
+## 13. 占位书目标身份补充覆盖（2026-10-15，独立合同后验证）
 
 固定 SHA 上游 `src/main/java/com/htmake/reader/api/controller/BookController.kt:1189–1335`
 已再次从 pinned raw source 读取：caller namespace 内按 name/author 找书，保存本地原文件、资源、
@@ -368,3 +368,24 @@ OpenReader 自动路径 `readerDevLocalPlaceholder` 与显式 portable `RestoreE
 控制。若当前应用全绿，记录为实现后补充控制而非“先于b4的红测”，不为制造red删掉已有guard。
 若出现真实失败，先归入具体must-fix合同、固定观察红测后再实施。完整解析CPU/扫描预算等
 其它开放项仍独立保留，不把本控制集当整项重构完成。
+
+上方仅合同段落在独立 `87e5a72e0f39b56bd35b3ef5fcdafcb35a1e9967` 提交、远端 feature SHA
+精确核验后才添加两个测试文件，**未修改应用**。四confirm×raw/token×六种外部变更48个API
+leaf、TXT/EPUB/CBZ×自动/显式Restore×六种变更36个service leaf全部通过。API在实际placeholder
+chapter Count返回后、item tx前触发；service在实际raw-written后、item tx前触发，均独立SQLite
+pool实际Exec、检查RowsAffected1，之后用原连接读取外部已提交快照。没有sleep概率或在tx内
+伪造外部提交；每case必查fired。拒绝后快照完整保持、无返回Book、无新增归档或旧bait hash变化，
+API零成功事件、原token仍可加载；外部变更没有被补偿撤销。
+
+首次受限模式setup因既有Go构建缓存权限失败，不计行为red；授权同源重跑终态exit0，API4.783s/
+service2.032s。focused race 同84 leaf以及8个API列合并、3个正常prepared/唯一恢复/歧义保护控制
+全部通过（API36.181s/service3.421s），无DATA RACE、no-tests或未触发夹具。最终新增测试源码
+fullGo终态通过（API119.156s/localbook8.860s），fullvet exit0。日志分别为
+`/private/tmp/openreader-import-placeholder-target-run.log`、
+`/private/tmp/openreader-import-placeholder-target-race.log`、
+`/private/tmp/openreader-import-placeholder-full-go.log`。
+
+这些是b4发布后补充的84项控制，**不是新的先于实现红测或新缺陷修复**，不改207旧red计数。
+应用/前端/脚本/镜像配置与精确b4无差异，既有762前端、三视口、候选卷和可信发布证据属于同一
+未变应用；本补测未重跑前端/浏览器/卷，也不声称新测试源码经历一轮新的Docker发布。
+tx重读后失效的故障注入、完整CPU/scan/峰值FD/跨进程/设备/advisory与整体审计仍开放。

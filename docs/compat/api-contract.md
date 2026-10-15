@@ -35,6 +35,11 @@ error, without resurrection, success event or retry-token consumption. External 
 source/URL/archive rebind is preserved, not rolled back by importer compensation. Existing guards are
 not yet test evidence; no new implementation, red count or production issue is claimed by this inventory.
 
+Superseding coverage result after independent87e5a72: all48API plus36service pre-item-tx external mutation
+controls pass, as do focusedrace/normal-restoration controls, fullGo/API119.156s and vet. The post-external
+snapshot, failed-stage retry and zero-event assertions hold with unchanged safe response shapes.
+These are post-b4 controls, not new pre-implementation reds; no app/API/production change or new Docker run.
+
 ## 2026-10-08 read/list lifecycle (implemented and Docker-published)
 
 The next fixed-baseline contract is

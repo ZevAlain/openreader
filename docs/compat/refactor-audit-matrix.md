@@ -57,6 +57,11 @@ RestoreExisting在item tx前外部删除/owner/source/URL/library/original重绑
 service入口；外部提交后快照应保留，拒绝项无复活/成功事件、原token可重试、旧bait hash不变。
 若绿仅记后补控制；若红才更新具体must-fix并按红测→实现推进，不倒填b4之前的证据。
 
+该独立合同87e5a72之后补测终态：48API+36service真实独立SQLite外部提交控制全部PASS，
+focused race含8列合并/3正常恢复控制PASS（API36.181s/service3.421s），finalfullGo
+API119.156s/localbook8.860s与vetPASS。不是84新red，无应用改动或新生产缺陷；原207计数不变。
+仅原item tx前这组覆盖已核验，晚期tx内故障、完整CPU/scan/峰值FD等仍不签收；详见第13节。
+
 ## 2026-10-04 当前切片：WebDAV PUT 生命周期与进度接收
 
 从当前服务和固定上游重新取证，PUT 在 body 读取后仍按绝对路径 chmod/replace/cleanup，且没有复验
