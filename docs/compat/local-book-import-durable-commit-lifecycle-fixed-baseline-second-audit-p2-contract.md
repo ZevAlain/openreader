@@ -2,9 +2,9 @@
 
 固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。  
 审查日期：2026-10-10；OpenReader 源码基线：`9cb6a030b9b2c6c5e6f55d2b19dcc719b554571a`。  
-状态：**implemented / validation-in-progress / Docker-not-published**。
+状态：**core-regression-validated / Docker-published / follow-up-open / awaiting-device-verification**。
 
-初始合同段落保留为历史；第8–9节记录独立红测，第10节为当前实施证据，仍不等同于全部门已完成。
+初始合同段落保留为历史；第8–9节记录独立红测，第10–11节记录 checkpoint，第12节为最终发布证据。
 
 本提交只盘点合同，不修改应用或测试。源码窗口不是已复现漏洞，也不是生产故障结论。
 已恢复的原书事件保持关闭；stage 应用 b2b32f7 已发布，不等于本项持久提交已签收。
@@ -284,3 +284,62 @@ Actions双架构发布与独立OCI仍待办，不能从旧stage镜像b2推导本
 URL、服务环境变量、backup member或浏览器key。安全差异仅owned/ctx/固定内部错误/unknown
 保留；纯parser CPU/regex/DOM、跨进程exactly-once、scan/peakFD预算、desktopclick/wheel、advisory
 和整体审计仍未签收。生产再只读health仍完整b2b32f7/statusok，无生产写入或升级。
+
+## 11. 精确候选本地终态与可信发布进度（2026-10-15）
+
+应用提交 `b4ff9ca61bd4e761ab23dd50067c3e78ff10441f`；上述第10节的 race/候选卷 pending
+是历史 checkpoint，不再作为当前状态。最终完整 API/localbook/importstage/rootedfs/EPUB/CBZ/
+engine race 终态 exit0，分别为 998.650s/7.262s/4.863s/5.881s/2.298s/3.886s/3.348s。
+日志 `/private/tmp/openreader-import-durable-full-race-final.log`；没有 DATA RACE 或悬挂本地测试。
+
+同 SHA 本地 Go1.24/CGO Linux arm64 候选 `openreader-import-durable-local:b4ff9ca` 已核验完整
+OCI revision，原始 sh fresh/historical 两门均首次运行终态 PASS：portable-v1/v2-assets、跨用户、
+backup/restart，以及旧 TXT/EPUB/UMD/CBZ、relative-cache、owner、archive hash、进度/书签和
+logical/portable restore。保留自有夹具与日志，全部容器已停止。更早 stage 候选0a的历史404仍为
+未复现 unknown，不从本轮通过推断其根因。该本地候选 index 不冒充 GHCR 双架构 index。
+
+所有本地门通过后，main 以非 force fast-forward 从9cb6a03更新到精确b4；可信
+[Actions38745709308](https://github.com/changshengyu/openreader/actions/runs/38745709308)
+已通过 backend/frontend/build/Compose、隔离 HTTP、native candidate、新旧卷/portable/backup门，
+仍在双架构正式构建/推送。尚不能签收发布终态或独立远端 OCI config；没有重复派发发布。
+
+按 rotate-worktree-safely skill 在里程碑交接后继续到原生受管理工作树
+`/Users/yuchangsheng/.codex/worktrees/import-durable-published/OpenReader-dev`，同精确b4、clean、
+空 submodule、完整任务交接与廉价 native/stage 控制通过。原工作树和普通 Git adapter 创建的后继
+均保留；attach 不支持普通树时使用原生 create_worktree，不修改内部注册数据或删除旧树。
+
+这是共享核心的回归签收，不是第6节所有控制或整个模块完成。placeholder lookup 后的独立外部
+删除/重新绑定覆盖仍待补核；现有源码 guards 和列合并绿灯不能替代这些案例。完整 parser CPU/
+regex/DOM interrupt、扫描/峰值FD预算、跨进程/崩溃 exactly-once、桌面 click/wheel 设备反馈、
+dependency advisory 与整体审计仍独立未完成。非root Linux arm64 native 已运行、amd64本地仅
+编译；CI 双架构构建也不能冒充两架构全部 native 测试运行。生产最新只读仍为完整b2b32f7，
+不声称已升级b4或已获得设备签收，原书恢复事件保持关闭。
+
+## 12. 可信双架构发布与独立 OCI 签收（2026-10-15）
+
+第11节远端 in-progress 是历史进度。可信
+[Actions38745709308](https://github.com/changshengyu/openreader/actions/runs/38745709308)
+在完整 `b4ff9ca61bd4e761ab23dd50067c3e78ff10441f` 终态 success，所有 backend/frontend/build/
+Compose、隔离 HTTP、native image、新旧卷/portable/backup、发布和平台检查步骤均 success。
+状态 watch 客户端末次网络 EOF 不等于工作流失败；独立 GET 已核验同一运行/Job 的全部终态，
+没有重派工作流。公开 Registry API 于 `2026-10-15T14:08:46.920Z` 校验实际响应字节 SHA256、
+manifest header digest、两真实 Linux platform 的 manifest/config、OS/arch 和完整 revision：
+
+- `ghcr.io/changshengyu/openreader:b4ff9ca` 与 `latest` 共用 OCI index
+  `sha256:60e97193265ff47808a3910cae1d0bf8a8cec6a3c7b5b4a12efeb7bab144c6ee`；
+- amd64 manifest `sha256:018ba1a38abd715fab512cacd68d5b53e9a8d2463766d3b5b7c11ba64cc5171a`，
+  config `sha256:472715b469468889494f6ceba12297c493691b83397941a23e407ad39311c31b`；
+- arm64 manifest `sha256:92f962345f44959bc392b2590f2a715d143cb1df7a2a8e06cdb273fab944a0f6`，
+  config `sha256:bcb383faad0e0d14d37505e6814e776d75a97c7c0738f838af2553be911e4dae`；
+- 两 config 均为完整b4 revision；没有把 attestation/unknown platform 当成实际架构，未输出凭证。
+
+只读记录 `/private/tmp/openreader-import-durable-registry-b4ff9ca.json`；本地 candidate digest 与
+远端 index 分开，不声称本机已强制拉取远端容器。发布后生产 GET `/api/health` 仍为
+`b2b32f7b40bb8cefc18d316aefb29865aede9872`、status ok、build2026-10-10T09:13:53Z。
+未访问/升级另一台 Mac 容器、未修改生产数据或挂载；浏览器刷新不是升级或真机签收。
+
+完成的是第10–11节所述共享 durable core 和其已列实际控制。允许差异仍为 Go/SQLite、多用户、
+原实体/ctx/owned columns、固定内部错误、未知实体保留与提交后成功不伪回滚；无 schema、根目录、
+旧 URL、格式、备份、环境变量或前端 key 迁移。第11节列出的 placeholder 外部删除/rebind补核、
+完整 parser CPU、scan/峰值FD、跨进程 exactly-once、设备反馈/advisory/整体审计继续开放，不能
+将发布状态改写成全部合同或整体重构已完成。

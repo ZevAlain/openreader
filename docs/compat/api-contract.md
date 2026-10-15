@@ -2,7 +2,7 @@
 
 Status: working contract. Keep this file updated when endpoint semantics change.
 
-## 2026-10-15 local-import durable commit (implemented, release pending)
+## 2026-10-15 local-import durable commit (core validated and published, follow-up open)
 
 The initial contract-only inventory below is historical; implementation evidence follows it.
 The four direct/TXT-alias/LocalStore/WebDAV confirm routes are inventoried in
@@ -19,8 +19,15 @@ Book/Chapter/category transaction and use authoritative committed Book/relations
 only owned columns; failure retains retry tokens and unknown filesystem entities. The stage guard is
 checked before commit; consumption and scoped success events are post-durable only.207 reds, additional
 late-SQL/column/batch/native controls, fullGo/vet/frontend762/build, three-user HTTP and Chromiumthree
-viewports pass. Complete fullrace, exact-candidate volumes and trusted publication remain pending;
-production read-only health is b2b32f7, not this unpublished implementation. See focused contract section10.
+viewports pass. Superseding terminal evidence: exactb4ff9ca complete fullrace passes (API998.650s),
+same-SHA Go1.24/CGO candidate original fresh/historical/portable-v1/v2/backup/restart gates pass first try.
+Trusted Actions38745709308 completed successfully for fullb4, including all validation/publication/platform
+gates. Public registry exact/latest bytes and both actual platform configs independently verify fullb4;
+index `sha256:60e97193265ff47808a3910cae1d0bf8a8cec6a3c7b5b4a12efeb7bab144c6ee`.
+Placeholder deletion/rebind coverage and
+full parserCPU/scan/peakFD/overall audit remain open; these core results do not sign off every required
+control. Post-publication production read-only health is b2b32f7, not a b4 upgrade. See focused contract
+sections10–12. No API/data/schema migration or production mutation was performed.
 
 ## 2026-10-08 read/list lifecycle (implemented and Docker-published)
 

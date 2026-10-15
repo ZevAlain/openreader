@@ -2,7 +2,7 @@
 
 Use this checklist for security-sensitive changes and release reviews.
 
-## P2 local-import durable commit (2026-10-10 inventory, not signed off)
+## P2 local-import durable commit (2026-10-15 core validated, follow-up open)
 
 - [x] Bind initial LibraryDir/data/user/new-book allocation and actual raw/body/metadata/resource work to
       one original opened session, exclusive creation and request ctx; do not re-admit replacements.
@@ -11,7 +11,7 @@ Use this checklist for security-sensitive changes and release reviews.
       columns and authoritative projection; no ignored category errors or fallback resurrection.
 - [x] Consume/notify only after the entire item commits; preserve retry stage on failure and earlier
       batch successes on later cancellation, with fixed path/SQLite-free durability errors.
-- [ ] Add actual fired old-app reds before implementation, then full/race/native/HTTP/browser and
+- [x] Add actual fired old-app reds before implementation, then full/race/native/HTTP/browser and
       exact-SHA fresh/historical/portable/backup/trusted-publication gates; no migration/production writes.
 
 Target: [`compat/local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md`](compat/local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md).
@@ -21,9 +21,15 @@ do not prove new archive initialization or SQL/category durability; full parserC
 Superseding implementation evidence: independent477contract→38c8f07/09d9fd6 actual207reds→shared
 OwnedTree/importer/itemtx/thinAPI. All207 now green plus actualchunk/source cancellation, partialmkdir,
 unknownpreservation,120-cycleFD/marker600, lateSQL/column/batch controls. FinalfullGo/vet/frontend762,
-three-accountHTTP/three-viewReader/nonrootLinuxnative pass. Fullrace stilllive; exactcandidate Go1.24/CGO
-volumes/backup/trustedpublication/OCI remain unchecked. No migration, newenvironmentvariable, production
-write or upgrade. FullparserCPU, exactly-once and scan/peakFD/overall audit remain open.
+three-accountHTTP/three-viewReader/nonrootLinuxnative pass. Finalfullrace terminalPASS/API998.650s;
+exactb4ff9ca Go1.24/CGO candidate original fresh/historical/portable/backup/restart gates PASS first try.
+TrustedActions38745709308 exactfullb4 terminalsuccess, all validation/publication/platform gates PASS.
+Independent public OCI raw-byte SHA/header/actual-platform-config checks verify exactb4ff9ca/latest index
+`sha256:60e97193265ff47808a3910cae1d0bf8a8cec6a3c7b5b4a12efeb7bab144c6ee` and both fullb4 revisions.
+The watch client's networkEOF did not restart or fail the workflow. No migration, newenvironmentvariable,
+production write or upgrade; post-publication production health still reports fullb2b32f7/statusok.
+Placeholder external deletion/rebind controls remain unverified; do not sign off all required controls
+from column-merge/native greens. FullparserCPU, exactly-once and scan/peakFD/overall audit remain open.
 
 ## P2 trusted proxy and rate-limit identity (2026-08-25 implementation)
 

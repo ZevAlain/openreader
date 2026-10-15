@@ -20,10 +20,15 @@ placeholder imports share guarded owned-column/Chapter/category persistence and 
 failed compensation removes only original owned entries/empty dirs, retaining unknown residue. No schema,
 stored path, resource marker, portable/backup or browser-key migration.207 actual reds and new chunk/FD/
 SQL/batch controls, final fullGo/vet, frontend762, real three-account HTTP and Readerthree-viewports pass.
-NativeLinuxarm64 passes nonroot/networknone/read-only runtime; amd64 compiles only. Fullrace and same-SHA
-Go1.24/CGO candidate/fresh/historical/portable/backup/publication are pending, not inferred from oldb2.
+NativeLinuxarm64 passes nonroot/networknone/read-only runtime; amd64 compiles only. Exactb4ff9ca final
+fullrace passes (API998.650s); same-SHA Go1.24/CGO candidate original fresh/historical/portable-v1/v2/
+backup/restart gates pass first try. Trusted Actions38745709308 completed successfully for exactfullb4,
+including validation/publication/platform gates. Independent public-registry bytes/config checks verify
+both true Linux platform revisions; exactb4ff9ca/latest index is
+`sha256:60e97193265ff47808a3910cae1d0bf8a8cec6a3c7b5b4a12efeb7bab144c6ee`, not inferred from oldb2.
 Production current readonlyhealth is fullb2b32f7healthy; no remote mutation/upgrade. FullparserCPU,
-exactly-once, scan/peakFD budgets and overall audit remain independently open.
+exactly-once, scan/peakFD budgets and overall audit remain independently open. Additional placeholder
+external deletion/rebind controls are follow-up work, not proven by the existing column-merge controls.
 
 ## 2026-10-08 read/list lifecycle inventory (no migration)
 

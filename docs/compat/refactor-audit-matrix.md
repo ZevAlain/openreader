@@ -1,11 +1,11 @@
 # OpenReader 全量上游复审矩阵
 
-## 2026-10-10 当前切片：本地书导入持久提交（仅合同）
+## 2026-10-15 当前切片：本地书导入持久提交（共享核心已验证并发布，后续开放）
 
 固定 upstream saveBook 的成功包含 Book/group/本地资源保存；next boundary 完整枚举新 archive
 allocation、raw/body/EPUB-CBZ resources、source/TOC、Book/Chapter/selected category transaction、
 failure compensation、durable-only consume/response/event，四 confirm 路由 raw/token/new/placeholder。
-状态 **implemented / validation-in-progress / Docker-not-published**，见
+状态 **core-regression-validated / Docker-published / follow-up-open / awaiting-device-verification**，见
 [`local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md`](local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md)。
 ignored post-commit category errors、contextless durable work和 absolute archive RemoveAll 属源码
 must-fix，尚非 actual red/生产复现。不能只补 handler 错误检查，也不能以 db.WithContext 或末尾
@@ -36,6 +36,20 @@ Importer持久路径；原scope有界raw/正文/ZIP/JSON、exclusive目录/owned
 API118.894s/vet、frontend762/build/Compose、三账号HTTP、confirmed Reader三视口和非rootLinux
 native全包通过，Linuxamd64编译。完整race真实live/终态待定；同SHA Go1.24/CGO candidate与
 fresh/historical/portable/backup、trusted双架构发布/OCI尚未通过，不称生产修复或整体完成。
+
+终态更新：精确应用b4ff9ca fullrace已PASS（API998.650s），同SHA Go1.24/CGO候选原始sh新旧卷/
+portable-v1/v2-assets/跨用户/历史四格式/进度书签/backup/restart均首次PASS。main非force更新到
+完整b4后，可信Actions38745709308全部验证门通过，仍在正式双架构构建/推送，尚无独立OCI签收。
+上方pending是历史阶段，不再当当前本地状态。原生受管理后继工作树同SHA/clean/廉价控制通过，
+原树保留。后续外部删除/rebind占位书覆盖、完整parserCPU/scan/峰值FD/设备/advisory及整体审计仍
+未完成，不用207绿灯签收全部合同。生产最新只读b2b32f7healthy，不是b4部署或设备验收。
+
+最终发布证据取代上段in-progress：可信Actions38745709308完整b4ff9ca终态success，所有发布/
+平台门PASS。独立公开Registry原字节SHA/config核验两真实Linux架构和完整b4 revision，
+`b4ff9ca`/`latest` index均为
+`sha256:60e97193265ff47808a3910cae1d0bf8a8cec6a3c7b5b4a12efeb7bab144c6ee`。
+详见合同第12节平台/config明细。发布后生产只读仍完整b2b32f7/statusok；未替用户升级，原书
+恢复事件保持关闭。后续覆盖及整体审计仍开放，不恢复旧99%作为完成证据。
 
 ## 2026-10-04 当前切片：WebDAV PUT 生命周期与进度接收
 
