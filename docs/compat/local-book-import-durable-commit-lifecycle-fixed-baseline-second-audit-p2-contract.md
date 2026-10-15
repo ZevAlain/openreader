@@ -205,3 +205,38 @@ panic、编译或fixture未触发；它是race仪器下的真实red，不是应�
 另独立只读生产health本日返回完整 `b2b32f7b40bb8cefc18d316aefb29865aede9872`、status ok、
 build2026-10-10T09:13:53Z；此前db1ea21是历史事实，不能继续当当前运行值。本项尚未实现，故
 生产已升级stage镜像不等于持久提交问题已解决；原已恢复书事件不重开，整体审计保持未完成。
+
+## 9. 实际工作边界追加红测（2026-10-15，仍先于实现）
+
+独立初轮red38c8f07远端精确核验后，只增加 nil-in-production 观察接缝与测试，所有原绝对
+mkdir/write/resource/remove、contextless handler 和 Book/category 提交逻辑仍未修复。接缝观察
+已发生的 allocation/Write/Close，不替换 parser结果或模拟成功 I/O。
+
+最终补充运行 `go test ./engine ./services/localbook ./services/epubreader ./services/cbzreader
+-run '^(TestImportArchiveAllocation|TestImportResource|TestImporterDurableWork)' -count=1 -v` 终态exit1，
+**追加79个实际行为失败、15个已绿取消控制**：
+
+- engine2：选名后真实同名目录/原文件被旧实现覆盖并认领；新目录创建后改000，非root实际原文件
+  Write返回permission error但留下空归档。首个超长中文basename夹具在本机没有触发失败，已舍弃，
+  不计red；最终EACCES夹具明确fired/实际错误，仍非rootLinux回归待后续完成。
+- localbook48：TXT/EPUB/CBZ × new/RestoreExisting × raw/chapter/source/TOC实际写后 × book/user
+  原目录换成含同一合法原bytes的普通replacement；后续独立helper重新接收并写入或提交替换归档。
+- localbook13：已给DB合法caller ctx的28个取消案例中，13个在raw写后继续准备资源、source写后
+  继续TOC、或恢复第一章写后继续第二章；context.Canceled有时被sql.ErrTxDone吞掉。另15个原本
+  安全停止/回滚是控制，不计红灯；SQL ctx绿灯并不证明其前后原实体I/O完整安全。
+- localbook6：raw实际写后添加unknown成员再取消，旧绝对RemoveAll误删unknown，new/restore及
+  三格式均fired；不能把“新分配目录”当作后来所有成员的所有权。
+- EPUB/CBZ各5：首entry实际写/close后换普通目录、symlink或加入冲突unknown成员（各3）；真实
+  reader返回partial+UnexpectedEOF时writer按name删掉后来同名newcomer（各1）；MaxInt64 +1
+  溢出造成静默空文件（各1）。外部sentinel和held原文件逐项观察，未把ZIP解析/编译失败当red。
+
+最终日志 `/private/tmp/openreader-import-durable-supplement-final-red.log`：engine0.944s、
+localbook3.273s、EPUB1.453s、CBZ1.927s；race同源码终态exit1，仍79行为red/15控制、无DATA RACE、
+panic/编译或未触发fixture（0.533s/5.065s/0.921s/1.841s）。race日志独立保留。
+既有正常portable archive、prepared snapshot、EPUB/CBZ导入/恢复资源控制通过；首个联合控制命令
+CBZ包显示no tests to run，不计覆盖，另真正的CBZ immutable generation控制0.438s通过。
+
+此轮只可独立feature checkpoint，不能推main发布。207累计red是128 API+79跨层真实反例，不能
+写成207条API或全合同覆盖。完整actual-chunk ctx/预算、原始source打开竞态、native FD与partial
+mkdir回收、元数据/分组最终重载、placeholder并发删除/列、batch早项成功和正式全量/卷/发布门
+仍需继续；不从这些追加red或15控制推导完整模块已实现。

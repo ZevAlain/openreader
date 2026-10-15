@@ -21,6 +21,9 @@ type extractionLimits struct {
 	MaxTotalBytes   int64
 }
 
+// Nil outside deterministic actual-entry ownership fixtures.
+var afterArchiveEntryTestHook func(destination, canonical string)
+
 func extractionLimitsFromConfig(_ config.Config) extractionLimits {
 	// New imports already pass the caller-configured strict parser limits before
 	// an archive is allocated. Runtime extraction deliberately retains the
@@ -164,6 +167,9 @@ func extractZipReader(reader *zip.Reader, destination string, limits extractionL
 			return "", fmt.Errorf("%w: extracted files exceed the total limit", ErrExtractionLimit)
 		}
 		actualTotal += written
+		if afterArchiveEntryTestHook != nil {
+			afterArchiveEntryTestHook(destination, entry.canonical)
+		}
 	}
 	return coverPath, nil
 }

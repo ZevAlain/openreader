@@ -55,6 +55,11 @@ type ArchivedBookSource struct {
 
 var unsafePathChars = regexp.MustCompile(`[\\/:*?"<>|\r\n\t]+`)
 
+// Nil outside deterministic allocation ownership tests. Observe the selected
+// name before the legacy mkdir/write; this seam does not change admission.
+var archiveDirectorySelectedTestHook func(parent, name string)
+var archiveDirectoryCreatedTestHook func(directory string)
+
 func ArchiveImportedBook(libraryDir, userName, title, author, originalFilename string, data []byte) (ArchivedBook, error) {
 	userName = SafeFilename(userName)
 	if userName == "" {
@@ -67,8 +72,14 @@ func ArchiveImportedBook(libraryDir, userName, title, author, originalFilename s
 		return ArchivedBook{}, err
 	}
 	directory := filepath.Join(parentDirectory, directoryName)
+	if archiveDirectorySelectedTestHook != nil {
+		archiveDirectorySelectedTestHook(filepath.Join(libraryDir, parentDirectory), directoryName)
+	}
 	if err := os.MkdirAll(filepath.Join(libraryDir, directory), 0o755); err != nil {
 		return ArchivedBook{}, err
+	}
+	if archiveDirectoryCreatedTestHook != nil {
+		archiveDirectoryCreatedTestHook(filepath.Join(libraryDir, directory))
 	}
 
 	originalFile := filepath.Join(directory, SafeFilename(originalFilename))

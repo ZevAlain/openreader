@@ -22,6 +22,13 @@ GET health现已返回完整b2b32f7/statusok，取代上文旧db1记录；不是
 最终同源码race78.770s保持128行为red/8控制通过，无data race；独立正常控制API1.500s与stage
 collision1.308s通过。全量应用/浏览器/镜像卷门待实现后再跑，不把初轮red当实现或正式候选。
 
+独立38c8f07后追加实际work观察接缝和79个真实跨层red：新归档独占/partial权限失败2，三格式
+new/restore晚期book/user replacement48、实际work取消后继续13、unknown成员误删6，EPUB/CBZ
+资源展开replacement/partial误删/MaxInt64各5。另15取消case原已安全是控制；最终普通/race均
+复核同数，无竞争或未触发fixture。超长中文名称未触发的初版夹具不计red，已改真实非rootEACCES。
+累计207是128 API+79跨层，不是207 API/完整合同签收；初始allocation→资源→SQL/category→owned
+compensation共享实现尚未开始，全部正式回归/卷/发布门仍待办，main和生产b2不变。
+
 ## 2026-10-04 当前切片：WebDAV PUT 生命周期与进度接收
 
 从当前服务和固定上游重新取证，PUT 在 body 读取后仍按绝对路径 chmod/replace/cleanup，且没有复验

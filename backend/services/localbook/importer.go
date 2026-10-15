@@ -31,6 +31,15 @@ const maxLocalBookTOCRuleBytes = engine.MaxTXTTocRuleBytes
 type Importer struct {
 	cfg config.Config
 	db  *gorm.DB
+	// Nil outside deterministic work-boundary tests. Observe actual completed
+	// I/O, never substitute parser results, contexts or persistence operations.
+	testAfterWork func(phase, archiveRoot string)
+}
+
+func (importer Importer) observeWork(phase, archiveRoot string) {
+	if importer.testAfterWork != nil {
+		importer.testAfterWork(phase, archiveRoot)
+	}
 }
 
 type ImportRequest struct {
@@ -209,6 +218,7 @@ func (importer Importer) importParsedBook(request ImportRequest, parsedBook engi
 			_ = os.RemoveAll(archiveRoot)
 		}
 	}()
+	importer.observeWork("raw-written", archiveRoot)
 
 	lastChapter := ""
 	if len(chapters) > 0 {
@@ -234,10 +244,12 @@ func (importer Importer) importParsedBook(request ImportRequest, parsedBook engi
 		if err := epubreader.New(importer.cfg, importer.db).PrepareBookResources(book); err != nil {
 			return models.Book{}, classifyEPUBPreparationError(err)
 		}
+		importer.observeWork("resources-prepared", archiveRoot)
 	case ".cbz":
 		if err := cbzreader.New(importer.cfg, importer.db).PrepareBookResources(book); err != nil {
 			return models.Book{}, classifyCBZPreparationError(err)
 		}
+		importer.observeWork("resources-prepared", archiveRoot)
 	}
 	contentDir := filepath.Join(importer.cfg.LibraryDir, archive.Directory, "content")
 	err = importer.db.Transaction(func(tx *gorm.DB) error {
@@ -262,6 +274,7 @@ func (importer Importer) importParsedBook(request ImportRequest, parsedBook engi
 				return err
 			}
 			cachePath := filepath.Join("content", contentPath)
+			importer.observeWork("chapter-written", archiveRoot)
 
 			chapter := models.Chapter{
 				BookID:              book.ID,
@@ -309,9 +322,11 @@ func (importer Importer) importParsedBook(request ImportRequest, parsedBook engi
 		if err := engine.WriteBookSource(importer.cfg.LibraryDir, archive, source); err != nil {
 			return err
 		}
+		importer.observeWork("source-written", archiveRoot)
 		if err := engine.WriteChapterArchive(importer.cfg.LibraryDir, archive, archivedChapters); err != nil {
 			return err
 		}
+		importer.observeWork("toc-written", archiveRoot)
 		return nil
 	})
 	if err != nil {
@@ -452,6 +467,7 @@ func (importer Importer) restoreExistingParsedBook(
 			_ = os.RemoveAll(archiveRoot)
 		}
 	}()
+	importer.observeWork("raw-written", archiveRoot)
 	preparedTarget := existing
 	preparedTarget.LibraryPath = archive.Directory
 	preparedTarget.OriginalFile = archive.OriginalFile
@@ -460,10 +476,12 @@ func (importer Importer) restoreExistingParsedBook(
 		if err := epubreader.New(importer.cfg, importer.db).PrepareBookResources(preparedTarget); err != nil {
 			return models.Book{}, classifyEPUBPreparationError(err)
 		}
+		importer.observeWork("resources-prepared", archiveRoot)
 	case ".cbz":
 		if err := cbzreader.New(importer.cfg, importer.db).PrepareBookResources(preparedTarget); err != nil {
 			return models.Book{}, classifyCBZPreparationError(err)
 		}
+		importer.observeWork("resources-prepared", archiveRoot)
 	}
 
 	book := existing
@@ -502,6 +520,7 @@ func (importer Importer) restoreExistingParsedBook(
 				return err
 			}
 			cachePath := filepath.Join("content", contentPath)
+			importer.observeWork("chapter-written", archiveRoot)
 			nextChapters = append(nextChapters, models.Chapter{
 				BookID:              target.ID,
 				Index:               index,
@@ -556,9 +575,11 @@ func (importer Importer) restoreExistingParsedBook(
 		if err := engine.WriteBookSource(importer.cfg.LibraryDir, archive, source); err != nil {
 			return err
 		}
+		importer.observeWork("source-written", archiveRoot)
 		if err := engine.WriteChapterArchive(importer.cfg.LibraryDir, archive, archivedChapters); err != nil {
 			return err
 		}
+		importer.observeWork("toc-written", archiveRoot)
 		book = target
 		return nil
 	})

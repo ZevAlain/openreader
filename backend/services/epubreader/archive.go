@@ -19,6 +19,10 @@ type extractionLimits struct {
 	MaxTotalBytes   int64
 }
 
+// Nil outside lifecycle fixtures; called only after an actual entry write and
+// source close. It never changes ordinary archive parsing or I/O.
+var afterArchiveEntryTestHook func(destination, canonical string)
+
 func defaultExtractionLimits() extractionLimits {
 	return extractionLimits{
 		MaxArchiveBytes: 1 << 30,
@@ -157,6 +161,9 @@ func extractZipReader(reader *zip.Reader, destination string, limits extractionL
 		}
 		if closeErr != nil {
 			return closeErr
+		}
+		if afterArchiveEntryTestHook != nil {
+			afterArchiveEntryTestHook(destination, entry.canonical)
 		}
 	}
 	return nil
