@@ -1,5 +1,15 @@
 # OpenReader 全量上游复审矩阵
 
+## 2026-10-15 下一切片：运行时与依赖 advisory（仅合同）
+
+见[`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
+固定upstream认证/XPath和当前实际调用已提取，JWT/XPath/HTML-text/已过支持期Go-Alpine属于维护
+must-fix，须先实际行为red再修；npm8high是8受影响包，不是8生产漏洞，SSR/Node/Windows/build
+前提分别记录。govulncheck1.9 JSON exit0不等于clean：宿主1.26.5 source有28符号报告但需条件
+复核；精确b4 Linux二进制实际Go1.24.13且pkgSymbols0，76匹配仅模块级，不能作可达性证明。
+本轮无应用/依赖/lock/Dockerfile变化、无生产写入；先独立合同再红测，保留原数据和已恢复原书事件。
+状态inventory-complete/behavioral-reds-pending/implementation-not-started，整体审计继续开放。
+
 ## 2026-10-15 当前切片：本地书导入持久提交（共享核心已验证并发布，后续开放）
 
 固定 upstream saveBook 的成功包含 Book/group/本地资源保存；next boundary 完整枚举新 archive

@@ -2,6 +2,15 @@
 
 Status: working contract. Keep this file updated when endpoint semantics change.
 
+## 2026-10-15 runtime/dependency advisory inventory (no API change)
+
+See [`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md).
+JWT parser and XPath evaluation have actual application call paths to affected dependency symbols;
+behavioral reds must precede any implementation. Auth statuses/errors, HS256/claims/session/legacy token
+semantics, rule fields/normal outputs, routes and caller isolation remain unchanged. No forced logout,
+new token schema or production probe is authorized. Source-host scans and stripped candidate module
+matches are not production exploit or complete audit proof; frontend Node/SSR/Windows conditions are distinct.
+
 ## 2026-10-15 local-import durable commit (core validated and published, follow-up open)
 
 The initial contract-only inventory below is historical; implementation evidence follows it.

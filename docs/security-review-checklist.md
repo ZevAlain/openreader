@@ -2,6 +2,23 @@
 
 Use this checklist for security-sensitive changes and release reviews.
 
+## P2 runtime/dependency advisory second audit (2026-10-15 inventory only)
+
+- [x] Pin official advisory/tool data, map upstream auth/XPath and actual application call paths; keep
+      source-host configuration, stripped-binary module fallback and browser/build/SSR/Node conditions separate.
+- [ ] Independently commit the contract, then observe actual bounded JWT allocation and isolated XPath
+      non-termination reds, with normal behavior controls, before fixing affected dependencies.
+- [ ] Resolve required Go minimum/toolchain, module graph, frontend locks and supported official base pins;
+      prove fixed behavior and accurate fail-closed audit reporting without mass latest/force or broad ignores.
+- [ ] Complete full/race/vet/frontend/browser/native/candidate new-old-volume/backup/trusted-platform/OCI
+      gates and candidate-specific audit, preserving sessions/data/URLs; no production write or upgrade.
+
+Target: [`compat/runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](compat/runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md).
+Initial npm8high counts packages. Govulncheck JSON exit0 is not a clean verdict; b4 candidate Go1.24.13
+has no extracted symbols, so its76 matches are module-level only, not76 reachable vulnerabilities. Current
+host1.26.5 source28 symbol reports need condition checks. No behavioral reds, app/lock/base fixes or new
+Docker candidate yet; parserCPU/scan/peakFD/device/whole audit remain separately unfinished.
+
 ## P2 local-import durable commit (2026-10-15 core validated, follow-up open)
 
 - [x] Bind initial LibraryDir/data/user/new-book allocation and actual raw/body/metadata/resource work to

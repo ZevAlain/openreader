@@ -2,6 +2,15 @@
 
 Status: working compatibility ledger; implemented migrations and remaining action-level audits are recorded below.
 
+## 2026-10-15 runtime/dependency advisory inventory (no migration)
+
+[`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)
+records the next toolchain/module/client/build/base-image audit. Future necessary Go-minimum/base pin
+updates must be explicit; no blanket latest update, SQLite/GORM/schema, root/archive/backup, token/session,
+browser-key or production migration is authorized. Preserve all old mounts, URLs, permissions, parser and
+RootedFS lifecycle behavior; same-SHA historical/portable/backup gates are still mandatory after implementation.
+Only read-only official metadata/scans and an isolated candidate-binary extraction have run so far.
+
 ## 2026-10-15 local-import durable commit implementation (no migration)
 
 See [`local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md`](local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md).
