@@ -30,6 +30,12 @@ Production current readonlyhealth is fullb2b32f7healthy; no remote mutation/upgr
 exactly-once, scan/peakFD budgets and overall audit remain independently open. Additional placeholder
 external deletion/rebind controls are follow-up work, not proven by the existing column-merge controls.
 
+Coverage-only follow-up inventory (focused section13): test-owned SQLite target mutations after
+placeholder selection but before item tx must remain committed if confirmation rejects. Compare against
+the post-external-change snapshot; never undo or resurrect the target, touch an existing bait archive,
+consume a failed token or claim full cross-process atomicity. Both automatic and explicit portable
+RestoreExisting need controls. No application/schema/path/backup/production change in this inventory.
+
 ## 2026-10-08 read/list lifecycle inventory (no migration)
 
 The implemented and Docker-published

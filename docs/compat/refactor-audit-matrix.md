@@ -51,6 +51,12 @@ portable-v1/v2-assets/跨用户/历史四格式/进度书签/backup/restart均�
 详见合同第12节平台/config明细。发布后生产只读仍完整b2b32f7/statusok；未替用户升级，原书
 恢复事件保持关闭。后续覆盖及整体审计仍开放，不恢复旧99%作为完成证据。
 
+下一覆盖盘点（仅合同，应用仍b4）：固定upstream saveBook再次核对；自动placeholder与显式
+RestoreExisting在item tx前外部删除/owner/source/URL/library/original重绑定需实际SQL控制，当前
+源码guard不作覆盖签收，也不先认定缺陷。见同合同第13节：四confirm×raw/token、三格式×两
+service入口；外部提交后快照应保留，拒绝项无复活/成功事件、原token可重试、旧bait hash不变。
+若绿仅记后补控制；若红才更新具体must-fix并按红测→实现推进，不倒填b4之前的证据。
+
 ## 2026-10-04 当前切片：WebDAV PUT 生命周期与进度接收
 
 从当前服务和固定上游重新取证，PUT 在 body 读取后仍按绝对路径 chmod/replace/cleanup，且没有复验

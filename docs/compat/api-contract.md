@@ -29,6 +29,12 @@ full parserCPU/scan/peakFD/overall audit remain open; these core results do not 
 control. Post-publication production read-only health is b2b32f7, not a b4 upgrade. See focused contract
 sections10–12. No API/data/schema migration or production mutation was performed.
 
+Next coverage-only inventory (focused section13) keeps every route/error unchanged: placeholder identity
+lost after selection but before item tx must fail with existing direct500/storage200-item safe durability
+error, without resurrection, success event or retry-token consumption. External committed deletion/owner/
+source/URL/archive rebind is preserved, not rolled back by importer compensation. Existing guards are
+not yet test evidence; no new implementation, red count or production issue is claimed by this inventory.
+
 ## 2026-10-08 read/list lifecycle (implemented and Docker-published)
 
 The next fixed-baseline contract is

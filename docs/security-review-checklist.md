@@ -31,6 +31,11 @@ production write or upgrade; post-publication production health still reports fu
 Placeholder external deletion/rebind controls remain unverified; do not sign off all required controls
 from column-merge/native greens. FullparserCPU, exactly-once and scan/peakFD/overall audit remain open.
 
+- [ ] Coverage-only follow-up: after target selection and before item tx, actual external committed delete/
+      owner/source/URL/library/original rebind remains intact; failed auto/explicit restore has no
+      resurrection, foreign mutation, success event or token consumption. See focused contract section13;
+      do not present already-green guards or post-b4 controls as additional pre-implementation reds.
+
 ## P2 trusted proxy and rate-limit identity (2026-08-25 implementation)
 
 - [x] Direct deployments trust only the TCP peer address; caller-controlled `X-Forwarded-For` and `X-Real-IP`

@@ -343,3 +343,28 @@ manifest header digest、两真实 Linux platform 的 manifest/config、OS/arch 
 旧 URL、格式、备份、环境变量或前端 key 迁移。第11节列出的 placeholder 外部删除/rebind补核、
 完整 parser CPU、scan/峰值FD、跨进程 exactly-once、设备反馈/advisory/整体审计继续开放，不能
 将发布状态改写成全部合同或整体重构已完成。
+
+## 13. 下一轮占位书目标身份控制盘点（2026-10-15，仅合同）
+
+固定 SHA 上游 `src/main/java/com/htmake/reader/api/controller/BookController.kt:1189–1335`
+已再次从 pinned raw source 读取：caller namespace 内按 name/author 找书，保存本地原文件、资源、
+source/shelf，合并旧 durChapterIndex/title/time。没有从这些代码推导并发 SQLite 或删除复活语义。
+OpenReader 自动路径 `readerDevLocalPlaceholder` 与显式 portable `RestoreExisting` 使用第5节目标
+身份保护，这是多用户/SQLite 允许强化；现有源码有 guards，但不能以源码代替具体反例/控制。
+
+| 边界 | 当前证据 | 裁决和测试计划 |
+|---|---|---|
+| 候选确定后、item tx前，外部目标已删除或变更owner/source/URL/library/original | b4的tx重读和原快照比较应拒绝；旧09也已有部分同类检查。 | `unknown coverage`，不是已证缺陷；四confirm×raw/token与三格式×自动/显式Restore均加实际已提交SQL控制，期望保留外部结果、无复活/新增章节关系/成功事件、新owned archive回收、token仍可重试。 |
+| tx重读后、guarded UPDATE前，目标再失效 | b4有where guard/RowsAffected，无Save fallback；普通SQLite外部writer不能任意越过读锁。 | 只作为同tx故障注入控制，不冒充独立并发外部提交。若后续加入，单列时序/回滚断言，不与上一行混计。 |
+| 正常可恢复目标 | 当前unowned intro/canUpdate和权威投影8控制已绿；原URL/progress/bookmark/分组合同不变。 | 邻接正常控制必须继续通过，不将新拒绝推广到所有逻辑恢复书。 |
+
+外部控制使用真实test-owned SQLite提交，不在 importer tx 内伪造已发生外部commit；触发点必须
+实际fired、位于tx前，比较的是外部变更提交后的完整DB快照，而不是要求撤销外部删除/重绑定。
+变更归档字段时只指向自有bait文件，并比较全部旧文件hash。四路响应仍是原durability安全错误
+（direct500/storage200-item），不增加404/409/499或新响应字段。显式Restore内部错误不得带来
+成功Book返回；服务/API测试不调用生产或复制用户书库。
+
+此盘点不改应用/测试、schema、backup/路径/环境变量或可见成功语义；先独立提交推送再添加
+控制。若当前应用全绿，记录为实现后补充控制而非“先于b4的红测”，不为制造red删掉已有guard。
+若出现真实失败，先归入具体must-fix合同、固定观察红测后再实施。完整解析CPU/扫描预算等
+其它开放项仍独立保留，不把本控制集当整项重构完成。
