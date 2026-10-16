@@ -43,6 +43,15 @@ unreproduced; evidence is the official 3.51.3 source ID plus the actual runtime 
 patch comparison. Browser/native arm64/volume/trusted publication pending; no image/production change.
 See focused contract section 10.
 
+OS/C contract (section 11, before implementation): official alpine:3.23 still resolves to the pinned
+3.23.6 digest, so zlib can only be fixed by installing the exact signed 1.3.2-r1 at build time. Both v3.23
+main APKINDEX files verify against the base image's official keys; per-arch `C:` identities and aports
+b92621a8 are recorded. The published fc4692c layers match every APK-owned file except the official
+`etc/shadow` rewrite; native apk 3.0.8 finds only zlib r0<r1 pending. Planned: a fail-closed APK/secdb
+release gate over both platform validation images (exact identities, per-file checksums, fresh secdb,
+reviewed unknown origins, no not-applicable path) and the exact Dockerfile fix. No runtime apk upgrade,
+untrusted packages, extra repositories or latest tags; image validation stays with Actions on main.
+
 2026-10-16 frontend supplement:
 [`compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
 Fresh all-lock npm audit8high packages, not8exploits; own tiny bounded fixtures before patches, distinguish

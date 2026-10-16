@@ -256,3 +256,45 @@ SQLite3.51.3（不跨3.53），同一断言红转绿且全部控制保持；OS/C
 状态 **implementation-complete / locally-regression-validated / Docker-pending /
 wal-schedule-unreproduced**。未合入main，未构建或推送镜像；镜像仍为fc4692c；生产未访问或修改。
 OS/C的zlib构建期修复与APK/secdb门（交接3d）仍开放。
+
+## 11. OS/C APK发布门与zlib构建期维护合同（2026-10-16，实施前）
+
+Registry只读核验：官方 `alpine:3.23` 与 `alpine:3.23.6` 仍是同一index `85fe1e81…`，3.23.7不存在，
+“刷新base”不能修复zlib；按第2节只允许构建期安装签名校验的官方精确zlib APK。
+
+实施前取证（用户批准下载两份APKINDEX；其余均为已存证据或本地已有镜像，断网运行）：
+
+- v3.23 main x86_64/aarch64 APKINDEX（`v3.23.6-61-g95654076fb0`，Last-Modified 10-16 05:46 GMT，
+  sha256 `d25ac254…`/`c65d4f28…`）以已发布base层内官方公钥 `6165ee59`/`616ae350` RSA验签通过。
+  zlib 1.3.2-r1：x86_64 `C:Q1jut3bNPRHp/JoWp0GWNhtIWnnQE=`（S 56205），aarch64
+  `C:Q1932/MXUWsUUsB2j59i8WBsgG3S0=`（S 54331），aports提交 `b92621a82657b055485976b304462bddf9aa9183`，
+  与第2节维护者补丁一致。
+- base 16包中13个在当前签名索引里同版本且 `C:` 全等，证明安装库的 `C:` 就是签名索引身份，可直接pin。
+  libcrypto3/libssl3 3.5.8-r0已被索引中openssl 3.5.9-r0（约9-30构建）取代，但10-13 secdb对3.5.8-r0
+  无待修复项；本合同不升级openssl，发布时门读取最新secdb，出现修复即失败关闭。
+- 已发布fc4692c两平台层还原后，110/109个APK拥有文件按 `Q1`+SHA1（文件内容或符号链接目标）逐一核对，
+  仅 `etc/shadow` 被官方base层自身改写（包内 `Q1miRFe6…`，实际 `Q1/czoE9…`）；builder复制的CA bundle
+  与包内字节相同；world为6项，repositories为两条官方v3.23地址；os-release归alpine-release包所有。
+- 本地pinned alpine 3.23.6（apk-tools 3.0.8，`--network none`）对77组已安装/修复版本原生比较，两架构
+  结果相同，唯一 `<` 为 `1.3.2-r0 < 1.3.2-r1`（CVE-2026-85091）；候选r1无 `<`。
+
+门合同（`scripts/check-os-advisories.mjs` + 已审基线 `scripts/os-apk-baseline.json`）：
+
+- 只接受工作流加载的 `openreader-ci:TAG` 与 `openreader-ci-arm64:TAG`（同TAG），无任何绕过参数。
+  `docker save` 落盘后解析：唯一manifest，config摘要与路径一致，每层解压后匹配diff_id；tar头校验和、
+  结束标记、条目类型、路径失败关闭；按OCI whiteout/opaque/非目录替换语义展开最终文件系统。
+- 基线固定两平台16包的版本/origin/`C:`（base原样加zlib r1 pin），world（含 `zlib=1.3.2-r1`）、
+  repositories、Cmd，唯一放行修改 `etc/shadow`（同时固定包内与实际校验和），5个无secdb记录的origin
+  记为unknown（不是clean），复审期限2026-11-16，过期或被secdb收录即失败。
+- 失败关闭：OS/架构/variant/Cmd/Entrypoint不符；os-release不是3.23.6；APK库空、截断、未知字段、重复、
+  缺字段、非法路径或校验和；包身份不符、多包或少包；APK拥有文件缺失或校验和不符；两平台包集合不同；
+  secdb schema变化、超过30天或时间在未来；原生比较集合与计划不完全一致或出现 `<`/`=`/`>` 以外结果；
+  任一 `<` 待修复。OS发现没有not-applicable通道，不凭推理豁免。
+- workflow：门测试在构建前运行；amd64验证镜像后新增arm64验证镜像（load、不推送、独立gha缓存），
+  然后对两平台运行门，再跑卷门和推送；推送步骤同时读取arm64缓存以复用已验证的层。
+- Dockerfile：运行时阶段在FROM之后、ARG之前执行 `RUN apk add --no-cache 'zlib=1.3.2-r1'`，不用
+  `--allow-untrusted`、upgrade、额外仓库或latest，CMD不变，builder阶段不改。
+
+测试先于实现：实现前门测试必须整体失败，实现与workflow后只剩Dockerfile断言为红，Dockerfile修复后
+全部转绿；另需用本地已有的真实已发布镜像和完整secdb走一遍真实采集路径。实际候选镜像构建、两平台门
+运行、新旧卷与可信双平台发布只能在合入main后的Actions中完成，本地不构建、不推送镜像，生产不操作。

@@ -35,6 +35,12 @@ OS/C工具门与zlib修复仍开放；应用/模块/镜像/生产未改。
 浏览器三视口、原生arm64、新旧卷/portable及可信发布待main上的Actions；WAL调度仍未复现；未合main，无新镜像，
 生产未动；OS/C zlib/APK门仍开放，见合同第10节。
 
+OS/C合同（第11节，实施前）：官方alpine:3.23仍为3.23.6同一digest，zlib只能构建期安装签名校验的精确
+1.3.2-r1。两份v3.23 main APKINDEX已用base内官方公钥验签，记录两架构 `C:`/aports b92621a8；已发布
+fc4692c逐文件核对仅官方 `etc/shadow` 改写，原生apk 3.0.8比较唯一 `<` 为zlib r0<r1。计划新增失败关闭的
+APK/secdb发布门（两平台验证镜像、精确包身份、逐文件校验和、secdb新鲜度、unknown origin复审）与
+Dockerfile精确zlib修复；先测试后实现，实际镜像验证待main上的Actions。
+
 ## 2026-10-16 当前切片：前端客户端与构建依赖 advisory 补充
 
 [`frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)
