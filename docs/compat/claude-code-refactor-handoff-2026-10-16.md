@@ -4,6 +4,31 @@
 整体目标仍是继续推进重构，**没有宣布全量完成**。本文件是本批次的入口；后续须重新核对
 Git/远端/运行时，不能只相信历史文字或把测试通过当作生产环境已升级。
 
+## 0. Claude Code 接续后的最新状态（2026-10-16 晚，优先于下文）
+
+同一工作树与分支 `codex/sqlite-c-advisory-foundation`；本节之前的HEAD为
+`bf6d7f7343dfdd33f724c15099a4e2dab6ff06f7`（ls-remote精确核验），本交接提交以实际
+`git rev-parse HEAD` 为准。`origin/main` 仍为 `24e55ba`。接续时先复现了下文第3节基线，结果一致。
+
+| 提交 | 内容 |
+| --- | --- |
+| `52786f8` test / `fc289a0` docs | in-flight C step取消控制（读/写事务），合同第9节；WAL确定性调度未编写，如实保留未复现/open |
+| `7a1bf82` build / `a376fc9` docs | go-sqlite3 v1.14.22→v1.14.36（SQLite 3.51.3），两项库级red同一断言转绿，合同第10节 |
+| `6e008a9` docs / `97e9560` test / `6aeda8b` ci / `d1d774f` build / `bf6d7f7` docs | OS/C APK/secdb发布门与运行时zlib 1.3.2-r1构建期修复，合同第11、12节 |
+
+当前测试：完整db包全绿；backend `go test ./...` 29包、`go vet ./...` 通过；关键race
+`./api ./db ./services/...` 通过（api需 `-timeout 40m`，约1020s，默认10分钟会整体超时）；frontend按lock
+`npm ci` 后788/788与build通过；门测试128/128（Node 26与本地pinned Node 22）；实际Go/npm扫描、Compose、
+隔离存储HTTP合同通过。本会话沙箱禁止本地端口监听和写默认Go缓存：含端口的测试需在沙箱外运行，Go命令用
+`GOCACHE=$TMPDIR/go-build`。
+
+仍开放：WAL-reset确定性调度（未复现/open）；三视口浏览器、原生Linux arm64候选、新旧卷/portable、可信双平台
+发布及OCI/binary/APK核验（合入main后由Actions执行，新增的两平台OS门会在推送前运行）；openssl 3.5.9-r0
+已进签名索引但secdb暂无对应修复，未升级；parser/设备/全量矩阵其余项。下一步由用户决定是否按
+`openreader-docker-release` 合入main；发布后核验两平台镜像的zlib 1.3.2-r1与SQLite 3.51.3。
+
+Git：上述提交均已推送。镜像：未构建、未推送，最近已验证发布仍为fc4692c。生产：未访问、未修改。
+
 ## 1. 从正确的工作树继续
 
 当前有效目录：
