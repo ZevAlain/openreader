@@ -25,6 +25,12 @@ Supplemental foundation tests add3actual red leaves/5controls for document parsi
 normalization. No schema/module/base/lock change or user-data operation; subprocesses are owned and
 reaped. This stage remains test-only and cannot replace future exact-candidate old-volume/backup gates.
 
+Subsequent foundation implementation afterd3cc2d1 explicitly raises source minimum toGo1.26.9, selects
+net0.60/crypto0.57/sys0.48/text0.42 and supported pinned officialGo/Node/Alpine bases. Both READMEs expose
+the new build requirement; Docker consumers still do not compile locally. No schema/root/archive/backup/
+token/URL/key/env migration or production operation. FullGo/API126.002s/default frontend/build gates
+pass, fullrace remains live; actual new-base candidate/historical/portable/runtime gates are still pending.
+
 ## 2026-10-15 local-import durable commit implementation (no migration)
 
 See [`local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md`](local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md).

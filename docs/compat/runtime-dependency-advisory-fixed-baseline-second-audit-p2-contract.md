@@ -2,9 +2,9 @@
 
 审查日期：2026-10-15。固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。
 源码基线：`36e0697f777d54a2df224cc0d9df9d10eba25781`；已发布应用：`b4ff9ca`。
-状态：**JWT-XPath-core-validated / wider-advisory-in-progress / Docker-not-published**。
+状态：**foundation-source-regression-validated / candidate-validation-pending / wider-advisory-open / Docker-not-published**。
 
-初始提交仅合同；第7节记录真实红测，第8节为当前两项最小依赖修复checkpoint。不是生产受攻击结论；
+初始提交仅合同；第7–9节记录独立红测/早期checkpoint，第10节为当前基础链实施证据。不是生产受攻击结论；
 已恢复的原书故障不重开，生产另一台Mac不升级、不写入。旧“npm8high/advisory待审计”记录由本项
 开始逐证据收敛，不以扫描数量或版本陈旧直接宣称可利用。
 
@@ -202,3 +202,36 @@ exit1/engine10.045s，仍每轮3/5（共9red/15控制）；race同源码exit1/en
 这是第二批3leaf反例，不是第7节3red重复计数；两个阶段共6leaf，norm仍明确库级。先独立
 test/docs checkpoint推送核验，之后才更新Go/MVS/base。故意red不能推main或触发正式发布；
 全量回归、候选runtime/卷/审计/浏览器/可信OCI门待基础链实现后重新运行。
+
+## 10. 支持中工具链与最小模块基础链（2026-10-16，候选门尚未完成）
+
+独立追加red `d3cc2d14664de15013fbf70036c6c89a0043ee0a` 远端精确核验后才实施：go指令从
+1.24.1改为**1.26.9**，x/net0.60.0及其必要MVS基础crypto0.57.0/sys0.48.0/text0.42.0；
+保留前两项jwt5.2.2/xpath1.3.6，不批量latest。go mod tidy生成checksum/移除废弃选中版本，
+go mod verify终态all modules verified；实际模块内go version为go1.26.9/darwin-arm64/CGO1。
+系统默认Go未修改，最低源码构建版本的提高在中英文README badge/开发要求/技术栈显式记录。
+
+Dockerfile采用第8节已核验的精确官方Go1.26.9-alpine3.23、Node22-alpine3.23和Alpine3.23.6
+index pins；保留native前端构建、CGO/vendor、单Go服务、CA复制、data/cache/library挂载、原URL和
+原环境变量，不增加迁移。尚未实际pull/build新candidate，不能从pins推出新Alpine/CGO运行证明。
+
+两批共22个focused leaf全部PASS（engine0.533s/authsession0.462s），既有预算/断言不改。
+完整Go终态PASS（API126.002s/engine2.716s/authsession2.595s/localbook9.445s），fullvet exit0，
+frontend762/762零skip/build819ms、Compose静态配置通过。前端lock未动，本机Node26.4.0离线
+ci --ignore-scripts仅用于本地验证，不能冒充固定Node22.23.3镜像构建。完整API/engine/auth/
+rootedfs/stage/localbook/EPUB/CBZ race使用25分钟预算已真实运行，API进程已核验live，**未终态**。
+日志`/private/tmp/openreader-runtime-foundation-{focused-green,full-go,full-race,vet,frontend-test,frontend-build}.log`。
+
+官方govulncheck1.9.0在真实go1.26.9 source/symbol配置、数据库时点2026-10-08T22:31:09Z完成。
+实际报告246返回OSV中只有1条模块级匹配、0包级/0符号级；不是“246漏洞”或CLI exit0=clean。
+唯一[GO-2026-5932](https://pkg.go.dev/vuln/GO-2026-5932)覆盖不再维护的crypto/openpgp族，
+所有版本均无修复，不能靠再升一个crypto版本消除。`go mod why`显示main不需要该包；完整
+宿主358包、linux/amd64 CGO1的359包、linux/arm64 CGO1的358包导入图均无openpgp及子包，
+保留所需bcrypt（及sha3/blowfish）。这是精确不适用前提，不是宽泛CVE忽略；后续审计门应继续
+强制该前提，未来一旦引入OpenPGP不得沿用本结论。
+
+审计原始/summary证据`/private/tmp/openreader-runtime-foundation-source-audit*.json`、三份
+`*-packages.txt`及`*-mod-verify.log`保留。Linux导入图只是选择检查，不是两架构编译/运行，
+source扫描不覆盖SQLite C、musl、Node/OS包、前端advisory或剥离二进制的真实符号精度。
+候选native/HTTP/三视口/新旧卷/portable/backup、准确失败关闭的发布审计门、可信双架构及
+独立OCI/实际二进制仍待办。main/Docker/生产未升级；更广frontend和整体审计继续开放。

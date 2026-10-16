@@ -1,6 +1,6 @@
 # OpenReader 全量上游复审矩阵
 
-## 2026-10-15 下一切片：运行时与依赖 advisory（JWT/XPath核心已修复，其余进行中）
+## 2026-10-16 当前切片：运行时与依赖 advisory（基础链源码已验证，候选门待办）
 
 见[`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
 固定upstream认证/XPath和当前实际调用已提取，JWT/XPath/HTML-text/已过支持期Go-Alpine属于维护
@@ -26,6 +26,12 @@ Docker-not-published；其它Go/Go最低版本/frontendlock/base仍未改。完�
 3秒不结束；库级norm NFC/NFKC三字节输入12步position0/无输出，追加3red/5控制。重复3轮和
 race同数，无竞争/未触发/遗留worker；旧JWT/XPath14项另跑全绿。x/net/text、Go最低、base/
 frontendlock未改，详见合同第9节；不是已实施、生产可利用或已发布结论。
+
+基础链实施取代上段未实施状态：独立d3cc2d1后更新Go最低1.26.9及net0.60/crypto0.57/sys0.48/
+text0.42，采用已核验官方base pins并显式更新双README。22focused全绿，fullGo/API126.002s、
+vet/frontend762/build/Compose通过；完整API等race真实live未终态。新source审计仅1模块级
+OpenPGP（精确导入图不含该族），0包/符号匹配，不能概括为全镜像无漏洞。候选/准确审计门/
+runtime/browser/卷/可信发布及其它frontend审计待办，详见合同第10节；main/生产未变。
 
 ## 2026-10-15 当前切片：本地书导入持久提交（共享核心已验证并发布，后续开放）
 

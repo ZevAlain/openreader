@@ -26,6 +26,12 @@ HTML; dependency-level NFC/NFKC iteration makes no progress. Three new red leave
 under race; old JWT/XPath14 cases stay green. Norm is not a proven exposed API path. No route/error/auth/
 dependency/base change yet; implementation and candidate gates remain pending (focused section9).
 
+After verifiedd3cc2d1, minimumGo1.26.9 and necessary net/crypto/sys/text foundation are implemented,
+without handler/auth/parser business changes.22focused cases/fullGo/API126.002s/vet/frontend762/build
+pass; complete API race is still live, not signed off. Runtime pins are updated but candidate/HTTP/browser/
+volume/release gates remain pending. Source report has0package/symbol matches and1unimported OpenPGP
+module match; this is not whole-image clearance or a production upgrade (focused section10).
+
 ## 2026-10-15 local-import durable commit (core validated and published, follow-up open)
 
 The initial contract-only inventory below is historical; implementation evidence follows it.

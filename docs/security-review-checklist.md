@@ -35,6 +35,13 @@ document parser nontermination and norm-library NFC/NFKC no progress. All worker
 prior14 JWT/XPath cases independently green. Module/base changes still absent; no production exploit
 or complete parser cancellation claim, and norm's API reachability stays explicitly unproven.
 
+Foundation checkpoint afterd3cc2d1:Go1.26.9/net0.60/crypto0.57/sys0.48/text0.42 and verified official
+base pins applied, no business/API/data migration.22focused/fullGo/API126.002s/vet/frontend762/build/
+Compose PASS; complete API/service race still live. Official source audit0package/symbol matches,
+1module-only OpenPGP with exact absence proven in host and both Linux target import graphs; no blanket
+ignore, and this does not cover C/OS/Node or exact candidate. Runtime/volume/browser/audit-gate/release and
+broader frontend work remain unchecked; pins alone are not a Linux runtime or whole-image security proof.
+
 ## P2 local-import durable commit (2026-10-15 core validated, follow-up open)
 
 - [x] Bind initial LibraryDir/data/user/new-book allocation and actual raw/body/metadata/resource work to
