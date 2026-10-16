@@ -156,3 +156,33 @@ cache只读，自有tmpfs，临时安装编译器）原样执行仍2red/3green�
 
 先在临时隔离探针验证可行性，再用实际Go嵌入C的仓库测试固定；不把独立编译探针、版本门或
 理论顺序冒充已发布binary/生产复现。本节先独立保存推送，后写该调度测试；第4–6节其余门不缩小。
+
+## 8. 连接生命周期、测试进程保护和原生运行时控制（测试阶段继续）
+
+第7节合同已以 `3982b9f31333d31fcf095a6170910670e4bec765` 独立推送核验；本批只加测试，
+仍未改Go模块、应用代码、Dockerfile、workflow或前端，仍是driver1.14.22/C3.45.1。
+
+- 准备语句依次绑定长/短Unicode、NULL、空串及恢复值，验证没有残留上次参数。
+- 16次两行查询只读第一行，提前关闭Rows两次，再复用同一准备语句/单连接，验证释放和重置。
+- 两行查询读到首行后取消context，后续Rows返回context.Canceled；取消已写但未提交的事务后
+  Commit不得成功，单连接池能恢复查询，文件DB仍保留原提交值且integrity为ok。此项没有证明
+  正在执行C step时的中断，不能替代后续in-flight取消或WAL调度验证。
+- 自有父/子进程实际注入17KiB输出、工作超时、SIGINT与SIGTERM。每项都必须观察准确拒绝原因、
+  测试父进程正常失败退出1、已记录自有worker PID消失；观测超时/外层输出超限不算成功。
+  信号只发给本次Start所得父PID；外层异常回收仅针对新建自有进程组，不按进程名批量杀进程。
+  正常worker仍不生成子进程，只有这个保护验证显式包含自有父/子两层。
+- 新runtime控制实际执行SQL的sqlite_version/source_id及compile_options，与链接C接口身份
+  一致；宿主和原生Linuxarm64均为3.45.1/既有e876e51a source，FTS3、FTS3_PARENTHESIS、
+  RTREE、THREADSAFE=1存在，FTS5未开启。这是同源码测试binary查询，不冒称已对发布服务执行SQL。
+
+三项新driver控制连续10轮通过；四项harness故障控制连续3轮通过（每轮约2.08s）。完整db包
+3.082s，既有12个root测试通过，实际库级失败仍精确为第6节两叶；正常控制现7项，保护验证4项。
+同切片race 9.962s结果相同、无DATA RACE；原生Linuxarm64/Go1.26.9/CGO1在768MiB/2CPU/
+128PID硬限、源码及module cache只读、自有临时容器内原样2red/7正常绿/4保护绿，2.101s。
+容器已自动移除，没有留下该fixture worker。`go vet ./db`通过；既有两审计门合同109/109通过。
+日志 `/private/tmp/openreader-sqlite-c-lifecycle-{race,full-db,linux-arm64,gates}.log` 保留。
+
+本批是独立test/docs检查点，不是依赖实施完成或新镜像发布。未跑全Go/前端/build/浏览器/卷/
+可信发布：无应用或前端改动且明确仍有两项预期库级红灯；所有实现与发布后置门继续保留。
+WAL确定性时序、in-flight C取消、APK精确取证与OS/C门及整体重构仍未完成。生产未访问或修改，
+生产commit未新核验；最近已验证发布仍fc4692c，不将本批测试结果等同于生产已升级。

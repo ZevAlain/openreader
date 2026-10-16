@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -26,7 +27,7 @@ const sqliteCompleted = "SQLITE_MAINTENANCE_COMPLETED\n"
 // These are library-level, two-row/empty-table correctness checks, not an API
 // exploit or a reproducer for the separate WAL-reset critical timing window.
 func TestSQLiteCMaintenanceBoundedBehavior(t *testing.T) {
-	for _, name := range []string{"empty-aggregate-not-null", "redundant-upsert-index", "bound-values-simple-upsert", "null-empty-control", "wal-rollback-checkpoint-reopen"} {
+	for _, name := range []string{"empty-aggregate-not-null", "redundant-upsert-index", "bound-values-simple-upsert", "null-empty-control", "wal-rollback-checkpoint-reopen", "prepared-bindings-reuse", "early-rows-close-reuse", "query-transaction-cancel-reuse", "runtime-features"} {
 		t.Run(name, func(t *testing.T) { runSQLiteMaintenanceWorker(t, name) })
 	}
 }
@@ -81,6 +82,9 @@ func runSQLiteMaintenanceWorker(t *testing.T, name string) {
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
+	if strings.HasPrefix(name, "harness-") {
+		fmt.Printf("SQLITE_HARNESS_WORKER_PID=%d\n", cmd.Process.Pid)
+	}
 	done, waited := make(chan error, 1), false
 	go func() { done <- cmd.Wait() }()
 	defer func() {
@@ -106,6 +110,9 @@ func runSQLiteMaintenanceWorker(t *testing.T, name string) {
 		if err != nil || !strings.Contains(text, sqliteCompleted) {
 			t.Fatalf("actual SQLite invariant failed: %v %s", err, text)
 		}
+		if name == "runtime-features" {
+			t.Logf("owned runtime query: %s", text)
+		}
 	}
 	select {
 	case <-output.entered:
@@ -118,6 +125,11 @@ func runSQLiteMaintenanceWorker(t *testing.T, name string) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("SQLite startup deadline (not a behavior red)")
 	}
+	if strings.HasPrefix(name, "harness-") {
+		// Tell the outer, owned harness test that its grandchild is in work and
+		// this parent has installed its interrupt handler. Never signal the root.
+		fmt.Print(sqliteEntered)
+	}
 	select {
 	case err := <-done:
 		waited = true
@@ -125,7 +137,7 @@ func runSQLiteMaintenanceWorker(t *testing.T, name string) {
 	case <-interrupt:
 		t.Fatal("SQLite fixture interrupted")
 	case <-time.After(2 * time.Second):
-		t.Fatal("actual SQLite work exceeded tiny-input deadline")
+		t.Fatal("SQLite work deadline (not a behavior red)")
 	}
 }
 
@@ -135,15 +147,32 @@ func TestSQLiteCMaintenanceOwnedWorker(t *testing.T) {
 		return
 	}
 	valid := map[string]bool{"empty-aggregate-not-null": true, "redundant-upsert-index": true,
-		"bound-values-simple-upsert": true, "null-empty-control": true, "wal-rollback-checkpoint-reopen": true}
+		"bound-values-simple-upsert": true, "null-empty-control": true, "wal-rollback-checkpoint-reopen": true,
+		"prepared-bindings-reuse": true, "early-rows-close-reuse": true, "query-transaction-cancel-reuse": true,
+		"runtime-features": true,
+		"harness-output":   true, "harness-deadline": true, "harness-sigint": true, "harness-sigterm": true}
 	if !valid[name] {
 		t.Fatal("unknown owned SQLite case")
 	}
 	version, _, _ := sqlite3.Version()
 	t.Logf("actual C SQLite version %s; bounded owned fixture %s", version, name)
 	fmt.Print(sqliteEntered)
+	if strings.HasPrefix(name, "harness-") {
+		if name == "harness-output" {
+			fmt.Print(strings.Repeat("x", 17<<10))
+		}
+		// A fixed idle fixture, never SQL/CPU stress. The real parent must kill
+		// and Wait it on output overflow, work timeout, SIGINT, or SIGTERM.
+		time.Sleep(30 * time.Second)
+		t.Fatal("harness fixture was not stopped by its owned parent")
+	}
 	if name == "wal-rollback-checkpoint-reopen" {
 		runSQLiteWALNormalControl(t)
+		fmt.Print(sqliteCompleted)
+		return
+	}
+	if name == "query-transaction-cancel-reuse" {
+		runSQLiteCancellationControl(t)
 		fmt.Print(sqliteCompleted)
 		return
 	}
@@ -160,6 +189,45 @@ func TestSQLiteCMaintenanceOwnedWorker(t *testing.T) {
 		}
 	}
 	switch name {
+	case "runtime-features":
+		var version, sourceID string
+		if err := database.QueryRow("SELECT sqlite_version(),sqlite_source_id()").Scan(&version, &sourceID); err != nil {
+			t.Fatal(err)
+		}
+		bindingVersion, _, bindingSource := sqlite3.Version()
+		if version != bindingVersion || sourceID != bindingSource || sourceID == "" {
+			t.Fatalf("SQL and linked C identity disagree: SQL=%s/%s binding=%s/%s", version, sourceID, bindingVersion, bindingSource)
+		}
+		rows, err := database.Query("PRAGMA compile_options")
+		if err != nil {
+			t.Fatal(err)
+		}
+		options := make(map[string]bool)
+		for rows.Next() {
+			var option string
+			if err := rows.Scan(&option); err != nil {
+				rows.Close()
+				t.Fatal(err)
+			}
+			options[option] = true
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			t.Fatal(err)
+		}
+		if err := rows.Close(); err != nil {
+			t.Fatal(err)
+		}
+		for _, required := range []string{"ENABLE_FTS3", "ENABLE_FTS3_PARENTHESIS", "ENABLE_RTREE", "THREADSAFE=1"} {
+			if !options[required] {
+				t.Fatalf("missing existing runtime capability %s", required)
+			}
+		}
+		if options["ENABLE_FTS5"] {
+			t.Fatal("unexpected FTS5 activation changes the evaluated C feature surface")
+		}
+		// Only self-owned version/capability metadata, never rows/user content.
+		fmt.Printf("SQLITE_RUNTIME version=%s source=%s options=%v\n", version, sourceID, options)
 	case "empty-aggregate-not-null":
 		execute("CREATE TABLE empty_probe (value INTEGER NOT NULL)")
 		var isNull, count int
@@ -204,8 +272,121 @@ func TestSQLiteCMaintenanceOwnedWorker(t *testing.T) {
 		if err := database.QueryRow("SELECT value,count(*) FROM null_probe").Scan(&value, &count); err != nil || value.Valid || count != 0 {
 			t.Fatalf("normal empty aggregate: value=%v count=%d err=%v", value, count, err)
 		}
+	case "prepared-bindings-reuse":
+		statement, err := database.Prepare("SELECT ?, ?")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer statement.Close()
+		for _, value := range []any{"中文正文" + strings.Repeat("长", 64), "短", nil, "", "恢复"} {
+			var actual sql.NullString
+			var marker int
+			if err := statement.QueryRow(value, 7).Scan(&actual, &marker); err != nil {
+				t.Fatal(err)
+			}
+			if marker != 7 || actual.Valid != (value != nil) || (value != nil && actual.String != value.(string)) {
+				t.Fatalf("prepared binding retained prior value: value=%v actual=%v marker=%d", value, actual, marker)
+			}
+		}
+	case "early-rows-close-reuse":
+		statement, err := database.Prepare("SELECT ? UNION ALL SELECT ?")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer statement.Close()
+		for i := 0; i < 16; i++ {
+			rows, err := statement.Query(i, i+1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !rows.Next() {
+				rows.Close()
+				t.Fatalf("missing first row: %v", rows.Err())
+			}
+			var actual int
+			if err := rows.Scan(&actual); err != nil || actual != i {
+				rows.Close()
+				t.Fatalf("prepared row=%d want=%d err=%v", actual, i, err)
+			}
+			// Leave the second row unread. Both Close calls must release/reset the
+			// statement so the single connection can be reused without stale rows.
+			if err := rows.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if err := rows.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if err := database.QueryRow("SELECT ?", i+100).Scan(&actual); err != nil || actual != i+100 {
+				t.Fatalf("connection unavailable after early close: %d %v", actual, err)
+			}
+		}
 	}
 	fmt.Print(sqliteCompleted)
+}
+
+// Normal lifecycle control, not a claim to cover interruption during an active C
+// step. The file is owned by this worker: cancellation may discard a connection,
+// and a fresh :memory: connection would otherwise hide rollback/reopen behavior.
+func runSQLiteCancellationControl(t *testing.T) {
+	t.Helper()
+	database, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "cancel-control.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	database.SetMaxOpenConns(1)
+	if _, err := database.Exec("CREATE TABLE cancel_probe(id INTEGER PRIMARY KEY,value TEXT); INSERT INTO cancel_probe VALUES(1,'原值'),(2,'第二行')"); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	rows, err := database.QueryContext(ctx, "SELECT value FROM cancel_probe ORDER BY id")
+	if err != nil {
+		cancel()
+		t.Fatal(err)
+	}
+	if !rows.Next() {
+		cancel()
+		rows.Close()
+		t.Fatalf("missing cancellation control row: %v", rows.Err())
+	}
+	var first string
+	if err := rows.Scan(&first); err != nil || first != "原值" {
+		cancel()
+		rows.Close()
+		t.Fatalf("first row=%q err=%v", first, err)
+	}
+	cancel()
+	if rows.Next() || !errors.Is(rows.Err(), context.Canceled) {
+		rows.Close()
+		t.Fatalf("canceled rows did not stop: %v", rows.Err())
+	}
+	if err := rows.Close(); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel = context.WithCancel(context.Background())
+	tx, err := database.BeginTx(ctx, nil)
+	if err != nil {
+		cancel()
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, "UPDATE cancel_probe SET value=? WHERE id=1", "取消的更改"); err != nil {
+		cancel()
+		t.Fatal(err)
+	}
+	cancel()
+	if err := tx.Commit(); !errors.Is(err, context.Canceled) && !errors.Is(err, sql.ErrTxDone) {
+		t.Fatalf("canceled transaction unexpectedly committed: %v", err)
+	}
+	checkCtx, checkCancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer checkCancel()
+	var actual, integrity string
+	if err := database.QueryRowContext(checkCtx, "SELECT value FROM cancel_probe WHERE id=1").Scan(&actual); err != nil || actual != "原值" {
+		t.Fatalf("cancel did not preserve committed data/release pool: value=%q err=%v", actual, err)
+	}
+	if err := database.QueryRowContext(checkCtx, "PRAGMA integrity_check").Scan(&integrity); err != nil || integrity != "ok" {
+		t.Fatalf("cancel control integrity=%q err=%v", integrity, err)
+	}
 }
 
 func runSQLiteWALNormalControl(t *testing.T) {

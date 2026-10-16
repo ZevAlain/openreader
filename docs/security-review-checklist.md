@@ -14,6 +14,14 @@ rootcontrols pass; noDATA RACE/startup/deadline failures countedred. NOTactualWA
 overflow proof. Furtherharnessfault/driverlifecycle/WALschedule/OSgate tests remain beforeimplementation;
 Go modules/base/app/production unchanged, deliberatelyred checkpoint stays feature-only.
 
+After independent3982b9f, test-only lifecycle/runtime controls now give2libraryred/7normalgreen plus
+4real harness fault/reap checks on host, race and native Linuxarm64. Newbindings/Rows.Close/canceled
+query+transaction controls pass10runs; output/deadline/SIGINT/SIGTERM parent/worker rejection+PID-gone
+checks pass3runs. Only ownStart PIDs/newprocessgroup are signalled; no process-name bulk termination.
+Actualnative SQL compile_options confirms existingFTS3/RTREE/THREADSAFE1 andnoFTS5, not productionSQL.
+Normalrow-boundary cancellation is NOTactiveC-step/WALreset proof. WALschedule/in-flightC/APK/OSgate
+remain open; no dependency/app/production writes or release. See focusedcontract section8.
+
 2026-10-16 frontend supplement:
 [`compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
 Fresh all-lock npm audit8high packages, not8exploits; own tiny bounded fixtures before patches, distinguish

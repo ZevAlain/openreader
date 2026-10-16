@@ -15,6 +15,12 @@
 zlib复现，测试阶段尚需harness故障/driver取消复用/确定性时序/OS门，应用和依赖仍未改；
 详见合同第6节，只能feature test checkpoint，不可红灯发布或缩小整体范围。
 
+合同3982b9f后新增准备绑定复用、提前Rows.Close、取消查询/事务后原值与连接恢复控制；三项
+连续10轮通过，四项自有worker输出/超时/SIGINT/SIGTERM拒绝及回收连续3轮通过。当前完整db/
+race/原生Linuxarm64精确2库级red、7正常控制绿、4保护验证绿，既有12root仍过；实际SQL查询
+C版本/feature控制已补，非发布服务SQL探针。vet与既有审计门109/109通过，见合同第8节。
+WAL临界时序、in-flight C取消、APK/OS门及全量实施/发布仍开放，不以正常取消冒充WAL复现。
+
 ## 2026-10-16 当前切片：前端客户端与构建依赖 advisory 补充
 
 [`frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)
