@@ -1,6 +1,6 @@
 # Go advisory 发布门合同（2026-10-16）
 
-状态：contract-only，测试/工具/workflow 尚未实现。补充
+状态：implemented / 58-contract-tests-pass / live-source-gate-pass / trusted-Actions-pending。补充
 [`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)
 第4–5节；不是另一个产品行为或数据库迁移。上游固定 fa22f271 的认证、规则、旧书和持久化合同不变。
 
@@ -51,3 +51,21 @@ source目标平台/CGO、DB时间、不适用项和未覆盖 C/OS/Node/frontend�
 ERR_MODULE_NOT_FOUND，只有 **1个 availability/TDD red**，不是协议分支已执行，也不是新的
 漏洞行为反例。日志 `/private/tmp/openreader-go-advisory-gate-availability-red.log` 保留。
 应用/模块/lock/工具/workflow未变，先独立提交测试再实现；现有6个真实依赖反例计数不变。
+
+## 实施及本地终态（取代历史未实施状态）
+
+独立测试35c633077cf637bca62b7aa267e2f3421b05671d远端核验后才实现标准库Node工具及Actions
+接线。原58项合同全部通过（0skip）；包含POSIX进程组超时kill+close/输出上限、UTF-8跨chunk、
+协议/DB/Go/SBOM/trace/三图、到期/前提失效，以及workflow触发路径与构建前执行次序。
+首次真实扫描含25次**完全相同**OSV重复（246unique，无冲突），不能因此失败；追加幂等性测试
+先实际失败，再以完整deepEqual去重，冲突仍拒绝。输出超限最初被退出竞态的kill EPERM覆盖，
+保持原始失败且await close，不把信号失败转为成功。UTF-8切块实测red后改为有界Buffer收集。
+这些是新工具迭代，不计入6个应用依赖漏洞反例；初轮失败日志保留。
+
+最终真实工具终态exit0，实际go1.26.9/darwin-arm64/CGO1，官方DB时点2026-10-08T22:31:09Z；
+246uniqueOSV、1纯模块finding、0包/符号，三图现场重建。输出明确pass-with-not-applicable，
+仅GO-2026-5932，期限2026-11-16；非whole-image clean。证据目录
+`/var/folders/5z/h__cbxf93c5gc1p4myzqpd480000gn/T/openreader-go-advisories-LMpYo7`，
+已按最终运行log核验该路径，原始扫描和环境均由工具保存。
+权威日志 `/private/tmp/openreader-go-advisory-gate-final-{unit,real}.log`。
+可信Actions尚未执行新接线，不能记为CI/双架构发布通过；frontend/OS/C/设备及整体审计继续开放。

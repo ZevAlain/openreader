@@ -2,7 +2,7 @@
 
 审查日期：2026-10-15。固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。
 源码基线：`36e0697f777d54a2df224cc0d9df9d10eba25781`；已发布应用：`b4ff9ca`。
-状态：**foundation-source-regression-validated / candidate-validation-pending / wider-advisory-open / Docker-not-published**。
+状态：**foundation-local-candidate-validated / advisory-gate-implemented / trusted-release-pending / wider-advisory-open**。
 
 初始提交仅合同；第7–9节记录独立红测/早期checkpoint，第10节为当前基础链实施证据。不是生产受攻击结论；
 已恢复的原书故障不重开，生产另一台Mac不升级、不写入。旧“npm8high/advisory待审计”记录由本项
@@ -235,3 +235,38 @@ rootedfs/stage/localbook/EPUB/CBZ race使用25分钟预算已真实运行，API�
 source扫描不覆盖SQLite C、musl、Node/OS包、前端advisory或剥离二进制的真实符号精度。
 候选native/HTTP/三视口/新旧卷/portable/backup、准确失败关闭的发布审计门、可信双架构及
 独立OCI/实际二进制仍待办。main/Docker/生产未升级；更广frontend和整体审计继续开放。
+
+## 11. 精确候选本地终态及发布门（2026-10-16，尚未正式发布）
+
+实现448720376ba53fbbf3c9d73caa796851899190db精确推送核验后，未再修改Go/模块/前端资产。
+同一完整race最终exit0：API1028.510s、engine20.638s、auth4.131s、rootedfs5.237s、stage2.462s、
+localbook9.168s、EPUB5.206s、CBZ4.879s；没有重启长测试或将空缓冲日志当成功。
+真实source-built Go+SQLite HTTP的三用户、双WebDAV前缀/Basic-Bearer、Range/304/416、旧token
+reparse/确认/正文/隔离及邻接目录上传合同通过；全部仅自有临时数据和本机地址。
+
+`PUSH=0`构建精确448本地candidate `openreader-runtime-foundation-local:4487203`，Linuxarm64，
+本地image index/id `sha256:3cc9a6335d6af6fdc2100eb4ea64ba73c62aba38374cad181c5db1abe4ff18e0`，
+不是GHCR发布digest。实际Go buildinfo1.26.9/linux-arm64/CGO1；固定Node22镜像前端构建通过，
+runtime3.23.6/musl1.2.5-r23/CA存在，非root只读断网下动态链接检查通过。apk info因断网有DNS
+警告，保留原始日志，不作联网更新/漏洞清零证明。两Linux架构的完整rootedfs独立合同均在
+非root/只读/断网/tmpfs容器PASS，amd64为模拟执行官方runtime，非整应用amd64候选签收。
+
+精确本地candidate新卷与历史卷两门均通过：旧用户名登录、TXT/EPUB/UMD/CBZ/相对cache、
+原文件哈希、用户隔离、fresh/portable-v1/v2外观资源跨用户恢复及重启。真实该Go+SQLite容器
+加独立Chromium1228在1440×900/390×844/360×800的数值resume URL、content200/正文、对称
+留白、原生wheel/上下点击翻页及移动工具默认可见/设置不穿透/中心切换均通过；无API mock。
+初轮浏览器缓存缺失、临时夹具误期望200而非合同201、误点中央/覆盖区域的失败记录保留；
+仅修测试夹具/目标，不改产品或放宽断言。最终日志`*-browser-final-verified.log`，截图
+`/private/tmp/openreader-runtime-foundation-browser-sjGVCz`，临时容器全部回收。
+
+实际剥离candidate官方binary扫描仅匹配GO-2026-5932，15finding含7枚举symbol，但extract
+**pkgSymbols0**；按官方实现只能计模块级回退，非7条真实可达。实际binaryGo/平台与三图证据
+相符，不以source结论抹掉原始binary报告。其余C/OS/Node/frontend不在该扫描范围。
+新失败关闭source发布门独立合同ceb6c28→测试35c6330后实施，58合同与真实扫描通过，详见
+[`go-advisory-release-gate-contract.md`](go-advisory-release-gate-contract.md)。
+
+所有本地日志前缀`/private/tmp/openreader-runtime-foundation-`，精确二进制/独立tests保留在
+`/private/tmp/openreader-runtime-foundation-native.PmXuhH`。正式可信Actions的Linuxamd64候选/
+两架构构建发布及独立OCI/config仍待执行；本地arm64不是全部平台证明。当前切片可进入可信
+发布门，不称整个advisory或重构完成：前端8high逐项维护、OS/C、parserCPU/scan/峰值FD/late-tx、
+真实设备及更广审计继续开放。Docker已发布仍b4ff9ca；生产最后只读b2b32f7，均不能用本地448替代。

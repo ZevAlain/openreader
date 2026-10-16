@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import {readFile} from 'node:fs/promises'
 import {evaluateSourceScan, parseMessages, runTool} from './check-go-advisories.mjs'
 
 const now = Date.parse('2026-10-16T03:00:00Z')
@@ -46,6 +47,14 @@ test('no findings is valid, OSV record alone is not a finding',()=>{
   assert.equal(result.status,'pass')
   assert.equal(result.findings,0)
 })
+test('official repeated identical OSV is idempotent',()=>{
+  assert.equal(check(f=>f.messages.push(structuredClone(f.messages[2]))).advisories,1)
+})
+test('conflicting repeated OSV fails closed',()=>assert.throws(()=>check(f=>{
+  const conflict=structuredClone(f.messages[2])
+  conflict.osv.summary='different metadata'
+  f.messages.push(conflict)
+})))
 const invalid = {
   'missing config': f=>f.messages.shift(),
   'duplicate config': f=>f.messages.push(f.messages[0]),
@@ -107,4 +116,20 @@ test('timeout kills and reaps owned scanner process group',async()=>{
 })
 test('output limit fails rather than truncating to apparent clean result',async()=>{
   await assert.rejects(runTool(process.execPath,['-e','process.stdout.write("x".repeat(100000))'],{maxBytes:100}),/output/)
+})
+test('tool stream preserves UTF-8 split across chunks',async()=>{
+  const result=await runTool(process.execPath,['-e',
+    'const b=Buffer.from("正文");process.stdout.write(b.subarray(0,1));setTimeout(()=>process.stdout.write(b.subarray(1)),50)'])
+  assert.equal(result,'正文')
+})
+test('release workflow triggers for gate changes and runs both checks before native build/publish',async()=>{
+  const source=await readFile(new URL('../.github/workflows/docker-publish.yml',import.meta.url),'utf8')
+  for(const path of ['scripts/check-go-advisories.mjs','scripts/check-go-advisories.test.mjs']) {
+    assert.ok(source.slice(0,source.indexOf('workflow_dispatch:')).includes(`- ${path}`))
+  }
+  const tests=source.indexOf('run: node --test scripts/check-go-advisories.test.mjs')
+  const scan=source.indexOf('run: node scripts/check-go-advisories.mjs')
+  const build=source.indexOf('- name: Build native validation image')
+  assert.ok(tests>0 && scan>tests && build>scan)
+  assert.ok(!source.slice(tests,build).includes('continue-on-error'))
 })

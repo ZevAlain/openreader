@@ -4,7 +4,8 @@
 
 见[`go-advisory-release-gate-contract.md`](go-advisory-release-gate-contract.md)。这是源扫描的失败关闭
 门，不是上游功能重做：精确协议/终态/Go/DB/SBOM/图校验，唯一 OpenPGP 不适用项须现场核验
-三图且有复审期限；binary剥离精度单列。状态 contract-only，工具/测试/Actions尚未实施。
+三图且有复审期限；binary剥离精度单列。独立合同ceb6c28→测试35c6330后工具/接线已实施，
+58合同与真实source gate通过；可信Actions尚待执行，不称整个安全审计完成。
 不修改用户API、数据或原已恢复事件；先合同、再新工具合同测试、后实现，更广重构不缩小。
 
 ## 2026-10-16 当前切片：运行时与依赖 advisory（基础链源码已验证，候选门待办）
@@ -39,6 +40,12 @@ text0.42，采用已核验官方base pins并显式更新双README。22focused全
 vet/frontend762/build/Compose通过；完整API等race真实live未终态。新source审计仅1模块级
 OpenPGP（精确导入图不含该族），0包/符号匹配，不能概括为全镜像无漏洞。候选/准确审计门/
 runtime/browser/卷/可信发布及其它frontend审计待办，详见合同第10节；main/生产未变。
+
+第11节本地终态取代上段待办：完整API等race终态PASS/API1028.510s，精确448本地arm64候选
+Go1.26.9/CGO1/Alpine3.23.6，fresh/historical/portable/backup/restart及真实三视口正文/交互通过，
+两个Linux独立rootedfs非root合同通过。剥离binary仍pkgSymbols0，OpenPGP只记模块回退；
+58项失败关闭gate合同/真实source扫描通过。可信Actions双架构/独立OCI未完成，未正式发布；
+frontend8high/OS-C/设备及全量重构仍开放，不更改生产或重开已恢复原书事件。
 
 ## 2026-10-15 当前切片：本地书导入持久提交（共享核心已验证并发布，后续开放）
 
