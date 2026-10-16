@@ -298,3 +298,27 @@ Registry只读核验：官方 `alpine:3.23` 与 `alpine:3.23.6` 仍是同一inde
 测试先于实现：实现前门测试必须整体失败，实现与workflow后只剩Dockerfile断言为红，Dockerfile修复后
 全部转绿；另需用本地已有的真实已发布镜像和完整secdb走一遍真实采集路径。实际候选镜像构建、两平台门
 运行、新旧卷与可信双平台发布只能在合入main后的Actions中完成，本地不构建、不推送镜像，生产不操作。
+
+## 12. OS/C APK门与zlib修复实施记录（2026-10-16，本地已验证，Actions待验证）
+
+第11节合同 `6e008a9ed1c4eb3be0a4c18b9774b412e48c95d0` 推送核验后依次提交并逐个ls-remote核验：
+
+- `97e956044ed6c713a337d0c6b22163e765d24eee` test：19项门合同测试、已审基线和真实fixture（已发布两平台
+  installed库、secdb子集、原生比较结果、签名索引zlib记录及来源）。该提交没有实现，测试整体以
+  ERR_MODULE_NOT_FOUND失败，即门可用性red。
+- `6aeda8b35cd853754bf0d02bfff41a5b529ab86b` ci：门实现与workflow；此时18/19，仅Dockerfile断言为红。
+- `d1d774fd8fb6b0d10b2ee6d37c5315e1dc0fa120` build：运行时阶段FROM之后、ARG之前
+  `RUN apk add --no-cache 'zlib=1.3.2-r1'`；19/19。
+
+验证：门测试19/19，连同既有Go/前端门共128/128，宿主Node 26与本地pinned Node 22.23.3（断网、只读挂载）
+均通过；`docker compose config` 通过；workflow经YAML解析，顺序为门测试→amd64验证镜像→arm64验证镜像→
+两平台门→卷门→登录→推送。每个失败关闭用例逐一打印拒绝原因，均命中预期分支。真实制品：本地已有的已发布
+fc4692c arm64镜像经 `docker save`（Docker 29/containerd）走真实解析路径，14.58MB、6层diff_id全部匹配、
+586条目；base-only基线16包/109文件通过（仅放行etc/shadow），候选基线在zlib 1.3.2-r0被拒；完整secdb
+（main 282包、community 461包）通过严格schema；真实镜像内原生比较72组与fixture一致，唯一pending为
+zlib r0<r1。本地没有已发布amd64内容，未拉取。
+
+未验证：含zlib r1的候选镜像实际构建、CI网络下 `apk add` 结果、两平台门实际运行、新旧卷/portable、可信
+双平台发布与OCI/APK核验，均需合入main后由Actions执行；本地未构建或推送镜像。状态
+**os-gate-implemented / zlib-build-fix-applied / locally-validated / Actions-pending**；WAL调度仍未复现；
+镜像仍为fc4692c；生产未访问或修改。

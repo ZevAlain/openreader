@@ -52,6 +52,14 @@ release gate over both platform validation images (exact identities, per-file ch
 reviewed unknown origins, no not-applicable path) and the exact Dockerfile fix. No runtime apk upgrade,
 untrusted packages, extra repositories or latest tags; image validation stays with Actions on main.
 
+OS/C implementation (section 12): test 97e9560 is red because the gate module is absent, ci 6aeda8b leaves
+only the Dockerfile assertion red, build d1d774f makes all 19 gate tests pass (128/128 with the existing
+gates under Node 26 and a local pinned Node 22). Every fail-closed case was checked for its exact reason.
+The real published arm64 image passes through `docker save` parsing (6 diff_ids, 109 APK-owned files,
+only the official etc/shadow rewrite) and is rejected for zlib 1.3.2-r0 under the reviewed baseline;
+full real secdb documents satisfy the strict schema. Candidate image build, both-platform gate runs,
+volumes and trusted publication remain pending in Actions; no image/production change.
+
 2026-10-16 frontend supplement:
 [`compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
 Fresh all-lock npm audit8high packages, not8exploits; own tiny bounded fixtures before patches, distinguish

@@ -41,6 +41,11 @@ fc4692c逐文件核对仅官方 `etc/shadow` 改写，原生apk 3.0.8比较唯�
 APK/secdb发布门（两平台验证镜像、精确包身份、逐文件校验和、secdb新鲜度、unknown origin复审）与
 Dockerfile精确zlib修复；先测试后实现，实际镜像验证待main上的Actions。
 
+实施记录（合同第12节）：test 97e9560先以门模块缺失为红，ci 6aeda8b后仅Dockerfile断言红，build d1d774f
+后19/19；连同既有门128/128（Node 26与本地Node 22）。真实已发布arm64镜像走docker save真实路径：
+base-only基线16包/109文件通过、候选基线在zlib r0被拒；完整secdb通过严格schema；原生比较72组与fixture
+一致。候选镜像构建、两平台门、新旧卷与可信发布待main上的Actions；未合main，无新镜像，生产未动。
+
 ## 2026-10-16 当前切片：前端客户端与构建依赖 advisory 补充
 
 [`frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)
