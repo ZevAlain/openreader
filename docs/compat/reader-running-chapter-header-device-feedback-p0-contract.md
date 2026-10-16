@@ -46,3 +46,7 @@
 - frontend 753/753 与 Vite build 通过；1440x900、1024x1366、390x844、360x800 的 scroll/scroll2
   浏览器合同验证了初始文字、跨章切换、fixed/absolute 几何、无溢出和不拦截点击，原移动/面板合同通过。
 - 可信 GitHub Actions run `34794997078` 已发布 `e1631d0`/`latest` 双架构镜像；用户真机显示效果仍待签收。
+- 2026-10-16 补记：本切片未运行 `reader-epub-contract.mjs`。该合同的移动端 `3 / 3` 等待原本靠 mini 隐藏头里的
+  计数文本通过，`e1631d0` 起必然超时。现已按
+  [`reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md`](reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md)
+  改为断言运行标题可见且没有章节计数（`41fd3e6`），桌面计数断言不变。

@@ -1,6 +1,7 @@
 # Reader EPUB 移动端章节计数合同裁决（P0）
 
-状态：**contract-only**。本切片只改浏览器合同脚本与文档，Reader 产品代码不改。
+状态：**implementation-complete / regression-validated**（测试合同改写，见第 9 节）。本切片只改浏览器合同脚本与
+文档，Reader 产品代码不改；产品行为自 `e1631d0` 起已与上游一致，并已随 `186c762` 发布。
 
 固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。  
 当前基线：`OpenReader@5bc38a3`（= `origin/main`；已发布镜像 `186c762` 与 `fc4692c` 之间
@@ -97,3 +98,53 @@
 
 - Reader 产品代码、单元合同、移动进度百分比算法、`第 N 章` 序号差异、桌面 `N / total` 的保留。
 - API、数据库、浏览器存储 key、持久文件、镜像与生产：本切片都不改；不在本地构建或推送镜像，不做任何生产操作。
+
+## 9. 实施与验证（2026-10-16）
+
+| 提交 | 阶段 | 内容 |
+| --- | --- | --- |
+| `5361e68` | 合同 | 本文件、gap analysis 与 matrix。 |
+| `0eb183d` | 红测 | 加入第 6 节的移动端上游控制，保留旧的无条件 `3 / 3` 等待。 |
+| `41fd3e6` | 实现 | `3 / 3` 等待原样移入桌面分支；移动端改为“页头只有运行标题、没有章节计数”。 |
+
+Reader 产品代码、单元合同、API 与数据均未改：`git diff 5bc38a3 41fd3e6 -- backend frontend` 为空。
+
+**环境**：用本 worktree 构建的本地 Go 二进制加 `vite build` 生产前端；每个服务使用独立的临时
+data/cache/library 和随机开发 JWT secret（未输出）。Playwright 1.61.1 / Chrome Headless Shell（本机缓存 v1228），
+Node v26.4.0。会话沙箱禁止 loopback 监听与连接，所以服务与浏览器合同在沙箱外运行。上游源码在固定提交的
+临时克隆中核对。
+
+**浏览器合同**（`reader-epub-contract.mjs`，每个视口单独运行）：
+
+| 代码状态 | 1440×900 | 390×844 | 360×800 |
+| --- | --- | --- | --- |
+| `5361e68`（旧脚本） | PASS | FAIL：`:710` 的 `3 / 3` 等待超时 | FAIL：同左 |
+| `0eb183d`（红测） | PASS | 新控制通过后 FAIL：`:725` 同一 `3 / 3` 等待超时 | FAIL：同左 |
+| `41fd3e6`（干净工作树） | PASS | PASS | PASS |
+
+本地复现结果与已发布 `186c762` 的记录一致。服务日志为 1434×200、24×201、20×304，没有 4xx/5xx，也没有 panic。
+
+**临时变异**：只改 Reader.vue 并构建到独立目录，构建后立即还原，未提交；对 `41fd3e6` 的合同运行：
+
+| 变异 | 1440×900 | 390×844 与 360×800 |
+| --- | --- | --- |
+| M1：mini 也渲染 `chapterLabel` | PASS | FAIL `:724`：页头应只含运行标题，实际为 `第 3 章 第二章3 / 3` |
+| M2：运行标题序号滞后一章 | FAIL `:710`：运行标题等待超时 | FAIL `:710`：同左 |
+| M3：mini `.reader-page-head` 设 `display: none` | PASS | FAIL `:714`：运行标题不可见 |
+
+M3 就是 `e1631d0` 之前的形态：旧断言只读 `textContent`，所以发现不了这种情况。
+
+**其余门**：
+
+- frontend `npm test`：沙箱外 788/788 通过。沙箱内为 785/788，失败的 3 项都是
+  `dependencyAdvisoryLifecycleContract` 的 app-client worker 因 `listen EPERM 127.0.0.1` 起不了 loopback 服务，
+  不是行为失败。
+- frontend `npm run build`：通过，只有既有的 Rolldown `#__PURE__` 注释警告。
+- 跳过并说明原因：Go `test`/`vet`/`race`（后端无改动）；依赖 advisory 门、Compose 与卷门（依赖、Dockerfile、
+  数据格式均无改动，卷门只在 Actions 上运行）；其他 Reader 浏览器合同（产品无改动，`186c762` 回归已在同一前端上
+  通过 openreader-smoke、reader-mobile、reader-cbz 和静态资源树检查）。
+- `docker-publish.yml` 的路径过滤不含 `docs/**` 或 `reader-epub-contract.mjs`，合入 main 不会触发新镜像。
+  EPUB 合同也不在 CI 中运行，这就是自 2026-09-14 起的分歧一直未被发现的原因。
+
+**状态**：Git 为 `claude/sleepy-moser-50391e` 上的本地提交，记录时未推送、未合入 main。镜像：未构建、未推送，
+产品行为已随 `186c762` 发布。生产：未访问、未操作。

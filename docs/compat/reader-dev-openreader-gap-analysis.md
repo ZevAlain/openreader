@@ -9,7 +9,10 @@ Reader 自 `e1631d0` 起与此一致；旧断言之前能通过，是因为 mini
 DOM 中。裁决为测试合同 `must-fix`：移动端改为断言运行标题 `第 3 章 第二章` 可见且没有章节计数，桌面
 `3 / 3` 保持；Reader 产品代码不改。桌面计数相对上游空 top-bar 的分类记为 `unknown`，另行盘点。完整合同见
 [`reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md`](reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md)。
-当前状态为 **contract-only**。
+合同 `5361e68` 先独立提交。红测 `0eb183d` 先让新的移动端上游控制通过，再在 390/360 上于同一 `3 / 3` 等待处
+复现超时。`41fd3e6` 把该等待原样限定为桌面，移动端改为“页头只有运行标题、没有章节计数”后，本地 Go 服务加生产
+前端的三视口全部通过。三项临时变异（mini 渲染计数、运行标题序号滞后、mini 隐藏页头）都按预期变红；frontend
+788/788 与 build 通过。当前状态为 **implementation-complete / regression-validated**；产品代码无改动，不产生新镜像。
 
 ## 2026-08-12 P2 用户配置写入请求边界第二轮
 
