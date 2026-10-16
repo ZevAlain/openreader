@@ -65,6 +65,11 @@
 | 移动端 `阅读进度: N%` | 按章整数百分比 | 含章内比例的平滑百分比 | `acceptable-change`，移动进度合同已裁决，不重开 |
 | 桌面运行标注与 `N / total` | top-bar 渲染空字符串 | `第 N 章 title` + `N / total` | `unknown`：运行标题合同第 5 条保留了桌面计数，但未对照上游空 top-bar 分类；本切片不重开，桌面 `3 / 3` 断言保持不变，需另行盘点 |
 
+补记（2026-10-16）：最后一行已另行盘点，见
+[`reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md`](reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md)：
+桌面运行标题为用户要求的 `acceptable-change`，桌面 `N / total` 为 `must-fix`（contract-only）。第 6 节第 2 条的桌面
+`3 / 3` 等待会在那个切片的红测阶段改写。
+
 ## 6. 目标合同（浏览器）
 
 `reader-epub-contract.mjs` 在点击 `#next-chapter` 跨 XHTML 跳转、`第二章 EPUB 文档` 出现后：

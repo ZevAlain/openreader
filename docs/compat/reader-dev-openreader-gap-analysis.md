@@ -1,5 +1,19 @@
 # Reader-dev vs OpenReader Gap Analysis
 
+## 2026-10-16 P0 Reader 桌面运行标注盘点
+
+固定上游桌面 `.top-bar` 渲染空字符串（`Reader.vue` L227–229，桌面样式只是一条 44px 空白），模板不引用 `catalog`
+或 `chapterIndex`。桌面上能看到当前章节的地方只有正文开头的 `<h3>` 和浏览器标签页标题 `书名 - 章节名`，书级进度
+只有右栏 `N%`。当前桌面页头左侧显示 `第 N 章 章节名`，右侧显示 `N / total`。查了全部本地分支历史、docs 和交接
+文档：运行序号与标题有“用户明确要求桌面和移动都显示”的书面记录（`9b96c50`、桌面分页合同第 28 行），判为
+`acceptable-change`，不重开；`N / total` 来自初始提交 `131d3f8` 的自有页头，之后只是被沿用，找不到用户要求，
+判为 **`must-fix`**：所有视口的页头只保留运行标题，可见或隐藏的计数都不允许。另发现 OpenReader 从不设置
+`document.title`，与上游 `书名 - 章节名` 不同，记为另行盘点的 `must-fix`，不并入本切片。测试计划：重写单元合同的
+“retain desktop count”断言和 EPUB 合同桌面分支的 `3 / 3` 等待，并在连续阅读合同里加“页头文本只等于运行标题”，
+这些断言在当前实现的桌面视口上应失败。完整合同见
+[`reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md`](reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md)。
+当前状态为 **contract-only**：产品代码和测试都没有改。
+
 ## 2026-10-16 P0 Reader EPUB 移动端章节计数合同裁决
 
 对已发布 `186c762` 做三视口回归时，`reader-epub-contract.mjs:710` 在 390×844 与 360×800 等待 `3 / 3`

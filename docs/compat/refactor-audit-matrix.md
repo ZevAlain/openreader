@@ -1,5 +1,15 @@
 # OpenReader 全量上游复审矩阵
 
+## 2026-10-16 当前切片：Reader 桌面运行标注盘点
+
+见[`reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md`](reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md)。
+固定fa22桌面top-bar渲染空字符串，模板没有章节`N / M`；桌面只有正文`<h3>`、标签页标题`书名 - 章节名`和右栏`N%`。
+当前桌面页头为`第 N 章 章节名`+`N / total`。运行序号/标题有用户要求桌面与移动都显示的书面记录（9b96c50、桌面分页
+合同第28行），判acceptable-change，不重开；`N / total`来自初始提交131d3f8的自有页头，没有用户要求，判must-fix：
+所有视口的页头只留运行标题，可见或隐藏的计数都不允许。`document.title`缺失另记must-fix，不并入本切片。状态
+contract-only；下一步红测（改写单元“retain desktop count”与EPUB桌面`3 / 3`，连续合同加“页头只含运行标题”），
+再只改Reader.vue删除计数，最后三视口回归与记录。实现提交改frontend，合入main会触发发布，由用户决定。
+
 ## 2026-10-16 当前切片：Reader EPUB 移动端章节计数合同裁决
 
 见[`reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md`](reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md)。
@@ -634,7 +644,7 @@ HTTP + SQLite trigger、候选/回拉容器纯 API 与 fresh/historical 卷门�
 | 章节请求预算与同章接管 | 上游正文专用 30 秒；迟到结果按当前书/章丢弃，但同章可复用请求不由已退出调用方独占。 | shelf/temporary GET 曾继承 12 秒；旧主 load 的 signal 又直接取消共享 Promise。`c7fbf73` 改为 30 秒并拆分 transport/subscriber ownership。 | **2026-09-14 第三次真机重开后已实施、回归并发布**：13 秒延迟正文三视口通过；最后订阅取消及 scope clear 仍会停止 transport，等待用户新镜像真机签收。 |
 | detached 书源的既有书籍正文 | 上游删除/替换书源列表不能使已入架书籍的当前来源在成功获取正文后被内部版本门拒绝。 | OpenReader 以 detached association 保留既有书籍的 source snapshot；`0a8a0ef` 抓取前接受该关联，提交后却要求 active，固定产生 stale 409。`8bebcbf` 统一为 existing association。 | **2026-09-29 生产重开**：生产 `8bebcbf` 一次 reload 的主请求与自动重试仍分别在约 191–215 ms、165–199 ms 返回精确 stale 409，且没有相邻章请求；detached 修复只关闭一个分支，不能视为 device-closed。`7057f52`/`f9b6c08`/`c1e1dbb` 已按合同、红测、实现增加安全 reason code；Actions `36516861894` 发布双架构 index `sha256:3d5eceaf00c0ceb6fcbb10121ef5fca444b2ea35756ebd4f2084b76d95f201d8`。生产健康检查仍是 `8bebcbf`，须部署 `c1e1dbb` 后取得具体 reason，才能为真实门继续补合同、红测和修复。 |
 | reader-dev 本地书原文件回填 | 上游按 name+author 替换已存在 shelf book，并保留章节位置；逻辑 ZIP 本身不带原文件。 | 唯一缺档占位行会原地回填；引用按完整 EPUB 身份、双向唯一标题、索引和有效边界重连，歧义候选不覆盖。 | **2026-09-14 已实施、回归并发布 `e1631d0`**：等待真机补传原文件验证；见 [`readerdev-local-book-reattachment-device-feedback-p0-contract.md`](readerdev-local-book-reattachment-device-feedback-p0-contract.md)。 |
-| 左上当前章节标注 | 上游 mini `.top-bar` 固定显示当前章节 title，并为正文保留 30px + safe-area 顶部区。 | 文本/EPUB 已显示 `第 N 章 章节名`；移动恢复固定 safe-area 栏，桌面保留右侧总进度，音频/CBZ 维持例外。 | **2026-09-14 已实施、四视口回归并发布 `e1631d0`**：等待用户真机签收；见 [`reader-running-chapter-header-device-feedback-p0-contract.md`](reader-running-chapter-header-device-feedback-p0-contract.md)。2026-10-16 EPUB 浏览器合同的移动端期望已按固定上游改为“运行标题可见且无章节计数”（`41fd3e6`），见 [`reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md`](reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md)。 |
+| 左上当前章节标注 | 上游 mini `.top-bar` 固定显示当前章节 title，并为正文保留 30px + safe-area 顶部区。 | 文本/EPUB 已显示 `第 N 章 章节名`；移动恢复固定 safe-area 栏，桌面保留右侧总进度，音频/CBZ 维持例外。 | **2026-09-14 已实施、四视口回归并发布 `e1631d0`**：等待用户真机签收；见 [`reader-running-chapter-header-device-feedback-p0-contract.md`](reader-running-chapter-header-device-feedback-p0-contract.md)。2026-10-16 EPUB 浏览器合同的移动端期望已按固定上游改为“运行标题可见且无章节计数”（`41fd3e6`），见 [`reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md`](reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md)。2026-10-16 桌面盘点：运行标题为用户要求的 `acceptable-change`；桌面 `N / total` 判 `must-fix`（contract-only，未实现），见 [`reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md`](reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md)。 |
 
 ## 不能再沿用的历史测试假设
 

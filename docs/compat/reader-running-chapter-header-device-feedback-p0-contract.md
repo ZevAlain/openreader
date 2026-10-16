@@ -50,3 +50,7 @@
   计数文本通过，`e1631d0` 起必然超时。现已按
   [`reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md`](reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md)
   改为断言运行标题可见且没有章节计数（`41fd3e6`），桌面计数断言不变。
+- 2026-10-16 补记（桌面）：目标合同第 5 条“右侧保留 `N / total`”已在
+  [`reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md`](reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md)
+  对照上游重新分类为 `must-fix`（contract-only，尚未实现）；左侧运行标题仍是用户要求的允许差异。第 5 条
+  “书名仍由浏览器标题提供”与当前代码不符：OpenReader 没有设置 `document.title`，另行盘点。
