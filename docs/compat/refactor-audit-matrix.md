@@ -1,5 +1,16 @@
 # OpenReader 全量上游复审矩阵
 
+## 2026-10-16 当前切片：浏览器标签页标题（document.title）盘点
+
+见[`browser-document-title-fixed-baseline-second-audit-p0-contract.md`](browser-document-title-fixed-baseline-second-audit-p0-contract.md)。
+固定fa22只有Index（`阅读`，mounted/activated）和Reader（`书名 - 章节名`，章节名空时只用书名；activated与watch.title）
+写`document.title`；章节名是原始目录标题，导航开始即换、失败不回退，连续滚动跨章和EPUB内链同样更新；离开Reader由
+Index设回`阅读`；登录框不改标题；书源调试独立页为`Reader书源编辑器`。当前OpenReader全程是`index.html`的`OpenReader`。
+Reader标题、切章更新、卸载恢复判must-fix；书源调试独立标题判must-fix；认证阻断恢复壳标题为多用户隔离acceptable-change；
+不复现上游undefined书名、陈旧书名、简繁临时转换、空白章名为acceptable-change。首页/首屏/登录/书源调试的文字取决于产品名
+用`阅读`还是`OpenReader`，没有用户决定的记录，判unknown，等用户决定D1。状态contract-only；下一步Reader红测（壳标题从
+index.html读取，不等D1），再实现；D1之后做壳标题与书源调试。实现提交改frontend，合入main会触发发布，由用户决定。
+
 ## 2026-10-16 当前切片：Reader 桌面运行标注盘点
 
 见[`reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md`](reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md)。
