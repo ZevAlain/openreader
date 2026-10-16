@@ -1,5 +1,16 @@
 # Reader-dev vs OpenReader Gap Analysis
 
+## 2026-10-16 P0 Reader EPUB 移动端章节计数合同裁决
+
+对已发布 `186c762` 做三视口回归时，`reader-epub-contract.mjs:710` 在 390×844 与 360×800 等待 `3 / 3`
+超时，1440×900 通过。固定上游 `Reader.vue` 模板不引用 `catalog` 或 `chapterIndex`：mini top-bar 只显示
+当前章节 `title`，移动端进度只有 `第 x/y 页` 和 `阅读进度: N%`，任何视口都没有章节 `N / M` 计数。当前
+Reader 自 `e1631d0` 起与此一致；旧断言之前能通过，是因为 mini 头部虽被 `display: none` 隐藏，计数文本仍在
+DOM 中。裁决为测试合同 `must-fix`：移动端改为断言运行标题 `第 3 章 第二章` 可见且没有章节计数，桌面
+`3 / 3` 保持；Reader 产品代码不改。桌面计数相对上游空 top-bar 的分类记为 `unknown`，另行盘点。完整合同见
+[`reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md`](reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md)。
+当前状态为 **contract-only**。
+
 ## 2026-08-12 P2 用户配置写入请求边界第二轮
 
 固定上游 `saveUserConfig/getUserConfig` 认证后保存当前终端四项 localStorage 配置 object；OpenReader 已

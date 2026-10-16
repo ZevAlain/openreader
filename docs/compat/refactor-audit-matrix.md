@@ -1,5 +1,14 @@
 # OpenReader 全量上游复审矩阵
 
+## 2026-10-16 当前切片：Reader EPUB 移动端章节计数合同裁决
+
+见[`reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md`](reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md)。
+已发布186c762三视口回归的唯一失败是EPUB合同移动端`3 / 3`等待。固定fa22 mini top-bar只显示当前章节
+title，模板没有章节`N / M`；当前Reader自e1631d0起一致，旧断言靠mini隐藏头里不可见的DOM文本通过。
+裁决为测试合同must-fix：移动端断言`第 3 章 第二章`可见且无计数，桌面`3 / 3`保持；Reader产品代码、
+API、数据、镜像与生产均不改。桌面计数对上游空top-bar的分类记unknown，另行盘点。状态contract-only；
+先合同，再红测，后改写合同脚本，最后三视口回归与记录。
+
 ## 2026-10-16 当前切片：SQLite WAL 与 OS/C 合同（未实施）
 
 见[`sqlite-wal-os-c-advisory-fixed-baseline-second-audit-p2-contract.md`](sqlite-wal-os-c-advisory-fixed-baseline-second-audit-p2-contract.md)。
