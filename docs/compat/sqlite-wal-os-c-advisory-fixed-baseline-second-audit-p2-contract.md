@@ -135,3 +135,24 @@ cache只读，自有tmpfs，临时安装编译器）原样执行仍2red/3green�
 查询、APK修复取证和精确OS/C门测试仍需继续；先独立保存test/docs检查点，不将此红灯推main。
 当前状态 **partial-library-reds-verified / implementation-not-started**；全部green回归、候选卷/
 正式发布及整体重构待办，Docker仍fc4692c，生产未操作或新核验。
+
+## 7. WAL 确定性测试调度补充（计划，未复现）
+
+官方SQLite修复commit `3c7a03032f9c69feb832b96447701bee6fa3ba81`（Fossil
+`5aadfbbdd83b051b5f4a3f06eb60cf9b37aa1d62e676584719e6f785ecf148c7`）及其
+`test/walrestart.test`已读，只有源码参考，没有执行下载的测试/PoC。修复是在取得read-lock0后
+复核live/cached WAL salt，避免将已重置的新WAL当旧WAL回填。
+
+当前实际amalgamation的 `sqlite3WalCheckpoint` 在读取头之后、调用walCheckpoint之前，若头
+变化且VFS为v3，会调用公开I/O的xUnfetch。这提供天然test-only调度点：只在自有checkpointer
+文件句柄复制/包装公开I/O方法表，其他方法和xUnfetch底层操作全部原样转发；在此点执行另一
+自有连接的正常短事务，再恢复检查点。不得修改WAL数据/header、SQLite算法或伪造I/O成功。
+
+调度测试必须观测初次完整checkpoint、临界回调确实进入、writer实际重置salt/有效帧、后继
+较大事务、checkpoint/reopen/integrity和已提交值。正常未触发调度控制与故障调度分开；
+未进入回调/帧数前提不成立/ABI或I/O错误不是损坏red。读取自有SHM/WAL格式只作观察，不写入。
+测试辅助仅由_test引入、只在可杀的自有worker执行，不能进入生产main依赖图或新增SQL调试API；
+若使用C公开ABI声明，须核对当前与候选头文件和架构，不能依赖未公开内部结构。
+
+先在临时隔离探针验证可行性，再用实际Go嵌入C的仓库测试固定；不把独立编译探针、版本门或
+理论顺序冒充已发布binary/生产复现。本节先独立保存推送，后写该调度测试；第4–6节其余门不缩小。
