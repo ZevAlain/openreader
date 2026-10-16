@@ -16,6 +16,11 @@ and focusedrace. Malformed JWT still yields its original invalid-session result 
 normal HS256/algorithm rejection/default-key compatibility and ordinary XPath outputs remain green.
 No API/dependency/production change yet; see focused section7, recovered and verified2026-10-16.
 
+After independent8fb3970 red verification, jwt5.2.2/xpath1.3.6 now make3behavior reds green without
+auth/parser/API business-code changes. All11controls, fullGo/API116.144s, engine/authsession package race,
+vet and frontend762/build pass. This is a local core checkpoint only; other dependencies, runtime/base,
+candidate HTTP/browser/volumes/audits/publication remain open. No production upgrade or new schema.
+
 ## 2026-10-15 local-import durable commit (core validated and published, follow-up open)
 
 The initial contract-only inventory below is historical; implementation evidence follows it.

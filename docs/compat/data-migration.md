@@ -16,6 +16,11 @@ allocation, XPath1=1) and11green controls, stable ordinary/race. Recovered logs/
 no app/module/lock/base/schema/session or production changes. Historical-volume gates remain mandatory
 after implementation, not inferred from the bounded self-owned experiments.
 
+Minimal jwt5.2.2/xpath1.3.6 implementation follows verified8fb3970; only module versions/checksums changed.
+Three original reds/11controls, fullGo/API116.144s, parser/auth package race, vet, frontend762/build PASS.
+No session/token/data/URL/schema migration; other modules/base/go-minimum remain unchanged at this
+checkpoint. Future Go1.26.9/MVS/base updates and exact-candidate historical/portable gates still required.
+
 ## 2026-10-15 local-import durable commit implementation (no migration)
 
 See [`local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md`](local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md).

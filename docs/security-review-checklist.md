@@ -24,6 +24,12 @@ allocation) plus11green controls repeat3times and under race, noDATA RACE/panic/
 reaped. True() is already green, not an extra red. Logs/remote recovered and verified10-16; no app/base/
 lock fix, production probe or new candidate. This is two dependency issues, not all scanner findings.
 
+10-16 minimal implementation checkpoint supersedes that no-fix state only for jwt5.2.2/xpath1.3.6:
+3actual reds+11controls now PASS, fullGo/API116.144s, engine/auth full-package race10.528s/2.073s,
+vet/frontend762/build PASS. No auth/parser business-code changes or production upgrade. All broader
+module/toolchain/base/frontend maintenance, precise audits and candidate/runtime/browser/volume/release
+gates remain unchecked; official base image metadata was verified, not applied or runtime tested.
+
 ## P2 local-import durable commit (2026-10-15 core validated, follow-up open)
 
 - [x] Bind initial LibraryDir/data/user/new-book allocation and actual raw/body/metadata/resource work to

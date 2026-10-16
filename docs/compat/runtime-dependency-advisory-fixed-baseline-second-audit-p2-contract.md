@@ -2,9 +2,9 @@
 
 审查日期：2026-10-15。固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。
 源码基线：`36e0697f777d54a2df224cc0d9df9d10eba25781`；已发布应用：`b4ff9ca`。
-状态：**actual-red-confirmed / wider-advisory-follow-up-open / implementation-not-started**。
+状态：**JWT-XPath-core-validated / wider-advisory-in-progress / Docker-not-published**。
 
-初始提交仅合同；第7节记录其后的真实红测，仍未修改应用、模块图、锁文件、Dockerfile或工作流。不是生产受攻击结论；
+初始提交仅合同；第7节记录真实红测，第8节为当前两项最小依赖修复checkpoint。不是生产受攻击结论；
 已恢复的原书故障不重开，生产另一台Mac不升级、不写入。旧“npm8high/advisory待审计”记录由本项
 开始逐证据收敛，不以扫描数量或版本陈旧直接宣称可利用。
 
@@ -140,3 +140,41 @@ scan/峰值FD预算、late-tx控制、真实设备签收和其它action-level/�
 或发布；实现前先独立提交推送此状态。全量/浏览器/新旧卷/后置审计/可信发布待实现后完成，
 第3节其它HTML/text/网络/运行时/base/frontend及整体重构仍开放，不把两个库的反例缩小为最终范围。
 无生产请求、数据写入、升级或原书故障重开。
+
+## 8. 两项最小依赖修复与下一基础链（2026-10-16）
+
+第7节的未实施状态保留为历史。独立真实red `8fb3970bb846af353010c42869f40435166c241b`
+精确推送核验后，才将jwt/v5从5.2.1改为**5.2.2**、xpath从1.3.3改为**1.3.6**，并用官方模块
+工具生成checksum。没有改parser/authsession业务代码、token/session规则、API、schema或默认数据。
+此时其它Go模块、go最低1.24.1、前端lock、Dockerfile和workflow均未变。
+
+原3个行为red和11控制全部PASS（engine0.974s/authsession1.153s）；同32KiB输入16次的实际JWT
+分配降为8,584/16,064 bytes，低于原2,097,152预算，非更换或放宽测试。完整engine/authsession
+race终态PASS（10.528s/2.073s），完整Go终态PASS（API116.144s/engine2.070s/authsession3.200s），
+fullvet exit0。Frontend锁文件不变，offline npm ci --ignore-scripts后762/762零skip/build861ms
+通过；已有大chunk警告保留，未为绿灯改阈值或安装全局工具。
+
+这些是**两项修复的本地checkpoint**，不是完整API race、真实HTTP/三视口、Linux native、
+candidate卷/后置advisory或新Docker发布证明。相关日志前缀
+`/private/tmp/openreader-runtime-advisory-jwt-xpath-`，full-go、full-packages-race、frontend-test、
+frontend-build及vet分别保留。生产最后只读仍b2；不把未发布源码当作用户已升级。
+
+下一基础链已只读核验、尚未实施：x/net0.60.0要求go1.26.0，并通过MVS要求x/crypto0.57.0、
+x/sys0.48.0、x/text0.42.0。官方Go1.26.9已独立下载验证；未改变系统默认Go或项目go指令。
+应先补HTML和norm的隔离fixture：官方CL709875包含一个混合table/svg/select的最小文档；
+CL794100包含三个invalid UTF-8 bytes。norm.Iter的库级复现不能直接称OpenReader公网可达，
+与实际sourceRuleDocument解析路径分开分类。新red/已绿控制需单列，不回写第7节3/11计数。
+
+官方Docker Registry于2026-10-16T01:40:24.859Z核验index实际字节SHA、两真实Linux平台的
+manifest/config与版本（只读，尚未pull/build，未改Dockerfile）：
+
+- Go1.26.9-alpine3.23 index
+  `sha256:6750308561953d451210ed1a8086d36c8c8bdcbf672d38d9d0d424b8a7a0216c`；
+- Alpine3.23.6 index
+  `sha256:85fe1e81d6758c208f3e1eed4338a1997e19d4be002d4dd32d3100c9a8c010a0`；
+- Node22-alpine3.23，两个config实际Node22.23.3，index
+  `sha256:baf676f7d0e552f3231945c2f979055ca121bce128c152f7a34e6bd1728b1c5a`。
+
+记录 `/private/tmp/openreader-runtime-advisory-base-images.json`，匿名bearer仅内存，不输出凭证。
+这不是OS/C/Node漏洞全清或实际运行的Alpine版本证明；仍需native/CA/CGO/包清单与新旧卷检查。
+后续必须完成整个第3–5节及发布门，不能停在这两个库或用元数据代替候选验证。

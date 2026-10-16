@@ -1,6 +1,6 @@
 # OpenReader 全量上游复审矩阵
 
-## 2026-10-15 下一切片：运行时与依赖 advisory（合同及实际red，未实施）
+## 2026-10-15 下一切片：运行时与依赖 advisory（JWT/XPath核心已修复，其余进行中）
 
 见[`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
 固定upstream认证/XPath和当前实际调用已提取，JWT/XPath/HTML-text/已过支持期Go-Alpine属于维护
@@ -15,6 +15,12 @@ must-fix，须先实际行为red再修；npm8high是8受影响包，不是8生�
 共3leaf实际red/11控制绿（true()已绿不计red）。三轮重复与race同数，无竞争/panic/unfired，
 全部worker回收。10-16恢复时核验日志/远端，未执行的额度失败文档更新不作已保存证据。
 详见合同第7节；应用/模块/lock/base未改，只能feature checkpoint，不可红灯发布；其余审计未完成。
+
+10-16实施checkpoint：独立red8fb3970远端核验后，仅jwt5.2.2/xpath1.3.6及checksum更新，
+3实际red/11控制均绿，JWT分配降为8,584/16,064 bytes。fullGo/API116.144s、engine/auth全包
+race10.528s/2.073s、vet、frontend762/build通过。状态JWT-XPath-core-validated/wider-in-progress/
+Docker-not-published；其它Go/Go最低版本/frontendlock/base仍未改。完整基础链/HTML-text/
+后置scan/runtime/browser/卷/发布仍待继续，详见合同第8节，不称整体安全或生产升级完成。
 
 ## 2026-10-15 当前切片：本地书导入持久提交（共享核心已验证并发布，后续开放）
 
