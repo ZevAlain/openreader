@@ -707,6 +707,21 @@ async function assertFrameContract(page, viewport, resourceResponses) {
     await page.mouse.click(Math.round(viewport.width / 2), Math.round(viewport.height / 2))
     await page.waitForTimeout(150)
   }
+  await page.waitForFunction(() => (
+    document.querySelector('.reader-running-chapter-title')?.textContent?.trim() === '第 3 章 第二章'
+  ))
+  if (viewport.width <= 750) {
+    assert.equal(
+      await page.locator('.reader-page-head .reader-running-chapter-title').isVisible(),
+      true,
+      'fixed upstream mini top-bar must visibly show the current EPUB chapter',
+    )
+    assert.match(
+      await page.locator('.reader-mobile-bottom.visible .mobile-progress-slider-row > span').innerText(),
+      /^第 \d+\/\d+ 页$/,
+      'mobile tool layer must show upstream in-chapter page progress',
+    )
+  }
   await page.waitForFunction(() => document.body.textContent.includes('3 / 3'))
 
   await page.goBack({ waitUntil: 'domcontentloaded' })
