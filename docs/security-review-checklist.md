@@ -1,5 +1,13 @@
 # OpenReader Security Review Checklist
 
+2026-10-16 SQLite/WAL/OS-C contract-only supplement:
+[`compat/sqlite-wal-os-c-advisory-fixed-baseline-second-audit-p2-contract.md`](compat/sqlite-wal-os-c-advisory-fixed-baseline-second-audit-p2-contract.md).
+ActualC3.45.1/WAL/multipleconnections meet necessary conditions for maintainer WAL-reset risk, not
+proof of production corruption. Exacttwo-platform APK/secdb/native-version comparison identifies
+zlib1.3.2-r0 belowfixr1; nonblockingCgzwrite exposure not proven. Missingsecdb records and embeddedC/
+copiedCA/builders remain separate. OwnboundedactualSQL/WAL/gzip controls and failclosed tooltests
+must precede implementation. No modules/image/app/data/production change; broad audit remains open.
+
 2026-10-16 frontend supplement:
 [`compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
 Fresh all-lock npm audit8high packages, not8exploits; own tiny bounded fixtures before patches, distinguish

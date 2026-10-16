@@ -2,6 +2,15 @@
 
 Status: working compatibility ledger; implemented migrations and remaining action-level audits are recorded below.
 
+## 2026-10-16 SQLite WAL/OS-C supplement (contract-only, no migration)
+
+See focused SQLite/WAL/OS-C contract. Maintain WAL, pooled connections, busytimeout5000, oldDB/table/
+index/row semantics and mounteddata/cache/library, logical/portable backup and restored ownership.
+Do not delete WAL/SHM, disable WAL, serialize to oneconnection, copy a live bareDB, change schemas/
+tokens or silently reinterpret stored values to avoid a dependency fix. CurrentSQLite3.45.1 needs the
+documentedWAL-reset maintenance; minimumcandidate3.51.3/driver1.14.36 is verifiedmetadata, not yet
+applied. Newcontract→boundedactualtests→implementation and exactoldvolume/recovery gates required.
+
 ## 2026-10-16 frontend dependency advisory supplement (published, no migration)
 
 Focused frontend dependency contract inventories necessary same-major client/build patches only. Existing

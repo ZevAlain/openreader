@@ -2,6 +2,14 @@
 
 Status: working contract. Keep this file updated when endpoint semantics change.
 
+## 2026-10-16 SQLite WAL/OS-C supplement (contract-only, API unchanged)
+
+Focused SQLite/WAL/OS-C contract extracts pinnedfa22 logical ZIP/namespace recovery and inventories
+actual C/runtime conditions. No rawSQL or arbitraryDB upload API is added. Existing bound-value REST/
+auth/status/errors, settings/progress/group UPSERT, Reader URLs and JSON/portable backup remain.
+Future necessary dependency maintenance requires bounded red/normal controls before implementation;
+neither library SQL examples nor package version gaps prove a current API exploit. No production action.
+
 ## 2026-10-16 frontend dependency advisory supplement (published, API unchanged)
 
 See focused frontend dependency advisory contract. Preserve two actual Axios.create instances, /api vs

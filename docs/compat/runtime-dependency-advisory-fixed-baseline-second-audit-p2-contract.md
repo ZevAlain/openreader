@@ -6,8 +6,10 @@
 
 2026-10-16下一阶段已单列
 [`frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)：
-固定上游客户端再提取、8high包适用性/必要patch与有界测试、全锁npm发布门；目前仅合同，
-未改frontend/lock，不把第12节Go发布当本项已实现。
+固定上游客户端再提取、8high包适用性/必要patch与有界测试、全锁npm发布门；其第8节已记录
+fc4692c双架构正式交付（Actions38868093878及独立实际产物/完整镜像验证），取代早期仅合同快照。
+OS/C仍由[`sqlite-wal-os-c-advisory-fixed-baseline-second-audit-p2-contract.md`](sqlite-wal-os-c-advisory-fixed-baseline-second-audit-p2-contract.md)
+继续，当前新合同尚无实现，不把Go/npm成功当C或WAL-reset覆盖。
 
 初始提交仅合同；第7–9节记录独立红测/早期checkpoint，第10–12节为基础链实施/验证/发布证据。不是生产受攻击结论；
 已恢复的原书故障不重开，生产另一台Mac不升级、不写入。旧“npm8high/advisory待审计”记录由本项

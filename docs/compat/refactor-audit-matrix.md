@@ -1,5 +1,15 @@
 # OpenReader 全量上游复审矩阵
 
+## 2026-10-16 当前切片：SQLite WAL 与 OS/C 合同（未实施）
+
+见[`sqlite-wal-os-c-advisory-fixed-baseline-second-audit-p2-contract.md`](sqlite-wal-os-c-advisory-fixed-baseline-second-audit-p2-contract.md)。
+固定fa22备份/namespace逻辑JSON语义再提取，保留SQLite/GORM/WAL/portable/rooted适配。
+当前driver1.14.22/C3.45.1及WAL多连接落在维护者罕见WAL-reset修复前范围，未复现损坏；
+最低候选1.14.36/C3.51.3已核验header/commit/Go校验和，尚未改模块。真实两平台16APK按origin
+和官方secdb/原生apk比较发现zlib1.3.2-r0低于r1维护修复，非已证实服务gzwrite可达。其它
+未列包/C条件不默认为clean。先独立合同、后有界实际测试、再实施；应用/模块/镜像/生产未改，
+上一fc4692c正式交付保持，整体parser/OS-C/设备/重构继续。
+
 ## 2026-10-16 当前切片：前端客户端与构建依赖 advisory 补充
 
 [`frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)
