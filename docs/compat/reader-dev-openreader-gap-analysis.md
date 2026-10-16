@@ -1,5 +1,23 @@
 # Reader-dev vs OpenReader Gap Analysis
 
+## 2026-10-16 P0 Reader/首页 浏览器标签页标题盘点
+
+固定上游只有两个视图写 `document.title`：Index 在 `mounted`/`activated` 设为 `阅读`（首屏 `<title>` 也是 `阅读`）；
+Reader 在 `activated` 和 `watch.title` 设为 `书名 - 章节名`，章节名为空时只用书名。章节名是原始目录标题，导航开始时
+就换成目标章，正文失败也不回退；连续滚动跨章和 EPUB 内链同样更新。Reader `deactivated` 不恢复标题，回到 Index 时由
+Index 设回 `阅读`。登录是盖在当前视图上的对话框，不改标题；书源调试是独立静态页，标题 `Reader书源编辑器`。OpenReader
+没有任何代码写 `document.title`，所有路由和状态都是 `index.html` 的 `OpenReader`。判定：Reader 标题、切章更新、离开
+Reader 时恢复为 **`must-fix`**；书源调试需要独立标题，也是 `must-fix`；认证阻断时恢复为壳标题，是多用户隔离的
+`acceptable-change`；不复现上游的 `undefined` 书名、陈旧书名、简繁切换后的临时转换和空白章节名，均为
+`acceptable-change`。首页、首屏、登录页和书源调试标题的文字取决于产品名用 `阅读` 还是 `OpenReader`：查遍提交历史、
+docs 和交接文档都没有用户决定（侧栏在 `bd8afe5` 改回了 `阅读`，`<title>`、登录页和 manifest 仍是 `OpenReader`），
+记为 **`unknown`，需要用户决定 D1**。测试计划：新增纯函数和组合函数的单元合同，以及“只有一个写入点”的源码合同；
+新增标签页标题浏览器合同（切章、失败章、换书中间态、返回书架、后退、认证阻断、登录页、书源调试新标签页、远程阅读），
+并在连续阅读、EPUB、重新认证和书源调试合同里补标题断言。壳标题从 `index.html` 读取，所以 Reader 部分不必等 D1。
+另记一条观察：运行标题在加载中和切章失败时可能显示“新序号 + 旧章节名”，没有复现，不并入本切片。完整合同见
+[`browser-document-title-fixed-baseline-second-audit-p0-contract.md`](browser-document-title-fixed-baseline-second-audit-p0-contract.md)。
+当前状态为 **contract-only**：产品代码和测试都没有改。
+
 ## 2026-10-16 P0 Reader 桌面运行标注盘点
 
 固定上游桌面 `.top-bar` 渲染空字符串（`Reader.vue` L227–229，桌面样式只是一条 44px 空白），模板不引用 `catalog`
