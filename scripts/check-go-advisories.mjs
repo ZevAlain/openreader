@@ -153,6 +153,9 @@ export function runTool(file, args, {cwd, env = process.env, timeout = 600_000, 
         }
       }
     }
+    const interrupt = () => stop(new Error('tool interrupted'))
+    process.once('SIGINT', interrupt)
+    process.once('SIGTERM', interrupt)
     const timer = setTimeout(() => stop(new Error('tool timeout')), timeout)
     for (const [stream, name] of [[child.stdout,'stdout'],[child.stderr,'stderr']]) {
       stream.on('data', chunk => {
@@ -164,6 +167,8 @@ export function runTool(file, args, {cwd, env = process.env, timeout = 600_000, 
     child.on('error', error => {failure ||= error})
     child.on('close', (code, signal) => {
       clearTimeout(timer)
+      process.removeListener('SIGINT', interrupt)
+      process.removeListener('SIGTERM', interrupt)
       const stdout = Buffer.concat(chunks.stdout).toString('utf8')
       const stderr = Buffer.concat(chunks.stderr).toString('utf8')
       if (!failure && (code !== 0 || signal)) failure = new Error(`tool failed: exit ${code}, signal ${signal}`)

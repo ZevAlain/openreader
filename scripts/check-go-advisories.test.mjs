@@ -114,6 +114,11 @@ test('timeout kills and reaps owned scanner process group',async()=>{
     'require("child_process").spawn(process.execPath,["-e","setInterval(()=>{},1000)"],{stdio:"inherit"});setInterval(()=>{},1000)'],
   {timeout:150}),/timeout/)
 })
+test('caller interruption kills and reaps owned scanner before rejecting',async()=>{
+  const pending=runTool(process.execPath,['-e','setInterval(()=>{},1000)'],{timeout:250})
+  const timer=setTimeout(()=>process.emit('SIGTERM'),50)
+  try {await assert.rejects(pending,/interrupted/)} finally {clearTimeout(timer)}
+})
 test('output limit fails rather than truncating to apparent clean result',async()=>{
   await assert.rejects(runTool(process.execPath,['-e','process.stdout.write("x".repeat(100000))'],{maxBytes:100}),/output/)
 })

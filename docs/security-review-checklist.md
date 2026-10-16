@@ -3,7 +3,7 @@
 2026-10-16追加 Go source advisory 发布门合同：
 [`compat/go-advisory-release-gate-contract.md`](compat/go-advisory-release-gate-contract.md)。
 只允许带完整现场导入图/版本/受影响包校验和复审期限的 OpenPGP 不适用项，不新增通配忽略。
-独立合同/测试后工具与接线已实施，58合同及真实source扫描通过；可信Actions待运行，
+独立合同/测试后工具与接线已实施，含中断清理的59合同及真实source扫描通过；可信Actions待运行，
 不替代二进制/OS/C/前端审计。
 
 Use this checklist for security-sensitive changes and release reviews.

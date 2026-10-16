@@ -1,6 +1,6 @@
 # Go advisory 发布门合同（2026-10-16）
 
-状态：implemented / 58-contract-tests-pass / live-source-gate-pass / trusted-Actions-pending。补充
+状态：implemented / 59-contract-tests-pass / live-source-gate-pass / trusted-Actions-pending。补充
 [`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)
 第4–5节；不是另一个产品行为或数据库迁移。上游固定 fa22f271 的认证、规则、旧书和持久化合同不变。
 
@@ -69,3 +69,8 @@ ERR_MODULE_NOT_FOUND，只有 **1个 availability/TDD red**，不是协议分支
 已按最终运行log核验该路径，原始扫描和环境均由工具保存。
 权威日志 `/private/tmp/openreader-go-advisory-gate-final-{unit,real}.log`。
 可信Actions尚未执行新接线，不能记为CI/双架构发布通过；frontend/OS/C/设备及整体审计继续开放。
+
+发布前补充中断控制：先实测SIGTERM通知时旧工具只等timeout（1项确定red），再为每个自有
+进程组注册SIGINT/SIGTERM清理并在close移除listener。中断/超限/超时都必须kill并等待close。
+最终59/59零skip及真实gate再次终态通过，日志`/private/tmp/openreader-go-advisory-gate-59-{unit,real}.log`；
+不修改Go/前端/持久化；这不是新漏洞反例或生产验证。

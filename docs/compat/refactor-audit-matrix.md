@@ -5,7 +5,7 @@
 见[`go-advisory-release-gate-contract.md`](go-advisory-release-gate-contract.md)。这是源扫描的失败关闭
 门，不是上游功能重做：精确协议/终态/Go/DB/SBOM/图校验，唯一 OpenPGP 不适用项须现场核验
 三图且有复审期限；binary剥离精度单列。独立合同ceb6c28→测试35c6330后工具/接线已实施，
-58合同与真实source gate通过；可信Actions尚待执行，不称整个安全审计完成。
+含中断清理的最终59合同与真实source gate通过；可信Actions尚待执行，不称整个安全审计完成。
 不修改用户API、数据或原已恢复事件；先合同、再新工具合同测试、后实现，更广重构不缩小。
 
 ## 2026-10-16 当前切片：运行时与依赖 advisory（基础链源码已验证，候选门待办）
