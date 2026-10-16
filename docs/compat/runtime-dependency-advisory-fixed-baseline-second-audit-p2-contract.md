@@ -2,9 +2,9 @@
 
 审查日期：2026-10-15。固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。
 源码基线：`36e0697f777d54a2df224cc0d9df9d10eba25781`；已发布应用：`b4ff9ca`。
-状态：**inventory-complete / behavioral-reds-pending / implementation-not-started**。
+状态：**actual-red-confirmed / wider-advisory-follow-up-open / implementation-not-started**。
 
-本提交仅合同，不修改应用、测试、模块图、锁文件、Dockerfile或工作流。不是生产受攻击结论；
+初始提交仅合同；第7节记录其后的真实红测，仍未修改应用、模块图、锁文件、Dockerfile或工作流。不是生产受攻击结论；
 已恢复的原书故障不重开，生产另一台Mac不升级、不写入。旧“npm8high/advisory待审计”记录由本项
 开始逐证据收敛，不以扫描数量或版本陈旧直接宣称可利用。
 
@@ -108,3 +108,35 @@ Git HEAD36e0697，main最后核验9e10ba3（纯发布ledger）；应用Docker b4
 所有scanner/提取容器已终态，工具缓存/自有tmp证据保留，工作树仍未改应用。
 本合同的行为红测、修复、后置审计及全部新候选门尚未进行。完整parser CPU/regex/DOM抢占、
 scan/峰值FD预算、late-tx控制、真实设备签收和其它action-level/整体审计仍未完成。
+
+## 7. 独立合同之后的实际旧依赖红测（2026-10-15，10-16恢复核验）
+
+合同 `93fd5fd2e7b4e2c6b04fbd2e98cacf14173a9271` 先独立推送并精确核验，随后只添加两份
+测试，模块图、lock、应用和base不变。10-16中断恢复时再次核验远端合同与main9e10ba3；此前
+额度错误导致的文档更新没有执行，不能倒填为当时已保存的证据。原测试及日志完整保留。
+
+初轮focused测试终态exit1（engine0.946s/authsession1.064s），**3个leaf实际失败、11控制通过**：
+
+- XPath `@XPath:1=1`：实际`sourceRuleElements→htmlquery.QueryAll`在一个article的文档上
+  持续分配，entered-work握手后触发32MiB TotalAlloc看门狗。自有worker以86退出且parent已Wait。
+  soft memory limit不是硬RSS保证；看门狗、外层取消和kill+Wait限制实验，不遗留主进程死循环。
+  nodes/text/attribute/组合、false表达式、false()和**true()当前也已安全**，共7控制通过；
+  不能按advisory描述扩大为所有true规则均已复现。
+- JWT custom/legacy-default各1：32KiB只有`.`的非凭证输入，实际Authenticate/parseClaims路径
+  16次，仍返回原ErrInvalidSession，但分别分配8,536,528/17,067,504 bytes，超过宽裕的
+  四倍input×attempts预算2,097,152。预热及GC后测量，输入分配不计入窗口；无真实token或数据库。
+  正常HS256、拒绝HS384和双默认key兼容共4控制通过。
+
+最终测试源码重复3轮仍exit1（engine1.061s/authsession1.242s），每轮同3失败/11控制，总9实际
+失败/33控制；custom分配8,530,952–8,542,104、compat17,061,816–17,062,528。focused race
+终态exit1（engine8.357s/authsession0.491s），仍3失败/11控制，无DATA RACE、panic、编译失败
+或未触发fixture；JWT分配8,543,664/17,074,744。全部自有worker已退出，独立pgrep无遗留。
+这些是3个leaf反例、两类问题，不是3CVE或28/76个扫描项均已复现。宿主Go1.26.5运行旧依赖
+源码，精确Linux Go1.24候选的额外行为门仍未签收。
+
+日志：`/private/tmp/openreader-runtime-advisory-initial-red.log`、
+`/private/tmp/openreader-runtime-advisory-repeat-red.log`、
+`/private/tmp/openreader-runtime-advisory-race-red.log`。故意red仅feature checkpoint，不可推main
+或发布；实现前先独立提交推送此状态。全量/浏览器/新旧卷/后置审计/可信发布待实现后完成，
+第3节其它HTML/text/网络/运行时/base/frontend及整体重构仍开放，不把两个库的反例缩小为最终范围。
+无生产请求、数据写入、升级或原书故障重开。

@@ -1,6 +1,6 @@
 # OpenReader 全量上游复审矩阵
 
-## 2026-10-15 下一切片：运行时与依赖 advisory（仅合同）
+## 2026-10-15 下一切片：运行时与依赖 advisory（合同及实际red，未实施）
 
 见[`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
 固定upstream认证/XPath和当前实际调用已提取，JWT/XPath/HTML-text/已过支持期Go-Alpine属于维护
@@ -9,6 +9,12 @@ must-fix，须先实际行为red再修；npm8high是8受影响包，不是8生�
 复核；精确b4 Linux二进制实际Go1.24.13且pkgSymbols0，76匹配仅模块级，不能作可达性证明。
 本轮无应用/依赖/lock/Dockerfile变化、无生产写入；先独立合同再红测，保留原数据和已恢复原书事件。
 状态inventory-complete/behavioral-reds-pending/implementation-not-started，整体审计继续开放。
+
+后续证据覆盖上段red-pending：合同93fd5fd远端核验后，仅添加测试。XPath1=1实际evaluator
+分配循环触发自有32MiB看门狗；JWT32KiB分段输入16次在custom/compat分配约8.5/17MiB，
+共3leaf实际red/11控制绿（true()已绿不计red）。三轮重复与race同数，无竞争/panic/unfired，
+全部worker回收。10-16恢复时核验日志/远端，未执行的额度失败文档更新不作已保存证据。
+详见合同第7节；应用/模块/lock/base未改，只能feature checkpoint，不可红灯发布；其余审计未完成。
 
 ## 2026-10-15 当前切片：本地书导入持久提交（共享核心已验证并发布，后续开放）
 

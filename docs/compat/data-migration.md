@@ -11,6 +11,11 @@ browser-key or production migration is authorized. Preserve all old mounts, URLs
 RootedFS lifecycle behavior; same-SHA historical/portable/backup gates are still mandatory after implementation.
 Only read-only official metadata/scans and an isolated candidate-binary extraction have run so far.
 
+Superseding test-only checkpoint after93fd5fd:3actual old-dependency red leaves (JWT custom/compat
+allocation, XPath1=1) and11green controls, stable ordinary/race. Recovered logs/remote verified10-16;
+no app/module/lock/base/schema/session or production changes. Historical-volume gates remain mandatory
+after implementation, not inferred from the bounded self-owned experiments.
+
 ## 2026-10-15 local-import durable commit implementation (no migration)
 
 See [`local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md`](local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md).

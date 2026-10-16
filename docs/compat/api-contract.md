@@ -11,6 +11,11 @@ semantics, rule fields/normal outputs, routes and caller isolation remain unchan
 new token schema or production probe is authorized. Source-host scans and stripped candidate module
 matches are not production exploit or complete audit proof; frontend Node/SSR/Windows conditions are distinct.
 
+Independent93fd5fd preceded3actual behavior-red leaves/11green controls, stable across3 ordinary runs
+and focusedrace. Malformed JWT still yields its original invalid-session result but amplifies allocation;
+normal HS256/algorithm rejection/default-key compatibility and ordinary XPath outputs remain green.
+No API/dependency/production change yet; see focused section7, recovered and verified2026-10-16.
+
 ## 2026-10-15 local-import durable commit (core validated and published, follow-up open)
 
 The initial contract-only inventory below is historical; implementation evidence follows it.
