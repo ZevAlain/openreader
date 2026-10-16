@@ -1,5 +1,12 @@
 # OpenReader Security Review Checklist
 
+2026-10-16 frontend supplement:
+[`compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
+Fresh all-lock npm audit8high packages, not8exploits; own tiny bounded fixtures before patches, distinguish
+actualapp/conditionallibrary/SSR/Node/Windows/build. Plan precise npm source-lock gate with no ignores,
+allseverity/schema/tool/registry/lock evidence fail-closed. Contract-only, no implementation or production
+change; Go foundation delivery does not close frontend/OS-C/device/full audit.
+
 2026-10-16追加 Go source advisory 发布门合同：
 [`compat/go-advisory-release-gate-contract.md`](compat/go-advisory-release-gate-contract.md)。
 只允许带完整现场导入图/版本/受影响包校验和复审期限的 OpenPGP 不适用项，不新增通配忽略。

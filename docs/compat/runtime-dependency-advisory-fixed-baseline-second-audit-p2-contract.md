@@ -4,6 +4,11 @@
 初始源码基线：`36e0697f777d54a2df224cc0d9df9d10eba25781`；当时已发布应用：`b4ff9ca`。
 当前状态：**Go-foundation-regression-validated / Docker-b2632a4-published / wider-advisory-open / awaiting-device-verification**。
 
+2026-10-16下一阶段已单列
+[`frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)：
+固定上游客户端再提取、8high包适用性/必要patch与有界测试、全锁npm发布门；目前仅合同，
+未改frontend/lock，不把第12节Go发布当本项已实现。
+
 初始提交仅合同；第7–9节记录独立红测/早期checkpoint，第10–12节为基础链实施/验证/发布证据。不是生产受攻击结论；
 已恢复的原书故障不重开，生产另一台Mac不升级、不写入。旧“npm8high/advisory待审计”记录由本项
 开始逐证据收敛，不以扫描数量或版本陈旧直接宣称可利用。

@@ -1,5 +1,14 @@
 # OpenReader 全量上游复审矩阵
 
+## 2026-10-16 当前切片：前端客户端与构建依赖 advisory 补充
+
+[`frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)
+已从固定fa22f271重新提取Axios/Vue挂载、登录/命名空间恢复，并核对当前双create实例/原生FormData。
+新全锁审计仍8high受影响包，SSR/Node/Windows/build条件单列；必要patch/version/integrity及
+维护者边界已核验，计划有界库级反例+真实app正常控制和准确npm发布门。状态contract-only /
+behavioral-reds-pending / implementation-not-started；应用/lock/workflow未改，b263已发布维护保持，
+生产无操作，整体advisory/设备/全量重构不计完成。先独立合同，再实际测试，后实现。
+
 ## 2026-10-16 Go advisory 发布门补充合同
 
 见[`go-advisory-release-gate-contract.md`](go-advisory-release-gate-contract.md)。这是源扫描的失败关闭

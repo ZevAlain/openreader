@@ -2,6 +2,14 @@
 
 Status: working compatibility ledger; implemented migrations and remaining action-level audits are recorded below.
 
+## 2026-10-16 frontend dependency advisory supplement (no migration authorized)
+
+Focused frontend dependency contract inventories necessary same-major client/build patches only. Existing
+JWT/session/browserkeys, numericURLs, SQLite/GORM/data/cache/library, original archives/backup/portable/
+WebDAV and user-isolation semantics must remain. Full lock audit includes dev/optional/peer; no omit-dev,
+force latest, transitive-as-direct additions or silent schema/runtime redesign. Contracts then actual tests
+before changes; candidate historical/portable/backup gates remain mandatory. Production remains untouched.
+
 ## 2026-10-16 runtime foundation published (no migration)
 
 The Go1.26.9/MVS/officialbase/security-gate slice b2632a4 passed trustedActions38841543709, including

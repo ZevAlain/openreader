@@ -1,5 +1,14 @@
 # OpenReader 前端重构总结
 
+## 2026-10-16 客户端与构建依赖维护合同（当前，仅合同）
+
+本文件后续旧架构/版本段落为历史；当前固定上游fa22f271的advisory补充见
+[`compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
+Vue3/Pinia/Vite仍是技术栈适配，app保持浏览器createApp SPA，不启用SSR/生产Vite。保持Reader/
+Index/overlay、真实双Axios认证/取消/上传、同账号恢复/跨用户隔离、数值旧URL及用户存储。
+先有界行为测试，再必要同major补丁/全锁门，最后Node22/三视口/候选卷/可信发布验证；不以
+依赖扫描归零或源字符串接线测试取代产品流程。当前无UI/应用/锁文件实施，生产未操作。
+
 ## 项目概况
 
 **OpenReader** — 自部署轻量级多端同步小说阅读器。

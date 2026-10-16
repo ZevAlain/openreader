@@ -2,6 +2,15 @@
 
 Status: working contract. Keep this file updated when endpoint semantics change.
 
+## 2026-10-16 frontend dependency advisory supplement (contract-only)
+
+See focused frontend dependency advisory contract. Preserve two actual Axios.create instances, /api vs
+root URL semantics,12000ms defaults, own Authorization and matching-token401 invalidation; normal
+response/error/cancel/timeout/nativeFormData/import bodies and numeric Reader resume URLs unchanged.
+Pinned upstream request/loginAuth reinitialization is re-extracted; existing REST/JWT adaptations remain,
+not replaced by upstream accessToken-query/300second/isSuccess framing. Tests precede dependencies/gate.
+Conditional library fixtures are not public API exploit proof. No implementation/production change yet.
+
 ## 2026-10-16 runtime foundation delivery (API unchanged)
 
 Implementation b2632a4 passed trustedActions38841543709 and published bothLinux architectures; focused
