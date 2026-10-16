@@ -145,7 +145,6 @@
     >
       <header v-if="showRunningChapterHeader" class="reader-page-head">
         <span class="reader-running-chapter-title">{{ runningChapterLabel }}</span>
-        <span v-if="!isMobileReader">{{ chapterLabel }}</span>
       </header>
 
       <article
@@ -1422,7 +1421,6 @@ function formatRunningChapterLabel(index, title) {
   return normalizedTitle ? `${ordinal} ${normalizedTitle}` : ordinal
 }
 
-const chapterLabel = computed(() => `${currentIndex.value + 1} / ${chapters.value.length || 1}`)
 const runningChapterLabel = computed(() => formatRunningChapterLabel(currentIndex.value, chapter.value?.title))
 const showRunningChapterHeader = computed(() => !isAudioChapter.value && !isCBZBook(book.value))
 const isMobileReader = computed(() => shouldUseMiniInterface(reader.pageMode, windowWidth.value))
