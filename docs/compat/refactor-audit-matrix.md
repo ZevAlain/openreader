@@ -9,6 +9,11 @@
 behavioral-reds-pending / implementation-not-started；应用/lock/workflow未改，b263已发布维护保持，
 生产无操作，整体advisory/设备/全量重构不计完成。先独立合同，再实际测试，后实现。
 
+独立合同7ff39d9精确推送后，原锁新增真实有界测试：最终26项三轮和Node22均13库级red/
+13正常及harness控制通过；全frontend788/775pass/同13fail，原762保持。精确section边界的
+另一个source-map查询差异单列不算advisory；新npm门缺失只算1availability red。应用/lock/
+workflow未改，详见合同第6节；下一步必须先独立test/docs推送，后实施，不可红灯发布。
+
 ## 2026-10-16 Go advisory 发布门补充合同
 
 见[`go-advisory-release-gate-contract.md`](go-advisory-release-gate-contract.md)。这是源扫描的失败关闭

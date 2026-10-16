@@ -2,7 +2,7 @@
 
 日期2026-10-16；固定上游 `changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。
 当前源码/远端main `b573aed010419e870afa03a8d3b986d12c0ccd78`（发布后纯ledger），Docker应用
-`b2632a4c248a53ce7bade8bdba7bdef66b89b236`。状态 **contract-only / behavioral-reds-pending /
+`b2632a4c248a53ce7bade8bdba7bdef66b89b236`。状态 **contract-committed / behavioral-reds-reproduced /
 implementation-not-started**。补充运行时合同第3–5节，不把上一Go维护切片当作完整依赖审计完成。
 
 ## 1. 固定上游与已签收适配
@@ -95,3 +95,42 @@ portable/backup/restart，可信Actions两平台、独立OCI/config/实际binary
 `sha256:936939c55f86fe456af4425ac35506fccd7ba93dd2858402446b7ba01d2284ab`不含本项补丁。
 生产另一台Mac不操作、不升级、不重新推断commit；最后独立记录b2仅历史事实，已恢复原书事件
 关闭。OS/C、完整parserCPU/scan/峰值FD/late-tx、真实设备和更广重构仍继续，不能缩小为只升Axios。
+
+## 6. 独立合同后的真实旧锁红测（2026-10-16）
+
+合同 `7ff39d9de7845056d007e95de5aa852c629c28a6` 先推送并精确核验。额度检查中断的首次大
+patch未执行；恢复后再次核对cleanHEAD/远端，确认没有worker文件/红测进程，再正常审批添加
+测试。中断前原锁全量762/762已终态通过；未执行的调用不倒填为证据。
+
+仅新增隔离worker、父测试和npm门合同测试，应用/manifest/lock/Go/base/workflow均未改。
+最终26项重复三轮每轮 **13个实际库级red、13个正常/生命周期控制通过**（合计39/39），
+0skip/0cancel；2.302/2.250/2.268秒。实际固定Node22.23.3/linux-arm64/非root/断网/只读容器
+原样26项仍13red/13green（3.822秒），不是Windows复现或整个镜像功能签收。
+
+- Axios2叶：共享resolver将自有污染用户名/密码用于empty-own-auth Basic；300层、不到1KiB字段
+  名的formToJSON未拒绝深度。own-auth和普通表单控制通过；当前app并未被证明有污染源/空auth。
+- Vue1叶：SSR属性名含单个CR仍原样输出；正常Unicode/HTML转义通过。仍是库级SSR，不称SPA受攻。
+- form-data2叶：自有field/filename的微小CRLF在buffer内成为额外header行；正常Unicode文件/值通过。
+- PostCSS1叶：没有from的自有CSS读取另一个自有.map，其marker进入输出map；正常基路径map通过。
+  不读取用户路径/秘密，也不将这个构建库控制称为生产CSS处理入口。
+- NanoID2叶：public customRandom(0)、non-secure customAlphabet(-1)均进入自有随机计数第33次，
+  在32次工作预算处安全抛出；没有等待无限循环或触发OOM，正常短ID通过，native/Expo分支未运行。
+- source-map-js5叶：6层小map读取最内层sources达729次（预算14）；negative/fraction/单层超界/
+  嵌套总offset超界构造未拒绝。没有展开巨大line字符串/大量节点，正常段内lookup保持正确source。
+
+首轮21项为12fail/9pass，其中一个拟正常控制在旧indexed-map的精确section边界column0返回
+null，属于另外的库查询行为，**不算本轮advisory red、也不声称已解决**。正常控制改为同一
+已映射段内column1，仍严格要求fixture.js，不锁定错误null输出；之后补齐fraction/nested合同，
+再加3项父harness正向控制，形成最终13/13。三控制真实验证deadline、SIGTERM、输出超限时
+kill并await close，不作为漏洞反例；无startup/工作deadline失败或遗留worker。
+
+真实app3叶全部通过：实际两个Axios实例在自有127.0.0.1 HTTP上的API/root URL、显式Basic不被
+Bearer覆盖、JSON/nativeFormData、当前/旧/重复401及login/register排除、AbortSignal和timeout。
+全frontend **788项/775pass/13fail**（3.964秒），失败精确为上述13个库级反例，原762项仍绿。
+npm发布门尚未存在，其单独测试仅 **1个ERR_MODULE_NOT_FOUND availability/TDD red**，没有
+执行协议分支，不是第14个漏洞反例。
+
+原始日志`/private/tmp/openreader-frontend-advisory-{initial,final,node22,full}-red.log`、
+`*-repeat-red-{1,2,3}.log`和`*-gate-availability-red.log`保留；初轮控制差异不隐藏。先独立推送test/docs checkpoint，之后才
+改版本/lock/门/workflow，不能将故意红灯状态推main发布。后置全量/真实浏览器/候选卷/发布及
+整体advisory仍未完成；Docker仍b2632a4，生产未操作/未新核验。

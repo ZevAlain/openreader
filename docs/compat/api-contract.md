@@ -11,6 +11,10 @@ Pinned upstream request/loginAuth reinitialization is re-extracted; existing RES
 not replaced by upstream accessToken-query/300second/isSuccess framing. Tests precede dependencies/gate.
 Conditional library fixtures are not public API exploit proof. No implementation/production change yet.
 
+After independent7ff39d9, actual app-client HTTP controls pass both API/root URL, own Basic/Bearer,
+JSON/nativeFormData, current-vs-late token401/login exclusions, cancel and timeout on ownedloopback.
+Thirteen library-only red leaves are separate; no application API/body/error/session changes yet.
+
 ## 2026-10-16 runtime foundation delivery (API unchanged)
 
 Implementation b2632a4 passed trustedActions38841543709 and published bothLinux architectures; focused

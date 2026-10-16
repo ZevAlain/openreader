@@ -7,6 +7,12 @@ actualapp/conditionallibrary/SSR/Node/Windows/build. Plan precise npm source-loc
 allseverity/schema/tool/registry/lock evidence fail-closed. Contract-only, no implementation or production
 change; Go foundation delivery does not close frontend/OS-C/device/full audit.
 
+Frontend red checkpoint after independent7ff39d9:13actual conditional-library leaves/13green normal+
+owned-lifecycle controls repeat3 and under actualNode22; noOOM/unfiredfixture/workerleftover. App normal
+wire/auth/401/cancel/nativeFormData controls green; fullfrontend775pass/13knownfail. Pure library/SSR/
+build conditions remain distinct from production exposure, unrelated map boundary remains open. New
+npm-gate missing module is1availability red only. No dependency/app/workflow/production implementation.
+
 2026-10-16追加 Go source advisory 发布门合同：
 [`compat/go-advisory-release-gate-contract.md`](compat/go-advisory-release-gate-contract.md)。
 只允许带完整现场导入图/版本/受影响包校验和复审期限的 OpenPGP 不适用项，不新增通配忽略。
