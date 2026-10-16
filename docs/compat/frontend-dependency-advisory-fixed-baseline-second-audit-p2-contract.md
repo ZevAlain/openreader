@@ -3,7 +3,7 @@
 日期2026-10-16；固定上游 `changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。
 当前源码/远端main `b573aed010419e870afa03a8d3b986d12c0ccd78`（发布后纯ledger），Docker应用
 `b2632a4c248a53ce7bade8bdba7bdef66b89b236`。状态 **contract-committed / behavioral-reds-reproduced /
-implementation-not-started**。补充运行时合同第3–5节，不把上一Go维护切片当作完整依赖审计完成。
+implementation-not-started**（以上为合同提取时快照；当前实施验收见第7节）。补充运行时合同第3–5节，不把上一Go维护切片当作完整依赖审计完成。
 
 ## 1. 固定上游与已签收适配
 
@@ -134,3 +134,51 @@ npm发布门尚未存在，其单独测试仅 **1个ERR_MODULE_NOT_FOUND availab
 `*-repeat-red-{1,2,3}.log`和`*-gate-availability-red.log`保留；初轮控制差异不隐藏。先独立推送test/docs checkpoint，之后才
 改版本/lock/门/workflow，不能将故意红灯状态推main发布。后置全量/真实浏览器/候选卷/发布及
 整体advisory仍未完成；Docker仍b2632a4，生产未操作/未新核验。
+
+实施解析约束：普通caret安装会选择Vue3.5.44/Vite8.3.4及较大构建链，虽审计0仍超出必要范围，
+因此不采用；原始解析锁另存tmp，未提交/发布。直接三包改用已核验精确patch；PostCSS8.5.23、
+NanoID3.3.18、source-map-js1.2.2仅设3个具体、同major、安全修复叶override，匹配所有当前生产者
+range，不是通配强制/漏洞ignore，也不新增app direct依赖。原拟临时恢复原锁再解析的patch被
+自动审批以“会退回已识别漏洞版本”拒绝，**没有执行**；不通过其它方式恢复旧锁。改为从当前
+已修复图用npm prefer-dedupe直接收敛这3个已确认安全版本，保留其余兼容解析节点，并逐项
+核验Babel/Vue/Rolldown等传递链及同patch范围的解析更新，不声称整个图数学意义最小。
+最终仍须真实npm ci、全图完整审计、原行为测试及多平台构建，不能用override隐藏漏洞或以
+解析输出代替验收；任何目标版本仍被报告都不允许发布。
+
+## 7. 独立红测之后的实施检查点（2026-10-16）
+
+实际红测checkpoint `218ad91272a2503510778af33eb37bbed3b56088` 已先推送并精确核验，之后才
+实施。直接依赖精确锁Axios1.20.0、Vue3.5.42、Vite8.0.16；3个具体叶约束见上。npm生成
+lock仍132个包，无删除路径，Linux/Darwin/Windows/native/WASM optional图保留，未升major。
+
+必要链与兼容解析更新分开记录：
+
+- Vue与9个@vue包同为3.5.42；compiler要求Babel parser ^7.29.8，解析7.29.9→types7.29.8→
+  两helpers7.29.7；不是独立应用功能升级。
+- Vite要求rolldown精确1.0.3及tinyglobby ^0.2.17（解析0.2.17）；rolldown的15个平台binding
+  同为1.0.3，types精确0.133.0。form-data4.0.6要求hasown ^2.0.4（解析2.0.4）。
+- 同range解析还保留sourcemap-codec1.6.0、picomatch4.0.7、es-object-atoms1.1.2、
+  wasm-runtime1.2.5及其要求 ^0.10.3 的wasm-util0.10.4；不是每个更新都宣称漏洞修复或数学
+  必要最小版本。拒绝的宽caret Vue3.5.44/Vite8.3.4/rolldown1.2.14不在候选。
+
+本机Node26.4.0/npm11.17.0和实际固定Node22.23.3/npm10.9.9 linux-arm64容器分别完成npm ci、
+全frontend **788/788**、Vite build、共享Go门60+新npm门49=**109/109**。13原库级red在相同
+断言/预算下全绿，正常控制保持；无skip/cancel。Node22从只读源码复制到自有tmpfs重新安装，
+没有误用Darwin native node_modules。构建保留large-chunk/注释位置warning，不隐藏warning。
+
+两真实npm门均终态0、132包、全部severity finding0，显式prod/dev/optional/peer；manifest
+SHA256 `6434b6c6e7bbeefae32bd116a645b369c5bd5d7eddab7f91583f8ecc22ce1706`，lock
+`5f75826ebf245702e01021cec0139ed07db0be07ee28be2e3a807460ef3c299d` 前后不变。
+本机观测07:20:36Z，Node22观测07:22:24Z。原始JSON/终态/范围由工具保存；不捏造npm数据库时间。
+门拒绝未知schema、缺图/版本/范围、变动锁、错误退出、stderr、任一severity及外部结果输入；
+不忽略finding。共享runTool只新增可选成功stdout/stderr/terminal结构，默认字符串返回保持；
+原Go门真实终态通过，Go1.26.9/DB2026-10-08、唯一条件OpenPGP模块项不扩大豁免。
+
+完整Go终态0（API124.141s）、vet0、Compose0及隔离真实HTTP三用户/DAV/REST/导入/正文/隔离
+均通过。完整API等race同一进程仍运行，25分钟预算，不重启/不倒填。应用Go、frontend/src、
+Dockerfile/Compose无diff；没有业务、API、schema、旧URL或持久数据迁移。
+
+当前状态 **implementation-source-validated / candidate-and-release-pending**，不是发布签收。
+精确候选三视口/认证上传/会话、卷/backup/restart、可信Actions双平台及独立OCI/实际binary
+仍待完成。Docker仍上轮b2632a4，main仍b573aed；另一Mac生产未操作/新核验，原已恢复事件
+不重开。OS/C、全parserCPU/scan/峰值FD/late-tx、设备及整体重构仍开放。

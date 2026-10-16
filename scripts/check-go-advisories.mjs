@@ -136,7 +136,7 @@ export function evaluateSourceScan(raw, evidence, {now = Date.now()} = {}) {
 
 // Each tool owns a POSIX process group. On timeout/output overflow, kill that group and await close,
 // including a go-run scanner descendant; killing only the Go launcher can leave work behind.
-export function runTool(file, args, {cwd, env = process.env, timeout = 600_000, maxBytes = 16 << 20} = {}) {
+export function runTool(file, args, {cwd, env = process.env, timeout = 600_000, maxBytes = 16 << 20, captureOutput = false} = {}) {
   assert.ok(process.platform !== 'win32', 'process-group lifecycle requires POSIX')
   return new Promise((resolvePromise, reject) => {
     const child = spawn(file, args, {cwd, env, detached:true, stdio:['ignore','pipe','pipe']})
@@ -175,8 +175,10 @@ export function runTool(file, args, {cwd, env = process.env, timeout = 600_000, 
       if (failure) {
         failure.stdout = stdout
         failure.stderr = stderr
+        failure.exitCode = code
+        failure.signal = signal
         reject(failure)
-      } else resolvePromise(stdout)
+      } else resolvePromise(captureOutput ? {stdout,stderr,exitCode:code,signal} : stdout)
     })
   })
 }

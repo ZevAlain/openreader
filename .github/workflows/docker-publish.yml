@@ -17,6 +17,8 @@ on:
       - scripts/smoke/local-store-directory-lifecycle-contract.mjs
       - scripts/check-go-advisories.mjs
       - scripts/check-go-advisories.test.mjs
+      - scripts/check-frontend-advisories.mjs
+      - scripts/check-frontend-advisories.test.mjs
   workflow_dispatch:
 
 permissions:
@@ -77,6 +79,12 @@ jobs:
 
       - name: Check Go source advisories with explicit applicability evidence
         run: node scripts/check-go-advisories.mjs
+
+      - name: Test complete-lock frontend advisory gate
+        run: node --test scripts/check-frontend-advisories.test.mjs
+
+      - name: Check frontend advisories including development dependencies
+        run: node scripts/check-frontend-advisories.mjs
 
       - name: Test frontend
         working-directory: frontend

@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import {readFile} from 'node:fs/promises'
+import {fileURLToPath} from 'node:url'
+import {runTool} from './check-go-advisories.mjs'
 import {evaluateNpmAudit, npmAuditArgs} from './check-frontend-advisories.mjs'
 
 function fixture() {
@@ -12,7 +15,7 @@ function fixture() {
     evidence:{manifest,lock,lockHashBefore:'a'.repeat(64),lockHashAfter:'a'.repeat(64),
       manifestHashBefore:'b'.repeat(64),manifestHashAfter:'b'.repeat(64),exitCode:0,
       nodeVersion:'v22.23.3',npmVersion:'10.9.6',registry:'https://registry.npmjs.org/',
-      includes:['prod','dev','optional','peer']}}
+      includes:['prod','dev','optional','peer'],stderr:''}}
 }
 function check(change=()=>{}) {
   const f=fixture();change(f)
@@ -36,6 +39,7 @@ for(const raw of ['', '  ', '{}', '[]','null','{"auditReportVersion":2','{}garba
 }
 const invalid={
   'tool exit failure even with apparent zero findings':f=>f.evidence.exitCode=1,
+  'unexpected successful stderr requires review':f=>f.evidence.stderr='npm warn unexpected scanner condition',
   'unknown audit schema':f=>f.report.auditReportVersion=3,
   'missing vulnerability object':f=>delete f.report.vulnerabilities,
   'array instead of vulnerability object':f=>f.report.vulnerabilities=[],
@@ -56,6 +60,11 @@ const invalid={
   'manifest lock mismatch':f=>f.evidence.lock.packages[''].dependencies.axios='^1.7.7',
   'unexpected package':f=>f.evidence.lock.name='different-project',
   'unsupported lock schema':f=>f.evidence.lock.lockfileVersion=1,
+  'lock root name mismatch':f=>f.evidence.lock.packages[''].name='other',
+  'lock root version mismatch':f=>f.evidence.lock.packages[''].version='0.0.0',
+  'lock package missing version':f=>delete f.evidence.lock.packages['node_modules/axios'].version,
+  'broad wildcard override':f=>f.evidence.manifest.overrides={'*':'1.0.0'},
+  'override contradicts lock':f=>f.evidence.manifest.overrides={postcss:'8.5.22'},
   'wrong registry':f=>f.evidence.registry='https://example.invalid/',
   'missing Node identity':f=>f.evidence.nodeVersion='',
   'missing npm identity':f=>f.evidence.npmVersion='',
@@ -70,3 +79,22 @@ for(const severity of ['info','low','moderate','high','critical']) {
 test('vulnerability object contradicting zero counts fails closed',()=>assert.throws(()=>check(f=>{
   f.report.vulnerabilities.axios={name:'axios',severity:'high',via:['owned fixture']}
 })))
+test('concrete exact same-major leaf constraints must match actual locked nodes',()=>{
+  assert.equal(check(f=>f.evidence.manifest.overrides={postcss:'8.5.23'}).status,'pass')
+})
+test('workflow triggers for npm gate files and checks them before native build',async()=>{
+  const source=await readFile(new URL('../.github/workflows/docker-publish.yml',import.meta.url),'utf8')
+  for(const path of ['scripts/check-frontend-advisories.mjs','scripts/check-frontend-advisories.test.mjs']) {
+    assert.ok(source.slice(0,source.indexOf('workflow_dispatch:')).includes(`- ${path}`))
+  }
+  const tests=source.indexOf('run: node --test scripts/check-frontend-advisories.test.mjs')
+  const scan=source.indexOf('run: node scripts/check-frontend-advisories.mjs')
+  const build=source.indexOf('- name: Build native validation image')
+  assert.ok(tests>0&&scan>tests&&build>scan)
+  assert.ok(!source.slice(tests,build).includes('continue-on-error'))
+})
+test('CLI rejects externally supplied results before starting npm',async()=>{
+  const script=fileURLToPath(new URL('./check-frontend-advisories.mjs',import.meta.url))
+  await assert.rejects(runTool(process.execPath,[script,'owned-not-a-scan.json']),
+    error=>error.exitCode===1&&error.stderr.includes('external results or bypass flags'))
+})

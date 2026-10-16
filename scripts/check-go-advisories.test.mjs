@@ -109,6 +109,10 @@ test('owned scanner process must finish successfully',async()=>{
   assert.equal(await runTool(process.execPath,['-e','process.stdout.write("ok")']), 'ok')
   await assert.rejects(runTool(process.execPath,['-e','process.stdout.write("{}");process.exit(7)']))
 })
+test('owned tool optionally preserves successful stderr and real terminal status',async()=>{
+  const result=await runTool(process.execPath,['-e','process.stdout.write("ok");process.stderr.write("owned warning")'],{captureOutput:true})
+  assert.deepEqual(result,{stdout:'ok',stderr:'owned warning',exitCode:0,signal:null})
+})
 test('timeout kills and reaps owned scanner process group',async()=>{
   await assert.rejects(runTool(process.execPath,['-e',
     'require("child_process").spawn(process.execPath,["-e","setInterval(()=>{},1000)"],{stdio:"inherit"});setInterval(()=>{},1000)'],

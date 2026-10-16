@@ -14,6 +14,11 @@ behavioral-reds-pending / implementation-not-started；应用/lock/workflow未�
 另一个source-map查询差异单列不算advisory；新npm门缺失只算1availability red。应用/lock/
 workflow未改，详见合同第6节；下一步必须先独立test/docs推送，后实施，不可红灯发布。
 
+实施进展取代上述未实施快照：独立red218ad91已先推送，后精确补丁/3个具体叶约束和npm发布门。
+Node26及实际Node22均788/788、build、109/109门合同及132包全锁零finding通过；完整Go/
+vet/Compose/真实隔离HTTP通过。完整race仍同一进程，精确候选浏览器/卷/可信发布未完成，
+见合同第7节。无业务/API/数据迁移或生产操作，不以扫描归零签收整体重构。
+
 ## 2026-10-16 Go advisory 发布门补充合同
 
 见[`go-advisory-release-gate-contract.md`](go-advisory-release-gate-contract.md)。这是源扫描的失败关闭

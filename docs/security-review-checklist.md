@@ -13,6 +13,12 @@ wire/auth/401/cancel/nativeFormData controls green; fullfrontend775pass/13knownf
 build conditions remain distinct from production exposure, unrelated map boundary remains open. New
 npm-gate missing module is1availability red only. No dependency/app/workflow/production implementation.
 
+Superseding implementation evidence (focused section7): independently pushed red218ad91 precedes
+exact same-major patches and three concrete safe leaf constraints. Actual Node26 and Node22 both pass
+788 frontend tests/build,109 gate tests,132-package full-lock audit with zero findings; fullGo/vet/
+Compose/owned HTTP pass. SourceGo/app/API/data unchanged. Fullrace and candidate browser/volumes/
+trusted publication/OCI pending; no production action or whole-system security-clear claim.
+
 2026-10-16追加 Go source advisory 发布门合同：
 [`compat/go-advisory-release-gate-contract.md`](compat/go-advisory-release-gate-contract.md)。
 只允许带完整现场导入图/版本/受影响包校验和复审期限的 OpenPGP 不适用项，不新增通配忽略。
