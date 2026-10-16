@@ -1,5 +1,10 @@
 # OpenReader Security Review Checklist
 
+2026-10-16追加 Go source advisory 发布门合同：
+[`compat/go-advisory-release-gate-contract.md`](compat/go-advisory-release-gate-contract.md)。
+只允许带完整现场导入图/版本/受影响包校验和复审期限的 OpenPGP 不适用项，不新增通配忽略。
+当前仅合同；工具、测试和可信发布接线仍待实施，不替代二进制/OS/C/前端审计。
+
 Use this checklist for security-sensitive changes and release reviews.
 
 ## P2 runtime/dependency advisory second audit (2026-10-15 inventory only)

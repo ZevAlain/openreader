@@ -1,5 +1,12 @@
 # OpenReader 全量上游复审矩阵
 
+## 2026-10-16 Go advisory 发布门补充合同
+
+见[`go-advisory-release-gate-contract.md`](go-advisory-release-gate-contract.md)。这是源扫描的失败关闭
+门，不是上游功能重做：精确协议/终态/Go/DB/SBOM/图校验，唯一 OpenPGP 不适用项须现场核验
+三图且有复审期限；binary剥离精度单列。状态 contract-only，工具/测试/Actions尚未实施。
+不修改用户API、数据或原已恢复事件；先合同、再新工具合同测试、后实现，更广重构不缩小。
+
 ## 2026-10-16 当前切片：运行时与依赖 advisory（基础链源码已验证，候选门待办）
 
 见[`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
