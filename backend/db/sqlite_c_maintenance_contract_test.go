@@ -27,7 +27,7 @@ const sqliteCompleted = "SQLITE_MAINTENANCE_COMPLETED\n"
 // These are library-level, two-row/empty-table correctness checks, not an API
 // exploit or a reproducer for the separate WAL-reset critical timing window.
 func TestSQLiteCMaintenanceBoundedBehavior(t *testing.T) {
-	for _, name := range []string{"empty-aggregate-not-null", "redundant-upsert-index", "bound-values-simple-upsert", "null-empty-control", "wal-rollback-checkpoint-reopen", "prepared-bindings-reuse", "early-rows-close-reuse", "query-transaction-cancel-reuse", "runtime-features"} {
+	for _, name := range []string{"empty-aggregate-not-null", "redundant-upsert-index", "bound-values-simple-upsert", "null-empty-control", "wal-rollback-checkpoint-reopen", "prepared-bindings-reuse", "early-rows-close-reuse", "query-transaction-cancel-reuse", "in-flight-query-cancel", "in-flight-exec-cancel", "runtime-features"} {
 		t.Run(name, func(t *testing.T) { runSQLiteMaintenanceWorker(t, name) })
 	}
 }
@@ -110,7 +110,7 @@ func runSQLiteMaintenanceWorker(t *testing.T, name string) {
 		if err != nil || !strings.Contains(text, sqliteCompleted) {
 			t.Fatalf("actual SQLite invariant failed: %v %s", err, text)
 		}
-		if name == "runtime-features" {
+		if name == "runtime-features" || strings.HasPrefix(name, "in-flight-") {
 			t.Logf("owned runtime query: %s", text)
 		}
 	}
@@ -149,8 +149,8 @@ func TestSQLiteCMaintenanceOwnedWorker(t *testing.T) {
 	valid := map[string]bool{"empty-aggregate-not-null": true, "redundant-upsert-index": true,
 		"bound-values-simple-upsert": true, "null-empty-control": true, "wal-rollback-checkpoint-reopen": true,
 		"prepared-bindings-reuse": true, "early-rows-close-reuse": true, "query-transaction-cancel-reuse": true,
-		"runtime-features": true,
-		"harness-output":   true, "harness-deadline": true, "harness-sigint": true, "harness-sigterm": true}
+		"in-flight-query-cancel": true, "in-flight-exec-cancel": true, "runtime-features": true,
+		"harness-output": true, "harness-deadline": true, "harness-sigint": true, "harness-sigterm": true}
 	if !valid[name] {
 		t.Fatal("unknown owned SQLite case")
 	}
@@ -173,6 +173,11 @@ func TestSQLiteCMaintenanceOwnedWorker(t *testing.T) {
 	}
 	if name == "query-transaction-cancel-reuse" {
 		runSQLiteCancellationControl(t)
+		fmt.Print(sqliteCompleted)
+		return
+	}
+	if name == "in-flight-query-cancel" || name == "in-flight-exec-cancel" {
+		runSQLiteInFlightCancellationControl(t, name == "in-flight-exec-cancel")
 		fmt.Print(sqliteCompleted)
 		return
 	}
@@ -387,6 +392,130 @@ func runSQLiteCancellationControl(t *testing.T) {
 	if err := database.QueryRowContext(checkCtx, "PRAGMA integrity_check").Scan(&integrity); err != nil || integrity != "ok" {
 		t.Fatalf("cancel control integrity=%q err=%v", integrity, err)
 	}
+}
+
+// In-flight control: the context must interrupt a statement while its C step is
+// still running, not only between rows. The connection-local marker proves the
+// VDBE program began; the one-row recursive count keeps memory constant and would
+// otherwise run far past the owned worker deadline. While the step may still be in
+// C, failures exit directly because deferred pool/transaction cleanup would wait
+// on it and turn a behavior failure into a harness deadline.
+func runSQLiteInFlightCancellationControl(t *testing.T, write bool) {
+	t.Helper()
+	database, err := Open(config.Config{DatabasePath: filepath.Join(t.TempDir(), "in-flight-cancel.db")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pool, err := database.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	pool.SetMaxOpenConns(1)
+	if _, err := pool.Exec("CREATE TABLE in_flight_probe(id INTEGER PRIMARY KEY,value TEXT); INSERT INTO in_flight_probe VALUES(1,'原值'),(2,'第二行')"); err != nil {
+		t.Fatal(err)
+	}
+	conn, err := pool.Conn(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	entered := make(chan struct{})
+	var once sync.Once
+	if err := conn.Raw(func(driverConn any) error {
+		sqliteConn, ok := driverConn.(*sqlite3.SQLiteConn)
+		if !ok {
+			return fmt.Errorf("unexpected driver connection %T", driverConn)
+		}
+		return sqliteConn.RegisterFunc("in_flight_marker", func() int64 {
+			once.Do(func() { close(entered) })
+			return 1
+		}, false)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	abandon := func(format string, args ...any) {
+		fmt.Printf(format+"\n", args...)
+		os.Exit(1)
+	}
+	const spin = "WITH RECURSIVE spin(x) AS (SELECT in_flight_marker() UNION ALL SELECT x+1 FROM spin WHERE x<?) "
+	const limit = int64(4_000_000_000)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	var count int64
+	var tx *sql.Tx
+	if write {
+		if tx, err = conn.BeginTx(ctx, nil); err != nil {
+			t.Fatal(err)
+		}
+		defer tx.Rollback()
+		if _, err := tx.ExecContext(ctx, "UPDATE in_flight_probe SET value=? WHERE id=1", "取消的更改"); err != nil {
+			t.Fatal(err)
+		}
+		go func() {
+			_, err := tx.ExecContext(ctx, spin+"INSERT INTO in_flight_probe(id,value) SELECT 3,count(*) FROM spin", limit)
+			done <- err
+		}()
+	} else {
+		go func() { done <- conn.QueryRowContext(ctx, spin+"SELECT count(*) FROM spin", limit).Scan(&count) }()
+	}
+	select {
+	case <-entered:
+	case err := <-done:
+		t.Fatalf("statement returned before its C step began (precondition, not a behavior red): %v", err)
+	case <-time.After(time.Second):
+		abandon("in-flight marker not reached (precondition, not a behavior red)")
+	}
+	time.Sleep(50 * time.Millisecond)
+	select {
+	case err := <-done:
+		t.Fatalf("statement finished before cancellation (precondition, not a behavior red): %v", err)
+	default:
+	}
+	canceledAt := time.Now()
+	cancel()
+	var latency time.Duration
+	select {
+	case err := <-done:
+		latency = time.Since(canceledAt)
+		if !errors.Is(err, context.Canceled) || count != 0 {
+			t.Fatalf("in-flight cancel returned err=%v count=%d after %v", err, count, latency)
+		}
+	case <-time.After(time.Second):
+		abandon("in-flight C step ignored cancellation for 1s")
+	}
+	checkCtx, checkCancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer checkCancel()
+	if write {
+		if err := tx.Commit(); !errors.Is(err, context.Canceled) && !errors.Is(err, sql.ErrTxDone) {
+			t.Fatalf("interrupted transaction unexpectedly committed: %v", err)
+		}
+	} else {
+		// The interrupted statement must be reset so the same C connection serves
+		// the next query instead of keeping the interrupt or a busy statement.
+		var marker int
+		if err := conn.QueryRowContext(checkCtx, "SELECT ?", 42).Scan(&marker); err != nil || marker != 42 {
+			t.Fatalf("connection unusable after in-flight cancel: %d %v", marker, err)
+		}
+	}
+	_ = conn.Close()
+	var value, integrity string
+	var rows int
+	if err := pool.QueryRowContext(checkCtx, "SELECT value FROM in_flight_probe WHERE id=1").Scan(&value); err != nil || value != "原值" {
+		t.Fatalf("in-flight cancel did not preserve committed data/release pool: value=%q err=%v", value, err)
+	}
+	if err := pool.QueryRowContext(checkCtx, "SELECT count(*) FROM in_flight_probe").Scan(&rows); err != nil || rows != 2 {
+		t.Fatalf("interrupted statement left rows=%d err=%v", rows, err)
+	}
+	if err := pool.QueryRowContext(checkCtx, "PRAGMA integrity_check").Scan(&integrity); err != nil || integrity != "ok" {
+		t.Fatalf("in-flight cancel integrity=%q err=%v", integrity, err)
+	}
+	mode := "query"
+	if write {
+		mode = "exec-transaction"
+	}
+	fmt.Printf("SQLITE_IN_FLIGHT_CANCEL mode=%s latency=%s\n", mode, latency.Round(time.Microsecond))
 }
 
 func runSQLiteWALNormalControl(t *testing.T) {
