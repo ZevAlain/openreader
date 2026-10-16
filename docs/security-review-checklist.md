@@ -60,6 +60,14 @@ only the official etc/shadow rewrite) and is rejected for zlib 1.3.2-r0 under th
 full real secdb documents satisfy the strict schema. Candidate image build, both-platform gate runs,
 volumes and trusted publication remain pending in Actions; no image/production change.
 
+Release (section 13): main fast-forwarded to 186c762; trusted Actions 38896494238 passed every step,
+including the both-platform OS gate (16/16 packages, 110/109 APK files, only etc/shadow, 72 comparisons,
+no pending) and fresh/historical volume and portable checks. `186c762`/`latest` = index
+`bfda54269b4cf53bab46f1debdd3d9bef640f23c4de5a7f6b248ed081c43f83c`. Independent pull-by-digest checks
+of both platforms confirm the pinned zlib 1.3.2-r1 identity, unchanged APK-owned files, the full revision
+label, go-sqlite3 v1.14.36 and the SQLite 3.51.3 source ID with no 3.45.1 remnant. No production action;
+WAL-reset ordering remains unreproduced and device/browser regression is still open.
+
 2026-10-16 frontend supplement:
 [`compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
 Fresh all-lock npm audit8high packages, not8exploits; own tiny bounded fixtures before patches, distinguish

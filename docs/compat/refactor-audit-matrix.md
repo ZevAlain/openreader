@@ -46,6 +46,12 @@ Dockerfile精确zlib修复；先测试后实现，实际镜像验证待main上�
 base-only基线16包/109文件通过、候选基线在zlib r0被拒；完整secdb通过严格schema；原生比较72组与fixture
 一致。候选镜像构建、两平台门、新旧卷与可信发布待main上的Actions；未合main，无新镜像，生产未动。
 
+发布（合同第13节）：main快进至186c762，可信Actions 38896494238全部成功（两平台OS门、新旧卷/portable
+通过），`186c762`/`latest` 为index `bfda5426…c43f83c`（amd64 `05014b1c…`、arm64 `d78a1190…`）。按digest
+独立核验两平台：zlib 1.3.2-r1与pin一致、APK文件仅放行etc/shadow、revision标签正确、二进制含go-sqlite3
+v1.14.36与SQLite 3.51.3 source ID且无3.45.1。状态released / awaiting-device-verification；WAL调度仍
+未复现，生产未操作、实际运行版本未知，整体parser/设备/全量重构继续。
+
 ## 2026-10-16 当前切片：前端客户端与构建依赖 advisory 补充
 
 [`frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)

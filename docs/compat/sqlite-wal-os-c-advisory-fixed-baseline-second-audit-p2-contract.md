@@ -322,3 +322,30 @@ zlib r0<r1。本地没有已发布amd64内容，未拉取。
 双平台发布与OCI/APK核验，均需合入main后由Actions执行；本地未构建或推送镜像。状态
 **os-gate-implemented / zlib-build-fix-applied / locally-validated / Actions-pending**；WAL调度仍未复现；
 镜像仍为fc4692c；生产未访问或修改。
+
+## 13. 发布记录（2026-10-16，可信Actions发布并独立核验）
+
+经用户确认，`main` 由 `24e55bab922e6c55206ef0a64d7fd64c02374da4` 快进至
+`186c762252ebbf8b33734a92d91ccac4975f5ac0`（非force，ls-remote核验）。可信Actions `38896494238` 成功，
+24m37s，全部步骤success：backend测试4m42s、Go/前端审计门与实际扫描、OS门测试、frontend测试/build、
+Compose、隔离存储HTTP合同、amd64验证镜像1m55s、arm64验证镜像15m29s；两平台OS门结果为
+pass-with-unknown-origins（16/16包、110/109个APK文件、仅etc/shadow、secdb main 10-13 `1f2de215…`与
+community 10-09 `96d0e5fc…`、72组比较无pending、5个unknown origin）；fresh/historical卷与portable备份、
+推送8s（复用已验证层缓存）及平台核验均通过。
+
+镜像：`ghcr.io/changshengyu/openreader:186c762` 与 `latest` 指向OCI index
+`sha256:bfda54269b4cf53bab46f1debdd3d9bef640f23c4de5a7f6b248ed081c43f83c`；linux/amd64
+`sha256:05014b1c05d841a87f8a11bcd52d36b62fa8761b9eb14bcfe22f13d72a54372f`，linux/arm64
+`sha256:d78a1190a58b1d99205fc4458283ea470b0d78d9607b313a744ce840a4703740`，另有两份attestation。
+
+发布后独立核验（按index digest拉取两平台，`docker save` 后用门同一解析逻辑）：两平台各7层diff_id全部
+匹配；16包身份与基线一致，110/109个APK文件逐一核对，仅放行etc/shadow；zlib 1.3.2-r1的 `C:` 与pin相同
+（x86_64 `Q1jut3bNPRHp/JoWp0GWNhtIWnnQE=`，aarch64 `Q1932/MXUWsUUsB2j59i8WBsgG3S0=`）；revision标签为
+完整186c762…；二进制为go1.26.9、go-sqlite3 v1.14.36（vendored构建信息不含h1，由go.sum固定），含SQLite
+3.51.3 source ID `2026-03-13 10:38:09 737ae4a3…`，不含3.45.1的 `e876e51a…`；二进制sha256 amd64
+`f88b3cab…`（22,107,264 B）、arm64 `daa51d8a…`（20,374,944 B）。
+
+未做：任何生产操作或生产运行commit核验；本轮未执行三视口浏览器与原生arm64设备回归；WAL-reset确定性调度
+仍为未复现/open；openssl 3.5.9-r0待secdb列出修复再评估；community secdb超过30天未更新或unknown origin
+复审期（2026-11-16）到期时，门会失败关闭，需要复审。状态 **released / Docker-published /
+awaiting-device-verification**；生产实际运行版本未知。
