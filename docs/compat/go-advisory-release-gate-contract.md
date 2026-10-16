@@ -43,3 +43,11 @@ source目标平台/CGO、DB时间、不适用项和未覆盖 C/OS/Node/frontend�
 
 未完成：实现/合同测试/真实 gate/可信 Actions 接线及发布；更广 frontend、OS/C、真实设备及整体
 重构继续开放。当前候选4487203尚非正式镜像，生产另一台Mac不作写入或升级。
+
+## 独立测试检查点
+
+合同 ceb6c28567d499886c29a73785259ab4d487f81e 已先推送并独立核验。随后新增工具合同测试，
+首次 `node --test scripts/check-go-advisories.test.mjs` exit1，原因是工具尚不存在的
+ERR_MODULE_NOT_FOUND，只有 **1个 availability/TDD red**，不是协议分支已执行，也不是新的
+漏洞行为反例。日志 `/private/tmp/openreader-go-advisory-gate-availability-red.log` 保留。
+应用/模块/lock/工具/workflow未变，先独立提交测试再实现；现有6个真实依赖反例计数不变。
