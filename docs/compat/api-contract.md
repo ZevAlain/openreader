@@ -21,6 +21,11 @@ auth/parser/API business-code changes. All11controls, fullGo/API116.144s, engine
 vet and frontend762/build pass. This is a local core checkpoint only; other dependencies, runtime/base,
 candidate HTTP/browser/volumes/audits/publication remain open. No production upgrade or new schema.
 
+Foundation supplemental tests, after bccaac3: actual document parsing fails to terminate on tiny malformed
+HTML; dependency-level NFC/NFKC iteration makes no progress. Three new red leaves/five controls repeat
+under race; old JWT/XPath14 cases stay green. Norm is not a proven exposed API path. No route/error/auth/
+dependency/base change yet; implementation and candidate gates remain pending (focused section9).
+
 ## 2026-10-15 local-import durable commit (core validated and published, follow-up open)
 
 The initial contract-only inventory below is historical; implementation evidence follows it.

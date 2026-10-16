@@ -30,6 +30,11 @@ vet/frontend762/build PASS. No auth/parser business-code changes or production u
 module/toolchain/base/frontend maintenance, precise audits and candidate/runtime/browser/volume/release
 gates remain unchecked; official base image metadata was verified, not applied or runtime tested.
 
+Foundation supplemental reds (focused section9):3new leaves/5controls, stable3runs and race; actual
+document parser nontermination and norm-library NFC/NFKC no progress. All workers reaped, noDATARACE;
+prior14 JWT/XPath cases independently green. Module/base changes still absent; no production exploit
+or complete parser cancellation claim, and norm's API reachability stays explicitly unproven.
+
 ## P2 local-import durable commit (2026-10-15 core validated, follow-up open)
 
 - [x] Bind initial LibraryDir/data/user/new-book allocation and actual raw/body/metadata/resource work to

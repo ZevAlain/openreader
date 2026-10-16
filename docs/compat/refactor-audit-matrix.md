@@ -22,6 +22,11 @@ race10.528s/2.073s、vet、frontend762/build通过。状态JWT-XPath-core-valida
 Docker-not-published；其它Go/Go最低版本/frontendlock/base仍未改。完整基础链/HTML-text/
 后置scan/runtime/browser/卷/发布仍待继续，详见合同第8节，不称整体安全或生产升级完成。
 
+基础链追加red：同bccaac3后继树仅加test，实际sourceRuleDocument对官方最小HTML在握手后
+3秒不结束；库级norm NFC/NFKC三字节输入12步position0/无输出，追加3red/5控制。重复3轮和
+race同数，无竞争/未触发/遗留worker；旧JWT/XPath14项另跑全绿。x/net/text、Go最低、base/
+frontendlock未改，详见合同第9节；不是已实施、生产可利用或已发布结论。
+
 ## 2026-10-15 当前切片：本地书导入持久提交（共享核心已验证并发布，后续开放）
 
 固定 upstream saveBook 的成功包含 Book/group/本地资源保存；next boundary 完整枚举新 archive

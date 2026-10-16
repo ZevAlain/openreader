@@ -178,3 +178,27 @@ manifest/config与版本（只读，尚未pull/build，未改Dockerfile）：
 记录 `/private/tmp/openreader-runtime-advisory-base-images.json`，匿名bearer仅内存，不输出凭证。
 这不是OS/C/Node漏洞全清或实际运行的Alpine版本证明；仍需native/CA/CGO/包清单与新旧卷检查。
 后续必须完成整个第3–5节及发布门，不能停在这两个库或用元数据代替候选验证。
+
+## 9. HTML与Unicode追加真实红测（2026-10-16，基础链仍未修改）
+
+第8节计划及两项实现bccaac3远端精确核验后，在同SHA原生受管理后继工作树中，只新增
+`backend/engine/parser_dependency_advisory_lifecycle_contract_test.go`；x/net0.33.0、x/text0.21.0、
+Go最低1.24.1、Dockerfile/frontendlock均未改。使用第8节已提取官方CL的微小输入，没有生产网络
+请求或用户数据，分清应用入口和依赖级实验：
+
+- HTML：真实`newSourceRuleDocument`同时构造CSS/XPath表征；混合table/svg/select文档在实际
+  entered-work握手后3秒仍不结束。只杀掉自有worker并Wait，未在主测试进程留不可取消解析。
+- NFC/NFKC：库级`norm.Iter.InitString/Next`处理`f3 cc 80`时连续12步仍position0/producedBytes0，
+  触发确定的进度断言。不是计时概率，也不是断言不同的Unicode输出；不称这3字节已证明可从
+  OpenReader公网入口传入。NFD/NFKD同非法输入、合法NFC/NFKC及普通HTML共5控制通过。
+
+初轮exit1/engine3.959s，**追加3个leaf实际red/5个已绿控制**。最终带进度诊断源码重复3次
+exit1/engine10.045s，仍每轮3/5（共9red/15控制）；race同源码exit1/engine8.672s，仍3/5。
+无DATA RACE/panic/编译失败/未握手或未回收worker。沿用旧XPath的私有输出握手记录器，不改变
+应用解析器、旧14项JWT/XPath测试或任何依赖；这14项另跑全绿（engine0.418s/authsession0.553s）。
+日志`/private/tmp/openreader-runtime-foundation-parser-{initial,repeat,race}-red.log`及
+`/private/tmp/openreader-runtime-foundation-prior-core-controls.log`。
+
+这是第二批3leaf反例，不是第7节3red重复计数；两个阶段共6leaf，norm仍明确库级。先独立
+test/docs checkpoint推送核验，之后才更新Go/MVS/base。故意red不能推main或触发正式发布；
+全量回归、候选runtime/卷/审计/浏览器/可信OCI门待基础链实现后重新运行。

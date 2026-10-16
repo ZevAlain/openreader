@@ -21,6 +21,10 @@ Three original reds/11controls, fullGo/API116.144s, parser/auth package race, ve
 No session/token/data/URL/schema migration; other modules/base/go-minimum remain unchanged at this
 checkpoint. Future Go1.26.9/MVS/base updates and exact-candidate historical/portable gates still required.
 
+Supplemental foundation tests add3actual red leaves/5controls for document parsing and dependency-level
+normalization. No schema/module/base/lock change or user-data operation; subprocesses are owned and
+reaped. This stage remains test-only and cannot replace future exact-candidate old-volume/backup gates.
+
 ## 2026-10-15 local-import durable commit implementation (no migration)
 
 See [`local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md`](local-book-import-durable-commit-lifecycle-fixed-baseline-second-audit-p2-contract.md).
