@@ -10,6 +10,11 @@
 未列包/C条件不默认为clean。先独立合同、后有界实际测试、再实施；应用/模块/镜像/生产未改，
 上一fc4692c正式交付保持，整体parser/OS-C/设备/重构继续。
 
+合同5bb35cf先独立推送后，仅加SQL测试：空聚合NULL/冗余UPSERT索引2实际red、3正常控制
+三轮/race/固定Go1.26.9原生Linuxarm64同样结果；既有db12root测试通过。不是WAL-reset/
+zlib复现，测试阶段尚需harness故障/driver取消复用/确定性时序/OS门，应用和依赖仍未改；
+详见合同第6节，只能feature test checkpoint，不可红灯发布或缩小整体范围。
+
 ## 2026-10-16 当前切片：前端客户端与构建依赖 advisory 补充
 
 [`frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)

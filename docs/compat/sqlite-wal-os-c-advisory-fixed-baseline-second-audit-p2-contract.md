@@ -5,6 +5,7 @@
 `fc4692c474df30d1f0427cba57e7ebc67c91b156`，OCI index
 `sha256:74ef48fd0c9f5547fff9787fb97763fff22e3500a376be05d5379f19dd8af765`。
 状态 **inventory-complete / contract-only / behavioral-tests-pending / implementation-not-started**。
+以上为提取时快照；当前第一批实际反例和仍未结束的测试阶段见第6节。
 前端维护交付保持，不把npm/Go扫描当作C、OS或数据库持久性问题的覆盖。生产另一Mac不操作，
 原书已恢复事件关闭；本合同不声称发现生产数据库损坏或远程利用。
 
@@ -102,3 +103,35 @@ vet、frontend788/build、两原有审计门、真实HTTP+SQLite/三视口、精
 允许差异仅已签收技术栈/多用户安全适配和必要持久性/依赖维护；任何备份格式或WAL/SQL运行
 语义变化均须先另签合同。OS/C广度、完整parserCPU/scan/峰值FD/late-tx、设备及全量重构仍开放。
 本轮未发布新镜像、未改变生产；上一fc4692c维护交付不重做、不倒填为本项已完成。
+
+## 6. 独立合同后的第一批实际库级反例（2026-10-16，测试阶段未结束）
+
+合同 `5bb35cf5d49f47c550e6083c78f0cbd664716581` 已独立推送并远端精确核验。首次GitHub
+TLS握手中断不计推送成功；普通HTTP/1.1非force重试后成功核验，没有关闭TLS校验或改main。
+随后仅新增 `backend/db/sqlite_c_maintenance_contract_test.go`；Go图/Dockerfile/frontend/
+workflow/应用未改，仍为driver1.14.22/SQLite3.45.1。
+
+自有0行/2行内存DB、固定短SQL/绑定Unicode值；parent进入工作握手后计时，startup5s/work2s/
+overall10s/输出16KiB，取消/中断kill+Wait；worker不生成子进程。没有读取用户DB/文件、使用
+外部可执行PoC或等待随机损坏。两项实际old失败：
+
+- NOT NULL空聚合返回 `(0,0)`，应为 `(1,0)`，裸列在空聚合中实际为NULL。
+- 冗余UPSERT后同一两行表扫描计数2、索引路径计数3，索引与表不一致。
+
+普通绑定值/单UPSERT、普通NULL空表、WAL双连接rollback/checkpoint/reopen/原值和integrity
+三项正常控制均通过。原样三轮每轮 **2实际库级red/3正常控制绿**，1.319/0.417/0.426s；
+同代码race保持2/3（3.636s），无DATA RACE/启动失败/deadline/未回收worker。
+完整db包既有12个root测试均通过，失败精确为新增两叶（包0.496s）；默认未设置case时worker
+测试直接返回，不将其额外算正常业务控制。
+
+固定官方Go1.26.9/Alpine Linux原生arm64/CGO1容器（768MiB/2CPU/128PID硬限，源码及module
+cache只读，自有tmpfs，临时安装编译器）原样执行仍2red/3green，0.046s；实际版本由C接口
+读取为3.45.1。该项是源编译测试探针，不是对发布应用添加SQL调试接口，也没有升级生产镜像。
+容器已移除，日志 `openreader-sqlite-c-{initial,repeat-1,repeat-2,repeat-3,race,full-db}-red.log`
+和 `openreader-sqlite-c-linux-arm64-red.log` 在 `/private/tmp/` 保留。
+
+这两项是**条件库级正确性反例，不是实际WAL-reset竞态或zlib溢出复现**，不能替代第4节完整
+测试阶段。harness故障注入、driver取消/复用/Rows.Close、WAL确定性时序、Linux编译feature
+查询、APK修复取证和精确OS/C门测试仍需继续；先独立保存test/docs检查点，不将此红灯推main。
+当前状态 **partial-library-reds-verified / implementation-not-started**；全部green回归、候选卷/
+正式发布及整体重构待办，Docker仍fc4692c，生产未操作或新核验。
