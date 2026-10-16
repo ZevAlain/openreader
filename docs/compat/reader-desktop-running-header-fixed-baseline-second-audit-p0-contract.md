@@ -1,7 +1,7 @@
 # Reader 桌面运行标注合同盘点（P0）
 
-状态：**contract-only**。本切片只写文档；Reader 产品代码、单元合同和浏览器合同都没有改。
-红测与实现按第 8 节在后续阶段进行。
+状态：**implementation-complete / regression-validated**。合同 `4092ea2`、红测 `4897a62`、实现 `035762d`，
+验证记录见第 10 节。提交只在本地，未推送、未合入 main；没有新镜像；生产未动。
 
 固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。  
 当前基线：`OpenReader@c1172d1`（`claude/sleepy-moser-50391e`，基于 `origin/main` `5bc38a3`；
@@ -187,3 +187,91 @@
 - 书级进度百分比算法；移动端 `第 x/y 页`；EPUB 合同的移动端改写（`41fd3e6`）。
 - 浏览器标签页标题（另行盘点）。
 - API、数据库、浏览器存储 key、持久文件、镜像与生产：本切片都不改，不在本地构建或推送镜像，不做任何生产操作。
+
+## 10. 实施与验证（2026-10-16）
+
+| 提交 | 阶段 | 内容 |
+| --- | --- | --- |
+| `4092ea2` | 合同 | 本文件、gap analysis 与 matrix。 |
+| `4897a62` | 红测 | 7.1：单元合同第一条断言改为“页头只包含运行标题”，并加两条 `doesNotMatch`（模板不渲染 `{{ chapterLabel }}`、没有 `const chapterLabel = computed`），其余断言不变。7.2：EPUB 合同把页头三条断言提到所有视口，移动端保留 `第 x/y 页`，桌面改为 `.reader-page-control .progress-box` 可见且匹配 `^\d+%$`。7.3：连续合同 `initial` 采样加 `headerText`，断言它等于 `runningTitle`。 |
+| `035762d` | 实现 | `Reader.vue` 删除页头里的计数 span 和 `chapterLabel` 计算属性，共 2 行。没有改 CSS、API、存储或后端。 |
+
+EPUB 合同里，按视口分支的断言放在“运行标题可见”（`:713`）之后、“页头文本只等于运行标题”（`:737`）之前。这样移动端
+的断言顺序和 `41fd3e6` 相同（可见 → 页码 → 页头 → body）；桌面的 `N%` 控制（`:726`、`:731`）排在红点之前，红测
+运行本身就证明这条控制在旧实现上通过，符合 7.2“控制在当前实现上也应通过”的要求。
+
+**环境**：用本 worktree 构建的 Go 二进制加 `vite build` 生产前端。`git diff 4092ea2 035762d -- backend` 为空，
+所有代码状态共用同一个二进制。每个代码状态单独起一个服务，各用独立的临时 data/cache/library 和随机开发 JWT
+secret（未输出）。Go 1.26.9（`go.mod` 选择的工具链）、Node v26.4.0、Playwright 1.61.1 / Chrome Headless Shell
+1228（149.0.7827.55）。会话沙箱禁止 loopback 监听，服务、浏览器合同和完整 `npm test` 都在沙箱外运行。第 2 节的
+上游证据在 `fa22f271` 的临时浅克隆中复核（会话 scratchpad；沙箱不允许写 `/private/tmp/changshengyu-reader-dev`）。
+
+**连续合同的逐视口运行**：提交的脚本一次运行里按 1440 → 390 → 360 → 1024 依次跑 scroll 和 scroll2，遇到第一处
+失败就退出。为了逐视口记录红点，在会话 scratchpad 生成了临时副本，只改两处：Playwright 辅助模块改用绝对路径
+导入；`main()` 的视口列表和模式列表改为从环境变量读取（模式默认仍是 scroll → scroll2）。断言、失败重试和进度
+事务用例都没动。`4092ea2` 基线运行时工作区已是红测脚本，所以两个基线都用 `git show 4092ea2:<脚本>` 取出的副本：
+EPUB 副本只改了导入路径；连续合同副本按上面的方法生成，并按原顺序传入四个视口。实现后的结论以提交的脚本原样
+运行为准。
+
+**单元合同**（`readerTextModeFrameContract.test.mjs`）与 frontend `npm test`：
+
+| 代码状态 | 单元合同 | `npm test` |
+| --- | --- | --- |
+| `4897a62`（红测，产品代码同 `4092ea2`） | FAIL `:114`：页头只包含运行标题 | 787/788，唯一失败就是这一条 |
+| `035762d` | PASS | 788/788 |
+
+**EPUB 合同**（`reader-epub-contract.mjs`，每个视口单独运行）：
+
+| 代码状态 | 1440×900 | 390×844 | 360×800 |
+| --- | --- | --- | --- |
+| `4092ea2`（旧脚本，三视口一次运行） | PASS | PASS | PASS |
+| `4897a62`（红测） | FAIL `:737`：页头应只含运行标题，实际为 `第 3 章 第二章3 / 3`；之前的可见性和桌面 `N%` 控制都通过 | PASS | PASS |
+| `035762d` | PASS | PASS | PASS |
+
+`035762d` 上缺省 `SMOKE_VIEWPORTS` 的三视口一次运行也通过。
+
+**连续阅读合同**（`reader-continuous-contract.mjs`）：
+
+| 代码状态 | 1440×900 | 1024×1366 | 390×844 | 360×800 |
+| --- | --- | --- | --- | --- |
+| `4092ea2`（旧脚本，四视口一次运行） | PASS | PASS | PASS | PASS |
+| `4897a62`（红测，逐视口） | FAIL `:178`：scroll 与 scroll2 的页头文本都是运行标题后面多出 `1 / 6` | FAIL `:178`，同左 | PASS | PASS |
+| `035762d`（提交的脚本原样运行，四视口一次跑完） | PASS | PASS | PASS | PASS |
+
+提交的红测脚本原样运行时停在 `1440/scroll :178`。
+
+**对照合同**（`035762d`）：`reader-text-modes-contract` 通过（桌面文档滚动、固定阅读框和点击区）；
+`reader-mobile-contract` 通过（desktop/mobile/adaptive-iPad/forced-mobile-iPad）。
+
+**服务日志**：除 WebSocket 外没有 4xx/5xx，也没有 panic。401 全部来自 `/ws/sync`：走 mock 的合同（连续阅读、
+文本模式、移动端）用的是假 token，而 `page.route` 拦不到 WebSocket，所以连接到真实服务时被拒。这些合同本来就会
+过滤这类控制台错误，`4092ea2` 基线上也一样。
+
+**临时变异**：每项都只改工作区里的 Reader.vue，先跑单元合同，再构建到独立目录，随后立即 `git checkout` 还原，
+确认工作树与 HEAD 一致，没有提交。浏览器合同对 `035762d` 的脚本运行：
+
+| 变异 | 单元合同 | EPUB 1440×900 | EPUB 390×844、360×800 | 连续 1440×900、1024×1366 | 连续 390×844、360×800 |
+| --- | --- | --- | --- | --- | --- |
+| M1：桌面在页头里用内联表达式重新渲染计数，不经过 `chapterLabel` | FAIL `:114` | FAIL `:737`，实际为 `第 3 章 第二章3 / 3` | PASS | FAIL `:178`，多出 `1 / 6` | PASS |
+| M2：计数移出页头，恢复 `chapterLabel`，作为 `hidden` 元素在所有视口留在 DOM 里 | `:114` 通过，FAIL `:119`：模板不得渲染 `{{ chapterLabel }}` | FAIL `:742`：body 含 `3 / 3`（`:737` 页头相等已通过） | FAIL `:742`，同左 | PASS | PASS |
+| M3：桌面整个不渲染页头（`v-if` 加上 `isMobileReader`，照搬上游空 top-bar） | FAIL `:114` | FAIL `:710`：运行标题等待 30 秒超时 | PASS | FAIL `:152`：`initial` 采样抛 `TypeError`，页头为 null（`:156` `header.getBoundingClientRect()`） | PASS |
+
+- M1 没有直接恢复原来那一行，是为了证明单元合同守的是页头结构，而不只是名字匹配。原样恢复那一行就是
+  `4092ea2` 的产品代码，红测阶段已经覆盖。
+- M2 证明“隐藏的计数也不允许”有两道防线：EPUB 的 body 断言和单元合同。连续合同只比较页头文本，所以通过，与
+  7.3 的设计一致。
+- M3 证明这些测试同时守住用户要求的桌面运行标题：照上游把桌面页头整个删掉，单元合同、EPUB 1440×900 和连续合同
+  的两个桌面视口都会失败。
+- 三个变异服务的日志同样没有非 WebSocket 的 4xx/5xx，也没有 panic。
+
+**其余门**：
+
+- frontend `npm run build`：通过，只有既有的两条 Rolldown `#__PURE__` 注释位置警告。
+- 跳过并说明原因：Go `test`/`vet`/`race`（后端无 diff）；依赖 advisory 门、Compose 与卷门（依赖、Dockerfile、
+  数据格式都没改，卷门只在 Actions 上运行）；其他 Reader 浏览器合同（本切片只删掉页头的一个子元素；`scripts/smoke`
+  中只有 EPUB 与连续合同读取 `.reader-page-head`，CBZ 不渲染页头）。
+- `035762d` 改了 `frontend/**`，命中 `docker-publish.yml` 的路径过滤，合入 main 会触发镜像发布；是否合入由用户决定。
+
+**状态**：Git 为 `claude/suspicious-ptolemy-1af85f` 上的本地提交（基于 `claude/nervous-saha-c99e83` 的 `4092ea2`，
+其中包含 `claude/sleepy-moser-50391e` 的 4 个提交），未推送、未合入 main。镜像：未构建、未推送，已发布的镜像仍带
+桌面计数。生产：未访问、未操作。

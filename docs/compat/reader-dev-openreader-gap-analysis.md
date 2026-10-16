@@ -12,7 +12,14 @@
 “retain desktop count”断言和 EPUB 合同桌面分支的 `3 / 3` 等待，并在连续阅读合同里加“页头文本只等于运行标题”，
 这些断言在当前实现的桌面视口上应失败。完整合同见
 [`reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md`](reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md)。
-当前状态为 **contract-only**：产品代码和测试都没有改。
+合同 `4092ea2` 先独立提交。红测 `4897a62` 按测试计划改写三处断言，在当前实现上：单元合同在 `:114` 失败
+（frontend 787/788）；EPUB 1440×900 在 `:737` 失败，页头实际为 `第 3 章 第二章3 / 3`，此前新增的桌面右栏 `N%`
+控制已通过；连续阅读合同 1440×900 与 1024×1366 的 scroll/scroll2 都在 `:178` 失败，页头多出 `1 / 6`；390×844、
+360×800 照常通过。实现 `035762d` 只删掉 `Reader.vue` 的计数 span 和 `chapterLabel`（2 行）。本地 Go 服务加生产
+前端上，EPUB 三视口、连续阅读四视口、text-modes 与 mobile 合同全部通过，frontend 788/788 与 build 通过。三项
+临时变异（桌面用内联表达式重新渲染计数、计数作为隐藏元素留在页头外、桌面不渲染页头）都按预期变红。当前状态为
+**implementation-complete / regression-validated**。实现改了 `frontend/**`，合入 main 会触发镜像发布，由用户
+决定；提交只在本地，未推送，没有新镜像，生产未动。
 
 ## 2026-10-16 P0 Reader EPUB 移动端章节计数合同裁决
 

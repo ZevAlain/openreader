@@ -10,6 +10,13 @@
 contract-only；下一步红测（改写单元“retain desktop count”与EPUB桌面`3 / 3`，连续合同加“页头只含运行标题”），
 再只改Reader.vue删除计数，最后三视口回归与记录。实现提交改frontend，合入main会触发发布，由用户决定。
 
+记录（取代上段状态）：合同4092ea2→红测4897a62（单元`:114`失败，frontend 787/788；EPUB 1440在`:737`页头实为
+`第 3 章 第二章3 / 3`，新增桌面`N%`控制先通过；连续1440/1024的scroll/scroll2在`:178`多出`1 / 6`；390/360照常
+通过）→实现035762d（Reader.vue删计数span与chapterLabel，共2行）。本地Go服务+生产前端：EPUB三视口、连续四视口、
+text-modes、mobile全部通过；frontend 788/788与build通过；三项临时变异（桌面内联计数、页头外hidden计数、桌面无
+页头）均按预期变红。状态implementation-complete / regression-validated；合入main会触发发布，由用户决定；本地
+未推送，无新镜像，生产未动。
+
 ## 2026-10-16 当前切片：Reader EPUB 移动端章节计数合同裁决
 
 见[`reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md`](reader-epub-mobile-chapter-counter-fixed-baseline-second-audit-p0-contract.md)。

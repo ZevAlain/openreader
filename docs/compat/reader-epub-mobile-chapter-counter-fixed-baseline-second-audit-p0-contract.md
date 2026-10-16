@@ -67,8 +67,8 @@
 
 补记（2026-10-16）：最后一行已另行盘点，见
 [`reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md`](reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md)：
-桌面运行标题为用户要求的 `acceptable-change`，桌面 `N / total` 为 `must-fix`（contract-only）。第 6 节第 2 条的桌面
-`3 / 3` 等待会在那个切片的红测阶段改写。
+桌面运行标题为用户要求的 `acceptable-change`，桌面 `N / total` 为 `must-fix`，已由 `035762d` 删除。第 6 节第 2 条的
+桌面 `3 / 3` 等待已在那个切片的红测 `4897a62` 改写：页头断言改为所有视口共用，桌面改为断言右栏 `N%`。
 
 ## 6. 目标合同（浏览器）
 
