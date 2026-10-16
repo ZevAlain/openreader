@@ -710,30 +710,40 @@ async function assertFrameContract(page, viewport, resourceResponses) {
   await page.waitForFunction(() => (
     document.querySelector('.reader-running-chapter-title')?.textContent?.trim() === '第 3 章 第二章'
   ))
+  assert.equal(
+    await page.locator('.reader-page-head .reader-running-chapter-title').isVisible(),
+    true,
+    'running header must visibly show the current EPUB chapter',
+  )
   if (viewport.width <= 750) {
-    assert.equal(
-      await page.locator('.reader-page-head .reader-running-chapter-title').isVisible(),
-      true,
-      'fixed upstream mini top-bar must visibly show the current EPUB chapter',
-    )
     assert.match(
       await page.locator('.reader-mobile-bottom.visible .mobile-progress-slider-row > span').innerText(),
       /^第 \d+\/\d+ 页$/,
       'mobile tool layer must show upstream in-chapter page progress',
     )
-    assert.equal(
-      await page.locator('.reader-page-head').evaluate(element => element.textContent.trim()),
-      '第 3 章 第二章',
-      'fixed upstream mini top-bar shows only the current chapter title',
-    )
-    assert.equal(
-      await page.evaluate(() => document.body.textContent.includes('3 / 3')),
-      false,
-      'fixed upstream mini interface has no chapter N / M counter, visible or hidden',
-    )
   } else {
-    await page.waitForFunction(() => document.body.textContent.includes('3 / 3'))
+    const desktopProgress = page.locator('.reader-page-control .progress-box')
+    assert.equal(
+      await desktopProgress.isVisible(),
+      true,
+      'fixed upstream desktop right rail must keep the book progress entry',
+    )
+    assert.match(
+      (await desktopProgress.innerText()).trim(),
+      /^\d+%$/,
+      'fixed upstream desktop right rail shows book progress as N%',
+    )
   }
+  assert.equal(
+    await page.locator('.reader-page-head').evaluate(element => element.textContent.trim()),
+    '第 3 章 第二章',
+    'running header shows only the current chapter title',
+  )
+  assert.equal(
+    await page.evaluate(() => document.body.textContent.includes('3 / 3')),
+    false,
+    'fixed upstream reader has no chapter N / M counter, visible or hidden',
+  )
 
   await page.goBack({ waitUntil: 'domcontentloaded' })
   assert.equal(new URL(page.url()).pathname, '/', 'EPUB cross-chapter navigation must not consume browser back history')

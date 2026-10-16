@@ -163,6 +163,7 @@ async function runContinuousViewport(browser, viewport, mode) {
         indexes: [...document.querySelectorAll('.chapter-content')].map(element => Number(element.dataset.index)),
         headerPosition: window.getComputedStyle(header).position,
         headerPointerEvents: window.getComputedStyle(header).pointerEvents,
+        headerText: header.textContent.trim(),
         runningTitle: runningTitle.textContent.trim(),
         runningTitleLeft: runningTitleRect.left,
         runningTitleRight: runningTitleRect.right,
@@ -174,6 +175,7 @@ async function runContinuousViewport(browser, viewport, mode) {
     })
     assert(initial.indexes.join(',') === '0,1', `${viewport.width}: initial blocks ${initial.indexes}`)
     assert(initial.runningTitle === `第 1 章 ${chapterTitle(0)}`, `${viewport.width}: running title ${JSON.stringify(initial.runningTitle)}`)
+    assert(initial.headerText === initial.runningTitle, `${viewport.width}/${mode}: running header must contain only the running title ${JSON.stringify(initial.headerText)}`)
     assert(initial.headerPointerEvents === 'none', `${viewport.width}: running header intercepts input`)
     assert(initial.runningTitleLeft >= 0 && initial.runningTitleRight <= initial.headerRight + 1, `${viewport.width}: running title overflows header`)
     assert(initial.headerPosition === 'fixed', `${viewport.width}: running header position ${initial.headerPosition}`)
