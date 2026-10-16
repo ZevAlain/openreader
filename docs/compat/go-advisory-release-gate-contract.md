@@ -1,6 +1,6 @@
 # Go advisory 发布门合同（2026-10-16）
 
-状态：implemented / 59-contract-tests-pass / live-source-gate-pass / trusted-Actions-pending。补充
+状态：implemented / 59-contract-tests-pass / live-source-gate-pass / trusted-Actions-pass / Docker-b2632a4-published。补充
 [`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)
 第4–5节；不是另一个产品行为或数据库迁移。上游固定 fa22f271 的认证、规则、旧书和持久化合同不变。
 
@@ -74,3 +74,7 @@ ERR_MODULE_NOT_FOUND，只有 **1个 availability/TDD red**，不是协议分支
 进程组注册SIGINT/SIGTERM清理并在close移除listener。中断/超限/超时都必须kill并等待close。
 最终59/59零skip及真实gate再次终态通过，日志`/private/tmp/openreader-go-advisory-gate-59-{unit,real}.log`；
 不修改Go/前端/持久化；这不是新漏洞反例或生产验证。
+
+最终可信Actions38841543709已success，59合同和真实Linuxamd64 source gate均通过，再通过
+native/新旧卷/portable门后发布b2632a4双架构index。独立OCI/实际二进制及精度证据见基础链合同
+第12节；source不适用项仍限于现场前提与期限，不将剥离binary升级成符号清零或frontend/OS-C完成。

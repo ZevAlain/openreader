@@ -2,6 +2,16 @@
 
 Status: working compatibility ledger; implemented migrations and remaining action-level audits are recorded below.
 
+## 2026-10-16 runtime foundation published (no migration)
+
+The Go1.26.9/MVS/officialbase/security-gate slice b2632a4 passed trustedActions38841543709, including
+exactnativeamd64 fresh/historical/portable-v1-v2/cross-user/restart/hash gates, and published bothLinux
+architectures. IndependentOCI/config/actualbinary evidence and the limits of localarm64/runtime checks
+are in focused runtime contract section12. No SQLite/GORM/schema, mount/archive/cache/backup, session/
+token/URL/browserkey migration; data/cache/library and oldaccounts/books retained. Source minimumGo
+is explicit in bothREADMEs; consumers still pull images. Production anotherMac not operated/reverified;
+frontend/OS-C/otheraudit/device work remains open, not silently considered resolved by this release.
+
 ## 2026-10-15 runtime/dependency advisory inventory (no migration)
 
 [`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)

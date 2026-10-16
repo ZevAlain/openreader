@@ -1,10 +1,10 @@
 # 运行时与依赖 advisory 第二轮固定基准合同（P2）
 
 审查日期：2026-10-15。固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。
-源码基线：`36e0697f777d54a2df224cc0d9df9d10eba25781`；已发布应用：`b4ff9ca`。
-状态：**foundation-local-candidate-validated / advisory-gate-implemented / trusted-release-pending / wider-advisory-open**。
+初始源码基线：`36e0697f777d54a2df224cc0d9df9d10eba25781`；当时已发布应用：`b4ff9ca`。
+当前状态：**Go-foundation-regression-validated / Docker-b2632a4-published / wider-advisory-open / awaiting-device-verification**。
 
-初始提交仅合同；第7–9节记录独立红测/早期checkpoint，第10节为当前基础链实施证据。不是生产受攻击结论；
+初始提交仅合同；第7–9节记录独立红测/早期checkpoint，第10–12节为基础链实施/验证/发布证据。不是生产受攻击结论；
 已恢复的原书故障不重开，生产另一台Mac不升级、不写入。旧“npm8high/advisory待审计”记录由本项
 开始逐证据收敛，不以扫描数量或版本陈旧直接宣称可利用。
 
@@ -270,3 +270,44 @@ runtime3.23.6/musl1.2.5-r23/CA存在，非root只读断网下动态链接检查�
 两架构构建发布及独立OCI/config仍待执行；本地arm64不是全部平台证明。当前切片可进入可信
 发布门，不称整个advisory或重构完成：前端8high逐项维护、OS/C、parserCPU/scan/峰值FD/late-tx、
 真实设备及更广审计继续开放。Docker已发布仍b4ff9ca；生产最后只读b2b32f7，均不能用本地448替代。
+
+## 12. 可信双架构发布与独立实际二进制核验（2026-10-16）
+
+上节未发布状态为历史。本轮实现 **b2632a4c248a53ce7bade8bdba7bdef66b89b236** 已普通快进推送
+main，可信 [Actions38841543709](https://github.com/changshengyu/openreader/actions/runs/38841543709)
+终态success，全部门通过：backend、frontend762/762、build、Compose、真实隔离HTTP、59审计门
+合同、实际Linuxamd64 source审计、nativeamd64候选、fresh/portable-v1-v2/跨用户/重启及历史
+TXT/EPUB/UMD/CBZ/相对cache/owner/hash、最终两架构构建推送和平台核验。
+CI实际source工具链go1.26.9/linux-amd64/CGO1，同DB2026-10-08、1纯模块OpenPGP、0包/符号；
+现场三图前提通过，不以CLI exit0、OSV记录总数或ID单独放行。
+
+已发布 `ghcr.io/changshengyu/openreader:b2632a4` 和 `latest`；2026-10-16T03:06:08.304Z匿名只读
+核验两tag相同实际index字节SHA：
+`sha256:936939c55f86fe456af4425ac35506fccd7ba93dd2858402446b7ba01d2284ab`。
+
+| 真正平台 | manifest digest | config digest |
+| --- | --- | --- |
+| linux/amd64 | `sha256:e1e14f024dc5e6622a65e5f952ad99133d2505b59e60ed5bd47e01d10d93f225` | `sha256:a98913b00999d580fc2f2d7766390a49159e9dc4829996d6780f69099e2f0036` |
+| linux/arm64 | `sha256:d0e673cac38e03482dcd240bb5154f38f15ba238487d036c315dd2ac326959d7` | `sha256:18f95c6a603133367d56d1f62f06c003b65cd341d2b876ca6a15eb2cf4cd64f5` |
+
+两config的os/arch/revision均精确匹配完整b263。逐层有界下载并核验真实blob SHA/size，经tar仅
+stdout读取最终实际`app/openreader`（不向宿主解压路径或执行外部脚本），二进制均含完整revision，
+buildinfo实际Go1.26.9/linux对应架构/CGO1和本轮选中模块。完整二进制SHA分别
+`80ff811e1e89c4ed2ecaf0e683ef4f7e29862790cd3ce92c9dab5bb6d2d8128e`（amd64）、
+`110d1860a2c05a5298baffdd4137f1eaa5549136ec6207e2dc2e92bd6b228d1b`（arm64）。
+
+两个实际发布二进制的官方扫描及extract均终态0、stderr空；都为pkgSymbols0，唯一OpenPGP
+15finding/7枚举symbol只能计**模块级回退**，非7条可达或整镜像clean。原始/summary/extract
+`/private/tmp/openreader-runtime-foundation-published-{amd64,arm64}-*`保留。
+额外将实际已发布arm64二进制只读挂入同pin的本地candidate runtime/同源码Node22资产，真实
+health确认完整b263，并通过临时SQLite/HTTP/三视口与第11节相同交互。**不是完整远端arm64
+镜像的端到端卷测试**；完整amd64候选卷门由CI完成，local448整镜像arm64卷门单列。
+日志`*-published-arm64-browser.log`、截图`/private/tmp/openreader-runtime-foundation-browser-LfXPL4`，
+容器已移除。独立registry report `*-published-verification.json`，完整CI日志`*-actions-final.log`。
+
+允许差异仅支持中Go1.26.9/MVS/官方构建基础和安全拒绝不终止/过量分配；没有业务API/token/
+schema/旧URL/data-cache-library/backup迁移。源码最低Go版本已显式提高，Docker用户仍直接拉取。
+本记录是发布后纯文档ledger，后续Git HEAD可晚于镜像commit，不意味着新应用镜像未同步。
+生产另一台Mac本轮未操作/未重新核验，最后独立只读记录仍b2b32f7，不等于现在已升级b263。
+原恢复事件关闭；旧扫描8high前端包逐项维护、OS/C、完整parserCPU/scan/峰值FD/late-tx、设备及
+更广重构仍开放，不把这个已交付维护切片升级成完整advisory或整个重构完成。

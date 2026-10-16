@@ -5,7 +5,8 @@
 见[`go-advisory-release-gate-contract.md`](go-advisory-release-gate-contract.md)。这是源扫描的失败关闭
 门，不是上游功能重做：精确协议/终态/Go/DB/SBOM/图校验，唯一 OpenPGP 不适用项须现场核验
 三图且有复审期限；binary剥离精度单列。独立合同ceb6c28→测试35c6330后工具/接线已实施，
-含中断清理的最终59合同与真实source gate通过；可信Actions尚待执行，不称整个安全审计完成。
+含中断清理的最终59合同与真实source gate通过；可信Actions38841543709已success并发布b2632a4，
+仍不称整个安全审计完成。
 不修改用户API、数据或原已恢复事件；先合同、再新工具合同测试、后实现，更广重构不缩小。
 
 ## 2026-10-16 当前切片：运行时与依赖 advisory（基础链源码已验证，候选门待办）
@@ -46,6 +47,14 @@ Go1.26.9/CGO1/Alpine3.23.6，fresh/historical/portable/backup/restart及真实�
 两个Linux独立rootedfs非root合同通过。剥离binary仍pkgSymbols0，OpenPGP只记模块回退；
 58项失败关闭gate合同/真实source扫描通过。可信Actions双架构/独立OCI未完成，未正式发布；
 frontend8high/OS-C/设备及全量重构仍开放，不更改生产或重开已恢复原书事件。
+
+基础链合同第12节正式发布取代上段未发布：b2632a4/fullSHA见合同，可信Actions全部门通过，
+`ghcr.io/changshengyu/openreader:b2632a4`/latest独立index
+`sha256:936939c55f86fe456af4425ac35506fccd7ba93dd2858402446b7ba01d2284ab`。
+两真实Linux manifest/config/revision及实际Go1.26.9/CGO1 binary逐层hash核验；两剥离binary
+OpenPGP仍只计模块回退。已发布arm64 binary在相同pin本地runtime的真实三视口追加通过，
+不是完整远端arm64镜像卷门。允许runtime/security适配，无API/数据迁移；production未新核验。
+状态Go-foundation-delivered/wider-advisory-open，不缩小frontend/OS-C/parser/设备/整体未完成范围。
 
 ## 2026-10-15 当前切片：本地书导入持久提交（共享核心已验证并发布，后续开放）
 

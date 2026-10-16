@@ -2,6 +2,14 @@
 
 Status: working contract. Keep this file updated when endpoint semantics change.
 
+## 2026-10-16 runtime foundation delivery (API unchanged)
+
+Implementation b2632a4 passed trustedActions38841543709 and published bothLinux architectures; focused
+runtime contract section12 records exactOCI/config/binary evidence. Fullrace, source-builtHTTP, candidate
+volumes and threeviewport Reader controls passed. Existing auth/status/error, numericresumeURLs, imports
+and caller isolation remain unchanged; no token/session migration or forced reauthentication. Frontend/
+OS-C/wideradvisory/device acceptance remain open; production anotherMac was not operated or reverified.
+
 ## 2026-10-15 runtime/dependency advisory inventory (no API change)
 
 See [`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md).

@@ -3,8 +3,13 @@
 2026-10-16追加 Go source advisory 发布门合同：
 [`compat/go-advisory-release-gate-contract.md`](compat/go-advisory-release-gate-contract.md)。
 只允许带完整现场导入图/版本/受影响包校验和复审期限的 OpenPGP 不适用项，不新增通配忽略。
-独立合同/测试后工具与接线已实施，含中断清理的59合同及真实source扫描通过；可信Actions待运行，
+独立合同/测试后工具与接线已实施，含中断清理的59合同及真实source扫描通过；可信Actions38841543709通过，
 不替代二进制/OS/C/前端审计。
+
+2026-10-16交付维护切片：b2632a4双架构已发布，精确OCI index/config/实际二进制Go1.26.9/CGO1
+独立核验；CI nativeamd64新旧卷/portable门和本地完整race/三视口通过，见基础链合同第12节。
+两个实际剥离binary的OpenPGP报告均只有模块精度，source不适用前提与到期复审门仍生效。
+未声称C/OS/Node/frontend无漏洞；原8high前端包、其它advisory/设备/全量审计仍未关闭，未操作生产。
 
 Use this checklist for security-sensitive changes and release reviews.
 
