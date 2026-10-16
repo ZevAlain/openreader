@@ -11,6 +11,11 @@ tokens or silently reinterpret stored values to avoid a dependency fix. CurrentS
 documentedWAL-reset maintenance; minimumcandidate3.51.3/driver1.14.36 is verifiedmetadata, not yet
 applied. Newcontract→boundedactualtests→implementation and exactoldvolume/recovery gates required.
 
+Update (branch only, unreleased): build commit 7a1bf82 applies driver v1.14.36/SQLite 3.51.3 with no
+schema, migration or storage-format change; WAL, pooled connections, busy_timeout and synchronous stay
+as before. Old-DB, fresh/historical volume and portable-backup gates still run in Actions before any
+release. See focused contract section 10.
+
 ## 2026-10-16 frontend dependency advisory supplement (published, no migration)
 
 Focused frontend dependency contract inventories necessary same-major client/build patches only. Existing

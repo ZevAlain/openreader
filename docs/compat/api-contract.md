@@ -10,6 +10,10 @@ auth/status/errors, settings/progress/group UPSERT, Reader URLs and JSON/portabl
 Future necessary dependency maintenance requires bounded red/normal controls before implementation;
 neither library SQL examples nor package version gaps prove a current API exploit. No production action.
 
+Update (branch only, unreleased): build commit 7a1bf82 applies driver v1.14.36/SQLite 3.51.3. No route,
+auth, request/response, status or error format changes; bound-value SQL, cancellation and connection reuse
+are held by owned controls. See focused contract section 10.
+
 ## 2026-10-16 frontend dependency advisory supplement (published, API unchanged)
 
 See focused frontend dependency advisory contract. Preserve two actual Axios.create instances, /api vs

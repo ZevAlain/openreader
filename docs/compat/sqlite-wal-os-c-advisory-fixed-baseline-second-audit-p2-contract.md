@@ -221,3 +221,38 @@ in-flight取消控制或两项SQL red替代，也不得在任何记录中写成�
 implementation-not-started**。下一步为独立 `build:` 提交把driver升到第2节精确候选v1.14.36/
 SQLite3.51.3（不跨3.53），同一断言红转绿且全部控制保持；OS/C工具合同测试与zlib构建期修复另行
 推进。镜像仍为fc4692c，未发布新镜像；生产未访问或修改。
+
+## 10. driver v1.14.36 / SQLite 3.51.3 实施与本地回归（2026-10-16，同一断言红转绿）
+
+第9节记录 `fc289a04b61498e526ab8d0ea210cd816d64e4e2` 推送核验后，独立 `build:` 提交
+`7a1bf82` 仅改 `backend/go.mod`/`go.sum`：`github.com/mattn/go-sqlite3` v1.14.22→v1.14.36
+（Origin commit `4ea2a9fb44c7ecc6eee436d26a32ab34a79a87ce`、tag v1.14.36、
+`h1:EyQAxPedU6e4/lGrYcT2+1yVcOLT7ERS6jvTYKzfzgY=`，go.mod hash不变）；`go mod tidy` 只移除旧版本两行，
+`go mod verify` 通过。应用Go代码、gorm sqlite driver v1.5.6、Go最低1.26.9、Dockerfile、workflow、前端均未改；
+不跨3.53系列。
+
+- 候选核验：头文件 SQLITE_VERSION 3.51.3、SOURCE_ID `2026-03-13 10:38:09 737ae4a3…fe6d618`；cgo默认编译
+  参数与旧版逐行相同。Go侧差异为Rows.Close加closemu并去掉finalizer、绑定前clear_bindings、多语句参数不足时
+  关闭语句、新增SetFileControlInt64、文本回调结果内存处理，均由准备绑定/早关Rows/取消/in-flight控制覆盖。
+- 同一断言红转绿：`empty-aggregate-not-null`、`redundant-upsert-index` 通过。实际SQL runtime为3.51.3/
+  `737ae4a3…`，与链接C一致；compile_options唯一变化为MAX_FUNCTION_ARG 127→1000（上游默认上限），
+  FTS3/FTS3_PARENTHESIS/RTREE/THREADSAFE=1保持，FTS5仍未开启。
+- 新driver：两项原red与5项driver控制各连续10轮70/70；4项保护验证各3轮12/12；完整db包全部通过（3.228s）；
+  同切片race通过（15.107s），无DATA RACE；vet通过；in-flight取消22–25µs。
+- 全量回归：backend `go test ./...` 29包ok/7包无测试（沙箱禁止本地监听时4包bind EPERM，沙箱外重跑全过，
+  140s）；`go vet ./...` 通过；关键race `./api ./db ./services/...` 全部通过、无DATA RACE（db与23个services包首轮通过；api首轮
+在go test默认10分钟时限整体超时，超时时正在运行的测试仅2s且无goroutine位于go-sqlite3，改用40分钟时限
+单独重跑1019.965s通过）；frontend按lock
+  `npm ci` 后788/788（沙箱内3项因listen EPERM失败，沙箱外全过）、build通过；审计门合同109/109；实际Go源码
+  扫描pass-with-not-applicable（246 advisories，唯一finding仍为既有不适用GO-2026-5932，DB
+  2026-10-08T22:31:09Z）；前端完整lock 132包0 finding；`docker compose config` 通过；隔离存储读列表/导入
+  HTTP合同（真实Go服务+SQLite，跨用户/WebDAV/LocalStore）通过；`go mod vendor` 构建上下文含v1.14.36/3.51.3
+  头文件，宿主 `-mod=vendor -trimpath` CGO构建通过。
+- 未执行：三视口浏览器（前端未改，本工作树未安装Playwright浏览器）、原生Linux arm64候选、fresh/historical卷与
+  portable备份（main上的Actions执行）、可信双平台构建发布与OCI/binary/C来源核验。WAL-reset确定性调度仍
+  **未复现/open**；修复证据仅为官方3.51.3 source ID（官方WAL文档称3.51.3起修复）与实际runtime版本，
+  未逐行比对官方补丁。
+
+状态 **implementation-complete / locally-regression-validated / Docker-pending /
+wal-schedule-unreproduced**。未合入main，未构建或推送镜像；镜像仍为fc4692c；生产未访问或修改。
+OS/C的zlib构建期修复与APK/secdb门（交接3d）仍开放。

@@ -28,6 +28,13 @@ Claude Code接续后先在同一工作树复现交接基线（2red/7正常/4保�
 如实保留未复现/open，不阻塞必须的driver维护，见合同第9节。下一步独立build:升级v1.14.36；
 OS/C工具门与zlib修复仍开放；应用/模块/镜像/生产未改。
 
+独立build:提交7a1bf82把go-sqlite3升至v1.14.36/SQLite3.51.3（精确commit/h1，cgo参数不变，不跨3.53）：
+两项库级red以同一断言转绿，9正常控制与4保护验证保持；实际runtime为3.51.3/737ae4a3，compile_options
+仅MAX_FUNCTION_ARG变为1000，仍无FTS5。本地全量：Go 29包/vet/关键race（api在40分钟时限1019.965s）、frontend
+788/build、审计门109/109与两项实际扫描、Compose、隔离存储HTTP+SQLite均通过（需监听端口的项在沙箱外执行）。
+浏览器三视口、原生arm64、新旧卷/portable及可信发布待main上的Actions；WAL调度仍未复现；未合main，无新镜像，
+生产未动；OS/C zlib/APK门仍开放，见合同第10节。
+
 ## 2026-10-16 当前切片：前端客户端与构建依赖 advisory 补充
 
 [`frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)

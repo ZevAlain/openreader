@@ -32,6 +32,17 @@ uncommitted non-cancelable mutation fails with the exact ignored-cancellation re
 worker. WAL deterministic scheduling was not written this session and stays unreproduced/open; no
 dependency/app/image/production change. See focused contract section 9.
 
+Build-only 7a1bf82 adopts go-sqlite3 v1.14.36/SQLite 3.51.3 (exact commit/h1, identical cgo flags, no
+3.53 jump). The two library reds turn green with the same assertions; 9 normal controls and 4 harness
+checks hold; runtime SQL reports 3.51.3/737ae4a3, compile_options only raise MAX_FUNCTION_ARG to 1000 and
+FTS5 stays off. Local full Go/vet/critical race (api 1019.965s under a 40m timeout; the default 10m limit expired with
+no goroutine in go-sqlite3), frontend 788/build, 109 gate tests,
+actual Go (only the known not-applicable GO-2026-5932) and full-lock npm scans, Compose and isolated
+HTTP+SQLite storage contracts pass; port-binding suites ran outside the sandbox. WAL-reset ordering stays
+unreproduced; evidence is the official 3.51.3 source ID plus the actual runtime version, not a line-by-line
+patch comparison. Browser/native arm64/volume/trusted publication pending; no image/production change.
+See focused contract section 10.
+
 2026-10-16 frontend supplement:
 [`compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
 Fresh all-lock npm audit8high packages, not8exploits; own tiny bounded fixtures before patches, distinguish
