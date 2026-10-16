@@ -3,7 +3,7 @@
 日期2026-10-16；固定上游 `changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。
 当前源码/远端main `b573aed010419e870afa03a8d3b986d12c0ccd78`（发布后纯ledger），Docker应用
 `b2632a4c248a53ce7bade8bdba7bdef66b89b236`。状态 **contract-committed / behavioral-reds-reproduced /
-implementation-not-started**（以上为合同提取时快照；当前实施验收见第7节）。补充运行时合同第3–5节，不把上一Go维护切片当作完整依赖审计完成。
+implementation-not-started**（以上为合同提取时快照；当前已发布验收见第7–8节）。补充运行时合同第3–5节，不把上一Go维护切片当作完整依赖审计完成。
 
 ## 1. 固定上游与已签收适配
 
@@ -182,3 +182,58 @@ Dockerfile/Compose无diff；没有业务、API、schema、旧URL或持久数据�
 精确候选三视口/认证上传/会话、卷/backup/restart、可信Actions双平台及独立OCI/实际binary
 仍待完成。Docker仍上轮b2632a4，main仍b573aed；另一Mac生产未操作/新核验，原已恢复事件
 不重开。OS/C、全parserCPU/scan/峰值FD/late-tx、设备及整体重构仍开放。
+
+## 8. 精确候选与正式发布终态（2026-10-16）
+
+实施/发布应用 **`fc4692c474df30d1f0427cba57e7ebc67c91b156`**；独立合同7ff39d9→实际红测
+218ad91→实施fc4692c，逐阶段先提交推送/核验，未把红灯状态推main。功能分支与main先分别
+核验，main从b573aed普通快进，没有force。之后仅补本节及关联文档台账，应用字节不再改变。
+
+本地PUSH=0精确fc4692c完整arm64候选通过新卷、历史TXT/EPUB/UMD/CBZ/relative-cache/
+owner-isolation、portable-v1/v2-assets/cross-user/restart。真实Go+SQLite+自有Chromium1228
+**1440×900、390×844、360×800**：真实界面登录200、浏览器原生multipart预检200/确认201、
+修改书名、数值book/read?resume=1正文200、对称几何、mobile默认工具/设置不穿透/中心toggle、
+native wheel与点击翻页、无pageerror。并非mocked API或只验证Node FormData。
+
+另外现有重新认证浏览器门四视口（另含1024×1366）通过显式退出/同账号恢复/跨账号离开Reader/
+旧进度写入0（该门的API层为mock，和上述真实HTTP分开）；自有真实HTTP会话门通过双登录/
+logout204→401/密码重置及删除后REST-WebDAV-WebSocket撤销。完整Go、vet与第7节结果保持。
+同一轮race完成：`./api ./engine ./services/authsession ./services/rootedfs ./services/importstage
+./services/localbook ./services/epubreader ./services/cbzreader` 全部ok，API1040.001s，engine21.840s，
+其余5.791/5.695/3.640/11.666/3.098/2.643s；没有DATA RACE/FAIL或遗留worker，没有重启长测。
+
+可信 [Actions 38868093878](https://github.com/changshengyu/openreader/actions/runs/38868093878)
+**completed/success**，完整后端、Go门60、新npm门49、frontend788/788、build、Compose、隔离真实
+HTTP、native amd64候选、新旧卷/portable、双架构发布和平台验证全部success，无skip。
+实际CI Node22.23.3/npm10.9.9，全锁132包0finding，同第7节lock hash。完整日志和状态保留。
+
+正式标签 `ghcr.io/changshengyu/openreader:fc4692c` 与 `latest`；独立匿名只读Registry核验
+2026-10-16T07:57:42.132Z，二者同一OCI index：
+
+`sha256:74ef48fd0c9f5547fff9787fb97763fff22e3500a376be05d5379f19dd8af765`
+
+- linux/amd64 manifest `sha256:2294d914fc33b8a5f7e753db63d9a51a433a854a31eb73e3c67c5a5aa55a18d3`。
+- linux/arm64 manifest `sha256:8cadf666e05cb1e94e42ed1ff45329a813827baaab76d4d133a7f0851b21d8f4`。
+
+两真实manifest/config/layer按digest/size校验，配置full revision和实际binary内嵌完整fc4692c、
+Go1.26.9/Linux/对应架构/CGO1及必要模块版本逐项核验；**两平台全部63个前端文件哈希均与
+精确已验证候选一致**，不是只信tag或一次扫描输出。原始层、binary、buildinfo及报告保留：
+`/private/tmp/openreader-frontend-advisory-published-verification.json`，产物目录
+`/private/tmp/openreader-frontend-advisory-published-F7VoeE`。
+
+两实际发布binary各自govulncheck1.9扫描/符号extract终态0、stderr空；仍仅GO-2026-5932，
+15个报告/7个列举函数名，但extract pkgSymbols=0，**只能记剥离binary的模块级回退，不是7个
+可达漏洞**。源扫描的精确导入图/受影响包/到期复核条件仍生效；不借前端0finding取消该门。
+
+按上述index digest真正拉取**完整发布arm64镜像**，不是旧runtime覆盖新binary：health完整
+fc4692c/statusok，真实三视口重新走上述UI登录/原生上传/正文/交互全部通过。该完整镜像的新卷、
+历史卷、portable-v1/v2-assets、跨用户、restart追加门也全通过。容器已全部停止移除，自有临时
+卷及日志/截图保留；未删除/挂载/迁移用户目录。浏览器日志`*-published-arm64-browser.log`，
+截图`/private/tmp/openreader-frontend-advisory-browser-NxxNeD`（已查看360截图）；完整CI日志
+`/private/tmp/openreader-frontend-advisory-actions-final.log`。
+
+允许差异仅既有Vue3/Pinia/Go/REST多用户适配与必要同major维护，保留全部API/认证/取消/旧URL/
+browser存储/SQLite/schema/data-cache-library/WebDAV/backup合同。生产是另一台Mac，**未操作或
+新核验commit，不能从本地/CI/推送推断升级**；原已恢复书籍事件关闭。状态
+**frontend-maintenance-delivered / wider-refactor-open / device-verification-open**；OS/C捆绑SQLite、
+完整parserCPU/scan/峰值FD/late-tx及整体重构继续，前端库级条件不是生产漏洞或整个系统无风险证明。

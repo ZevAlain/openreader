@@ -2,7 +2,7 @@
 
 Status: working contract. Keep this file updated when endpoint semantics change.
 
-## 2026-10-16 frontend dependency advisory supplement (contract-only)
+## 2026-10-16 frontend dependency advisory supplement (published, API unchanged)
 
 See focused frontend dependency advisory contract. Preserve two actual Axios.create instances, /api vs
 root URL semantics,12000ms defaults, own Authorization and matching-token401 invalidation; normal
@@ -14,6 +14,13 @@ Conditional library fixtures are not public API exploit proof. No implementation
 After independent7ff39d9, actual app-client HTTP controls pass both API/root URL, own Basic/Bearer,
 JSON/nativeFormData, current-vs-late token401/login exclusions, cancel and timeout on ownedloopback.
 Thirteen library-only red leaves are separate; no application API/body/error/session changes yet.
+
+Superseding delivery: focused section8 records publishedfc4692c/Actions38868093878SUCCESS and exact
+two-platform OCI/config/binary/frontend-byte checks. Complete788tests/build/109gatecontracts, owned
+actualclient HTTP plus wholepublishedarm64 UIlogin/nativebrowsermultipart/Reader threeviewports and
+realHTTPsession revoke controls pass. Reauthfourviewport mock-layer contract separately passes.
+No API/auth/status/body/error/timeout/cancel/session/oldURL change or production operation; OS/C,
+parser/device/full audit remain open. The earlier no-implementation paragraphs are historical checkpoints.
 
 ## 2026-10-16 runtime foundation delivery (API unchanged)
 

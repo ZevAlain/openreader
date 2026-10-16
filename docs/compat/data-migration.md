@@ -2,7 +2,7 @@
 
 Status: working compatibility ledger; implemented migrations and remaining action-level audits are recorded below.
 
-## 2026-10-16 frontend dependency advisory supplement (no migration authorized)
+## 2026-10-16 frontend dependency advisory supplement (published, no migration)
 
 Focused frontend dependency contract inventories necessary same-major client/build patches only. Existing
 JWT/session/browserkeys, numericURLs, SQLite/GORM/data/cache/library, original archives/backup/portable/
@@ -13,6 +13,13 @@ before changes; candidate historical/portable/backup gates remain mandatory. Pro
 Independent7ff39d9 precedes test-only13library-red/13green controls; all files/maps/credentials/loopback
 servers are self-owned and reaped. App/lock/data/session/schema unchanged; Node22 same outcomes do
 not replace the future new-candidate historical/portable/backup gates. No production probes or migration.
+
+Superseding delivery: fc4692c/Actions38868093878SUCCESS, exactlocalarm64 and CInativeamd64 candidate
+fresh/historical/portable-v1-v2/assets/crossuser/restart pass. Independently verified wholepublishedarm64
+image was actually pulled by index digest and additionally passes the same new/oldvolume gates and
+realUIlogin/nativeupload/Reader threeviews; details in focused frontend contractsection8. No SQLite/
+schema/data/cache/library/backup/WebDAV/token/browserkey/URL migration, no production writes or upgrade.
+Only this maintenance slice is delivered; OS/C/parserCPU/scan/peakFD/late-tx/device/fullrefactor stay open.
 
 ## 2026-10-16 runtime foundation published (no migration)
 

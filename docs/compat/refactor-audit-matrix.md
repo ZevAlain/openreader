@@ -19,6 +19,14 @@ Node26及实际Node22均788/788、build、109/109门合同及132包全锁零find
 vet/Compose/真实隔离HTTP通过。完整race仍同一进程，精确候选浏览器/卷/可信发布未完成，
 见合同第7节。无业务/API/数据迁移或生产操作，不以扫描归零签收整体重构。
 
+第8节正式交付取代上述pending：应用fc4692c、可信Actions38868093878全部success，关键8包
+race全部ok（API1040.001s）；本地精确候选及真正拉取的完整发布arm64镜像三视口UI登录/
+原生multipart上传/Reader交互、新旧卷/portable/跨用户/restart通过。独立两平台OCI/config/
+实际binary及63个前端文件字节与候选一致；fc4692c/latest index
+`sha256:74ef48fd0c9f5547fff9787fb97763fff22e3500a376be05d5379f19dd8af765`。
+两剥离binary的OpenPGP仍仅模块精度，不作reachable计数。生产另一Mac未操作/新核验；允许
+技术栈/必要维护适配，无API/数据迁移，OS-C/parserCPU/scan/峰值FD/late-tx/设备/整体仍开放。
+
 ## 2026-10-16 Go advisory 发布门补充合同
 
 见[`go-advisory-release-gate-contract.md`](go-advisory-release-gate-contract.md)。这是源扫描的失败关闭

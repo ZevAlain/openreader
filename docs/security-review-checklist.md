@@ -19,6 +19,14 @@ exact same-major patches and three concrete safe leaf constraints. Actual Node26
 Compose/owned HTTP pass. SourceGo/app/API/data unchanged. Fullrace and candidate browser/volumes/
 trusted publication/OCI pending; no production action or whole-system security-clear claim.
 
+Frontend section8 supersedes pending: applicationfc4692c passed trustedActions38868093878 (allsteps
+success), critical8package race (API1040.001s), exactcandidate and actualwholepublishedarm64 browser/
+fresh-historical-portable-crossuser-restart gates. Anonymousindependent OCI checks verify fullrevision,
+bothrealbinary metadata and all63frontend files EXACTcandidate bytes; fc4692c/latest index74ef48fd…
+(full digest in focusedcontract). Bothstrippedbinaries still only OpenPGPmodulefallback/pkgSymbols0,
+not7reachable issues. Preserve precise source exception review and no production operation. Frontend
+maintenance delivered, NOT wholeOS/C/SQLite/parser/device/security audit complete.
+
 2026-10-16追加 Go source advisory 发布门合同：
 [`compat/go-advisory-release-gate-contract.md`](compat/go-advisory-release-gate-contract.md)。
 只允许带完整现场导入图/版本/受影响包校验和复审期限的 OpenPGP 不适用项，不新增通配忽略。
