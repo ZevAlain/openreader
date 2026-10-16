@@ -26,6 +26,11 @@ COPY backend/ ./
 RUN CGO_ENABLED=1 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-$(go env GOARCH)} go build -mod=vendor -trimpath -ldflags="-s -w -X openreader/backend/api.Version=${VERSION} -X openreader/backend/api.Commit=${VCS_REF} -X openreader/backend/api.BuildDate=${BUILD_DATE}" -o /out/openreader .
 
 FROM alpine:3.23.6@sha256:85fe1e81d6758c208f3e1eed4338a1997e19d4be002d4dd32d3100c9a8c010a0
+# The pinned official 3.23.6 base still ships zlib 1.3.2-r0. Install only the exact
+# v3.23 main maintenance fix at build time: apk verifies the signed repository index,
+# the release OS gate pins the package identity, and nothing upgrades at container start.
+# Kept before the ARGs so the validated layer is reused by the published build.
+RUN apk add --no-cache 'zlib=1.3.2-r1'
 ARG BUILD_DATE=unknown
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="OpenReader" \
@@ -43,7 +48,7 @@ ENV OPENREADER_ADDR=:8080 \
     OPENREADER_PUBLIC_DIR=/app/public \
     GIN_MODE=release
 # The Go builder includes the standard CA bundle; time/tzdata is embedded in
-# the binary so this runtime stage needs no network package installation.
+# the binary, so the zlib fix above is the runtime stage's only package install.
 COPY --from=backend-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=backend-builder /out/openreader /app/openreader
 COPY --from=frontend-builder /src/frontend/dist /app/public
