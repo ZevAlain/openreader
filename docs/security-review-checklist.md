@@ -22,6 +22,16 @@ Actualnative SQL compile_options confirms existingFTS3/RTREE/THREADSAFE1 andnoFT
 Normalrow-boundary cancellation is NOTactiveC-step/WALreset proof. WALschedule/in-flightC/APK/OSgate
 remain open; no dependency/app/production writes or release. See focusedcontract section8.
 
+After handoff fab8d3e the baseline reproduced exactly (2 library reds/7 normal/4 harness, race, vet,
+109/109). Test-only 52786f8 adds in-flight C-step cancellation controls: an owned WAL file DB, a
+connection-local marker registered only through `*sql.Conn.Raw` inside the owned test worker (no
+production SQL function or debug API), and a constant-memory recursive count cancelled while still in
+C. Query and write-transaction paths both return `context.Canceled` within 1s, reuse the connection or
+recover the single-connection pool, and keep committed values/integrity; 10 runs pass, and a temporary
+uncommitted non-cancelable mutation fails with the exact ignored-cancellation reason and no leftover
+worker. WAL deterministic scheduling was not written this session and stays unreproduced/open; no
+dependency/app/image/production change. See focused contract section 9.
+
 2026-10-16 frontend supplement:
 [`compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](compat/frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)。
 Fresh all-lock npm audit8high packages, not8exploits; own tiny bounded fixtures before patches, distinguish

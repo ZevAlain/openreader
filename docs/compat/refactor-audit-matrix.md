@@ -21,6 +21,13 @@ race/原生Linuxarm64精确2库级red、7正常控制绿、4保护验证绿，�
 C版本/feature控制已补，非发布服务SQL探针。vet与既有审计门109/109通过，见合同第8节。
 WAL临界时序、in-flight C取消、APK/OS门及全量实施/发布仍开放，不以正常取消冒充WAL复现。
 
+Claude Code接续后先在同一工作树复现交接基线（2red/7正常/4保护、race、vet、109/109一致），
+再以独立测试提交52786f8新增in-flight C step取消控制：读/写事务两项在C内执行时取消，1秒内
+返回context.Canceled，同连接复用或单连接池恢复，原值/integrity保持；连续10轮20/20通过，临时
+反向变异能准确报出忽略取消。完整db/race现为2库级red/9正常/4保护。WAL确定性调度本轮未编写，
+如实保留未复现/open，不阻塞必须的driver维护，见合同第9节。下一步独立build:升级v1.14.36；
+OS/C工具门与zlib修复仍开放；应用/模块/镜像/生产未改。
+
 ## 2026-10-16 当前切片：前端客户端与构建依赖 advisory 补充
 
 [`frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](frontend-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)

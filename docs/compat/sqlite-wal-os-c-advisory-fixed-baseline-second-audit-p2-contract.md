@@ -5,7 +5,7 @@
 `fc4692c474df30d1f0427cba57e7ebc67c91b156`，OCI index
 `sha256:74ef48fd0c9f5547fff9787fb97763fff22e3500a376be05d5379f19dd8af765`。
 状态 **inventory-complete / contract-only / behavioral-tests-pending / implementation-not-started**。
-以上为提取时快照；当前第一批实际反例和仍未结束的测试阶段见第6节。
+以上为提取时快照；当前第一批实际反例和测试阶段进展见第6–9节，最新状态以第9节为准。
 前端维护交付保持，不把npm/Go扫描当作C、OS或数据库持久性问题的覆盖。生产另一Mac不操作，
 原书已恢复事件关闭；本合同不声称发现生产数据库损坏或远程利用。
 
@@ -186,3 +186,38 @@ cache只读，自有tmpfs，临时安装编译器）原样执行仍2red/3green�
 可信发布：无应用或前端改动且明确仍有两项预期库级红灯；所有实现与发布后置门继续保留。
 WAL确定性时序、in-flight C取消、APK精确取证与OS/C门及整体重构仍未完成。生产未访问或修改，
 生产commit未新核验；最近已验证发布仍fc4692c，不将本批测试结果等同于生产已升级。
+
+## 9. in-flight C step 取消控制与测试阶段收口（2026-10-16，Claude Code）
+
+交接 `fab8d3e55569750b31a6f4c5241a6e995ef411c3` 后先在同一工作树复现基线：完整db包既有12个root
+测试通过、仅第6节两叶失败，7正常控制/4保护验证绿，3.719s；同切片race结果相同，9.900s，无DATA
+RACE；`go vet ./db` 通过；审计门合同109/109。backend内Go为go.mod选择的1.26.9（宿主根目录为
+1.26.5）。随后仅新增测试提交 `52786f8600f1795f44245735b16ebc638da4ba17`，已推送并ls-remote精确
+核验；Go模块/应用/Dockerfile/workflow/前端未改，仍为driver1.14.22/C3.45.1。
+
+- `in-flight-query-cancel`、`in-flight-exec-cancel`：自有worker内经应用 `Open` 打开自有WAL文件库，
+  单连接池。只在该 `*sql.Conn` 上经 `Raw` 注册连接级标记函数（仅测试进程，不进生产依赖图，不加
+  SQL调试API）；单行递归计数常量内存，在一次C step内执行，不被中断会远超worker时限。标记进入且
+  50ms后仍在执行才取消；要求1秒内返回 `context.Canceled` 且无结果。
+- 读路径：同一连接500ms内复用 `SELECT ?`，证明被中断语句已重置，没有残留中断或忙语句。
+- 写路径：同一被取消事务内先UPDATE、再执行被中断的INSERT；Commit不得成功；新池连接500ms内读到
+  原提交值、行数2、integrity为ok，证明单连接池已回收。
+- C step若忽略取消，worker直接输出准确原因并退出1（延迟清理会等待仍在C内的语句，把行为失败变成
+  harness超时），父测试按实际行为失败分类；标记未到达/取消前已结束单列为前提失败，不算行为red。
+
+证据：两项连续10轮20/20通过，取消到返回20–66µs。临时反向变异（语句改用不可取消的Background，
+未提交）使两项均在约1.06s以 `in-flight C step ignored cancellation for 1s` 失败，并按实际行为
+失败分类，无遗留worker；文件随后原样恢复。新增后完整db包：既有12root通过，失败仍精确为第6节
+两叶，正常控制9项、保护验证4项，2.745s；同切片race结果相同，12.090s，无DATA RACE；vet及审计门
+109/109通过。本轮未重跑原生Linuxarm64容器。
+
+第7节WAL确定性调度：本轮Claude Code会话没有编写临时探针、test-only C helper或调度测试（该部分
+会话输出被安全检查中止）。按第2节与第4节第3条如实保留 **未复现/open**：不能以版本门、普通并发、
+in-flight取消控制或两项SQL red替代，也不得在任何记录中写成已复现或已排除。该项不撤销WAL-reset
+的must-fix维护裁决；升级后以源码补丁存在与实际runtime版本为证据，确定性调度仍可后续补做。
+
+据此SQLite驱动维护的测试检查点收口为 **2实际库级red/9正常控制/4保护验证**，状态
+**library-reds-verified / in-flight-cancel-verified / wal-schedule-unreproduced /
+implementation-not-started**。下一步为独立 `build:` 提交把driver升到第2节精确候选v1.14.36/
+SQLite3.51.3（不跨3.53），同一断言红转绿且全部控制保持；OS/C工具合同测试与zlib构建期修复另行
+推进。镜像仍为fc4692c，未发布新镜像；生产未访问或修改。
