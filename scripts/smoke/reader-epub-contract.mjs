@@ -721,8 +721,19 @@ async function assertFrameContract(page, viewport, resourceResponses) {
       /^第 \d+\/\d+ 页$/,
       'mobile tool layer must show upstream in-chapter page progress',
     )
+    assert.equal(
+      await page.locator('.reader-page-head').evaluate(element => element.textContent.trim()),
+      '第 3 章 第二章',
+      'fixed upstream mini top-bar shows only the current chapter title',
+    )
+    assert.equal(
+      await page.evaluate(() => document.body.textContent.includes('3 / 3')),
+      false,
+      'fixed upstream mini interface has no chapter N / M counter, visible or hidden',
+    )
+  } else {
+    await page.waitForFunction(() => document.body.textContent.includes('3 / 3'))
   }
-  await page.waitForFunction(() => document.body.textContent.includes('3 / 3'))
 
   await page.goBack({ waitUntil: 'domcontentloaded' })
   assert.equal(new URL(page.url()).pathname, '/', 'EPUB cross-chapter navigation must not consume browser back history')
