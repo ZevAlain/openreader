@@ -1,5 +1,21 @@
 # OpenReader 全量上游复审矩阵
 
+## 2026-10-17 当前切片：Reader 正文加载失败错误面盘点
+
+见[`reader-chapter-error-surface-fixed-baseline-second-audit-p0-contract.md`](reader-chapter-error-surface-fixed-baseline-second-audit-p0-contract.md)。
+固定fa22当前章失败时正文区是“错误章节页”：`<h3>`目标章目录标题+`获取章节内容失败！`+原因，EPUB/音频/CBZ错误时同样按
+文字页渲染；每次失败弹一次提示；正文无按钮，重试只走刷新浮动按钮；错误页照常响应点击分区，页码按错误页重算；连续模式失败章
+留在列表、后一章照常加载；目录失败显示`获取章节目录失败！`。当前主错误块只有原因和自有“重新加载”：无标题、无标签、无提示，
+英文`failed to load chapter content`原样显示，stale冲突显示通用兜底。本地Go服务+生产前端三视口复现：1440×900按钮被`tap-upper`
+盖住，真实点击跳上一章末尾并写进度`4:第五章 前邻`；真机触摸page/flip同样跳章，scroll/scroll2上翻、隐藏工具层、写`5:第一章 起点`
+而不重载；只有窄视口+鼠标能重试。已签收的内联错误块按钮桌面下带被盖住、触摸附带翻页或切换工具层；连续模式目标章失败时后一章
+不显示；目录失败后重试显示第0章、不重新请求目录；移动页码沿用上一章`第 1/9 页`。工具栏“重新载入章节”三视口正常。标题、标签、
+提示、stale文案、按钮遮挡与触摸穿透（P0）、内联按钮、连续目标章、目录失败、页码判must-fix；正文内按钮沿用连续合同理由判
+acceptable-change；原因取脱敏消息、纯文本渲染判acceptable-change；英文原因是否中文化判unknown（D1）。运行标题、标签页标题、
+点击翻页区设计、章末入口、加载器与API不重开。状态contract-only；下一步在运行标题/桌面计数/标签页标题切片之上红测（源码合同、
+触摸判定、目录重试、连续窗口、错误面浏览器合同），再分四个提交实现（按钮可达P0优先）。实现提交改frontend，合入main会触发
+发布，由用户决定。
+
 ## 2026-10-17 当前切片：Reader 运行标题加载中与失败时的章节名盘点
 
 见[`reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md`](reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md)。
