@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { openSmokeBrowser } from './playwright-runtime.mjs'
+import { readShellDocumentTitle, waitForDocumentTitle } from './document-title.mjs'
 
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
@@ -17,6 +18,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const baseURL = process.env.TARGET_URL || 'http://127.0.0.1:8080'
+const shellTitle = readShellDocumentTitle()
 const outputDir = process.env.SMOKE_OUTPUT_DIR || tmpdir()
 
 function expectedBookmarkDialogWidth(viewport) {
@@ -710,6 +712,7 @@ async function assertFrameContract(page, viewport, resourceResponses) {
   await page.waitForFunction(() => (
     document.querySelector('.reader-running-chapter-title')?.textContent?.trim() === '第 3 章 第二章'
   ))
+  await waitForDocumentTitle(page, 'EPUB 浏览器契约 - 第二章', `${viewport.width}: EPUB cross-document link must update the tab title`)
   assert.equal(
     await page.locator('.reader-page-head .reader-running-chapter-title').isVisible(),
     true,
@@ -747,6 +750,7 @@ async function assertFrameContract(page, viewport, resourceResponses) {
 
   await page.goBack({ waitUntil: 'domcontentloaded' })
   assert.equal(new URL(page.url()).pathname, '/', 'EPUB cross-chapter navigation must not consume browser back history')
+  assert.equal(await page.evaluate(() => document.title), shellTitle, `${viewport.width}: leaving the Reader must restore the shell tab title`)
   assert.equal(await page.locator('iframe.epub-iframe').count(), 0, 'browser back must return to the bookshelf instead of the previous EPUB chapter')
 }
 

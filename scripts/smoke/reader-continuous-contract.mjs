@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { openSmokeBrowser } from './playwright-runtime.mjs'
+import { waitForDocumentTitle } from './document-title.mjs'
 
 const targetUrl = process.env.TARGET_URL || 'http://127.0.0.1:5173'
 const readerUrl = process.env.SMOKE_READER_URL || `${targetUrl.replace(/\/$/, '')}/books/1/read?chapter=0`
@@ -76,6 +77,7 @@ async function installMocks(page, requestCounts, progressWrites, options = {}) {
     if (path === '/books/1/chapters') {
       return route.fulfill(json(Array.from({ length: 6 }, (_, index) => ({
         id: index + 11,
+        bookId: 1,
         index,
         title: chapterTitle(index),
       }))))
@@ -165,6 +167,7 @@ async function runContinuousViewport(browser, viewport, mode) {
         headerPointerEvents: window.getComputedStyle(header).pointerEvents,
         headerText: header.textContent.trim(),
         runningTitle: runningTitle.textContent.trim(),
+        documentTitle: document.title,
         runningTitleLeft: runningTitleRect.left,
         runningTitleRight: runningTitleRect.right,
         headerRight: headerRect.right,
@@ -176,6 +179,7 @@ async function runContinuousViewport(browser, viewport, mode) {
     assert(initial.indexes.join(',') === '0,1', `${viewport.width}: initial blocks ${initial.indexes}`)
     assert(initial.runningTitle === `第 1 章 ${chapterTitle(0)}`, `${viewport.width}: running title ${JSON.stringify(initial.runningTitle)}`)
     assert(initial.headerText === initial.runningTitle, `${viewport.width}/${mode}: running header must contain only the running title ${JSON.stringify(initial.headerText)}`)
+    assert(initial.documentTitle === `连续跨章契约测试 - ${chapterTitle(0)}`, `${viewport.width}/${mode}: tab title ${JSON.stringify(initial.documentTitle)}`)
     assert(initial.headerPointerEvents === 'none', `${viewport.width}: running header intercepts input`)
     assert(initial.runningTitleLeft >= 0 && initial.runningTitleRight <= initial.headerRight + 1, `${viewport.width}: running title overflows header`)
     assert(initial.headerPosition === 'fixed', `${viewport.width}: running header position ${initial.headerPosition}`)
@@ -266,6 +270,7 @@ async function runContinuousViewport(browser, viewport, mode) {
     await page.waitForFunction(() => (
       document.querySelector('.reader-running-chapter-title')?.textContent?.startsWith('第 2 章')
     ))
+    await waitForDocumentTitle(page, '连续跨章契约测试 - 第 2 章', `${viewport.width}/${mode}: tab title after crossing into chapter 2`)
 
     await page.evaluate(() => {
       const element = document.querySelector('.reader-shell.document-scroll')
@@ -415,6 +420,7 @@ async function runProgressTransaction(browser) {
     await page.waitForFunction(() => (
       document.querySelector('.reader-running-chapter-title')?.textContent?.startsWith('第 3 章')
     ))
+    await waitForDocumentTitle(page, '连续跨章契约测试 - 第 3 章', 'progress transaction: tab title after crossing into chapter 3')
     await page.waitForTimeout(180)
     assert((requestCounts.get(3) || 0) === 1, `delayed extension request count ${requestCounts.get(3) || 0}`)
     await page.evaluate(() => {
