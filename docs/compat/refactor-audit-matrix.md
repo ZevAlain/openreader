@@ -1,5 +1,18 @@
 # OpenReader 全量上游复审矩阵
 
+## 2026-10-17 当前切片：Reader 运行标题加载中与失败时的章节名盘点
+
+见[`reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md`](reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md)。
+固定fa22只有一个`this.title`：`getContent`在请求正文前就写成目标章目录标题，失败不回退，迟到响应丢弃；EPUB内链和连续滚动
+跨章同步写index与标题；连续模式上一章/下一章、搜索和书签跳转把两者一起推迟。当前序号取`currentIndex`（加载开始即写），
+章节名取已提交的`chapter`（成功后才写）。本地Go服务+生产前端三视口复现：文本四模式加载中`第 2 章 第一章 起点`，500后持续
+`第 5 章 第二章 延迟`，重新加载期间不变；目录跳转与EPUB内链相同；缓存命中也有1–4ms中间值；Reader内换书出现“新书序号+旧书
+章节名”；无chapter参数首次进入先显示`第 1 章`；迟到请求不回写（aligned）。加载中/失败/重载/EPUB/换书/目录替换/首次进入判
+must-fix；越界截断与连续模式开始即换判acceptable-change。目标：章节名取`chapters[currentIndex]`，目录行未知为空，导航开始即
+整体切换、失败不回退、不跨书拼接，与标签页标题同源。序号、显示位置、几何与计数裁决不重开。状态contract-only；下一步在桌面
+计数与标签页标题切片之上红测（改写派生断言、纯函数/事务单元合同、MutationObserver浏览器合同、EPUB延迟断言），再实现。
+实现提交改frontend，合入main会触发发布，由用户决定。
+
 ## 2026-10-16 当前切片：浏览器标签页标题（document.title）盘点
 
 见[`browser-document-title-fixed-baseline-second-audit-p0-contract.md`](browser-document-title-fixed-baseline-second-audit-p0-contract.md)。

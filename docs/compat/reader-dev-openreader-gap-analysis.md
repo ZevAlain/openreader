@@ -1,5 +1,24 @@
 # Reader-dev vs OpenReader Gap Analysis
 
+## 2026-10-17 P0 Reader 运行标题加载中与失败时的章节名盘点
+
+固定上游只有一个 `this.title`，同时驱动 mini 顶栏、非连续模式的正文 `<h3>` 和标签页标题。`getContent` 在请求正文之前
+就把它写成目标章目录标题（`Reader.vue` L1038–1040），正文失败不回退，迟到响应按 `bookUrl`/`index` 丢弃；EPUB 内链和
+连续滚动跨章在同一个同步块里写 index 和标题；连续模式的上一章/下一章、正文搜索和书签跳转把 index 和标题一起推迟到新章
+可见之后。当前运行标题的序号取 `currentIndex`（加载器开始时就写），章节名取已提交的 `chapter`（正文成功后才写，失败不写）。
+用本地 Go 服务加生产前端在 1440×900、390×844、360×800 复现：文本四种模式切章加载中显示 `第 2 章 第一章 起点`，正文 500
+之后一直是 `第 5 章 第二章 延迟`，重新加载期间不变；目录跳转和 EPUB 内链（`第 3 章 第一章（下）`）相同；目标已在缓存时也有
+1–4ms 的混合中间值；Reader 内换书显示“新书序号 + 旧书章节名”，新书正文失败时一直保留；没有 `chapter` 参数的首次进入先显示
+`第 1 章`。被取代的迟到请求不回写，与上游一致。判定：加载中、失败、重新加载、EPUB 内链、换书、目录替换和首次进入时的
+章节名均为 **`must-fix`**；目录越界时截断、连续模式“开始即换”的时机为 `acceptable-change`（运行时适配）。目标：章节名取
+`currentIndex` 对应的目录行，目录行未知时为空，导航开始即整体切换、失败不回退、不跨书拼接，并与标签页标题同源。序号格式、
+桌面/移动显示、几何和计数裁决都不重开；运行标题合同第 3 条“也在章节事务完成后更新”这句不是用户要求的措辞，按上游重新裁决。
+测试计划：改写 `readerTextModeFrameContract.test.mjs` 里固定 `chapter.value?.title` 的派生断言，新增纯函数和加载事务单元合同，
+新增用 MutationObserver 记录每个中间值的浏览器合同，并在 EPUB 合同的跨 XHTML 步骤里加延迟断言。另记三条观察，不并入本切片：
+1440×900 错误块的“重新加载”被点击层盖住；正文错误块没有章节标题；失败状态下的进度载荷可能不一致。完整合同见
+[`reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md`](reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md)。
+当前状态为 **contract-only**：产品代码和测试都没有改。
+
 ## 2026-10-16 P0 Reader/首页 浏览器标签页标题盘点
 
 固定上游只有两个视图写 `document.title`：Index 在 `mounted`/`activated` 设为 `阅读`（首屏 `<title>` 也是 `阅读`）；

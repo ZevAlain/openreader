@@ -54,3 +54,8 @@
   [`reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md`](reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md)
   对照上游重新分类为 `must-fix`（contract-only，尚未实现）；左侧运行标题仍是用户要求的允许差异。第 5 条
   “书名仍由浏览器标题提供”与当前代码不符：OpenReader 没有设置 `document.title`，另行盘点。
+- 2026-10-17 补记（加载中与失败）：第 3 条中间一句“也在章节事务完成后更新”已在
+  [`reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md`](reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md)
+  对照上游重新裁决，第 1 条的“当前激活 Chapter”明确为 `currentIndex` 对应的目录行。真实浏览器在加载中和正文失败后都
+  显示“新序号 + 旧章节名”，判 `must-fix`；目标是导航开始即整体切换到目标章，失败不回退（contract-only，尚未实现）。
+  序号格式和其余条目不变。
