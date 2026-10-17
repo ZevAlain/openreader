@@ -11,6 +11,16 @@ Reader标题、切章更新、卸载恢复判must-fix；书源调试独立标题
 用`阅读`还是`OpenReader`，没有用户决定的记录，判unknown，等用户决定D1。状态contract-only；下一步Reader红测（壳标题从
 index.html读取，不等D1），再实现；D1之后做壳标题与书源调试。实现提交改frontend，合入main会触发发布，由用户决定。
 
+记录（取代上段状态）：合同c8ebd30（本分支以9839270为基线cherry-pick为c75e730）→红测377e8b8（单元17条全红，frontend
+788/805；新标签页合同三视口×navigation/auth/remote都在第一处等待得到`OpenReader`，EPUB三视口`:715`、连续四视口
+scroll/scroll2`:182`与进度事务`:423`、重新认证四视口`:214`同样失败）→实现4a0aae8（utils/documentTitle.js唯一写入点
++useReaderDocumentTitle，Reader.vue加一次调用；标题由book与currentIndex处目录行派生，目录行bookId与book.id不一致时只显示
+书名，卸载时恢复壳标题）。本地Go服务+生产前端：上述合同全部通过，移动端/文本模式/首页工作台/远程阅读/换源/音频/CBZ/
+书源调试对照通过；frontend 805/805与build通过；M1–M5（另加M1b：Reader.vue不调用）临时变异均按预期变红：只靠首页
+恢复在认证阻断处失败，已提交章节名在失败章与`第1章`处失败，去掉同书校验只在挂起目录的换书处失败。观察：书架换书时
+按旧目录长度为新书预加载正文，另行盘点。状态：Reader部分implementation-complete / regression-validated，首页/首屏/
+登录/书源调试仍contract-only等D1；合入main会触发发布，由用户决定；本地未推送，无新镜像，生产未动。
+
 ## 2026-10-16 当前切片：Reader 桌面运行标注盘点
 
 见[`reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md`](reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md)。

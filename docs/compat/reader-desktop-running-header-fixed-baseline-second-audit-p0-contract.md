@@ -275,3 +275,8 @@ EPUB 副本只改了导入路径；连续合同副本按上面的方法生成，
 **状态**：Git 为 `claude/suspicious-ptolemy-1af85f` 上的本地提交（基于 `claude/nervous-saha-c99e83` 的 `4092ea2`，
 其中包含 `claude/sleepy-moser-50391e` 的 4 个提交），未推送、未合入 main。镜像：未构建、未推送，已发布的镜像仍带
 桌面计数。生产：未访问、未操作。
+
+2026-10-17 补记：第 5 节最后一行留给另行盘点的浏览器标签页标题见
+[`browser-document-title-fixed-baseline-second-audit-p0-contract.md`](browser-document-title-fixed-baseline-second-audit-p0-contract.md)。
+其 Reader 部分已在 `claude/xenodochial-carson-5004c3` 上实现（`4a0aae8`，以本切片的 `9839270` 为基线，本地回归通过，
+尚未发布）；本切片的提交、结论和状态不变。

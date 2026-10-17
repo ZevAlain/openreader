@@ -16,7 +16,21 @@ docs 和交接文档都没有用户决定（侧栏在 `bd8afe5` 改回了 `阅�
 并在连续阅读、EPUB、重新认证和书源调试合同里补标题断言。壳标题从 `index.html` 读取，所以 Reader 部分不必等 D1。
 另记一条观察：运行标题在加载中和切章失败时可能显示“新序号 + 旧章节名”，没有复现，不并入本切片。完整合同见
 [`browser-document-title-fixed-baseline-second-audit-p0-contract.md`](browser-document-title-fixed-baseline-second-audit-p0-contract.md)。
-当前状态为 **contract-only**：产品代码和测试都没有改。
+合同 `c8ebd30` 先独立提交，之后在 `claude/xenodochial-carson-5004c3` 上以桌面计数切片 `9839270` 为基线
+cherry-pick 为 `c75e730`。2026-10-17 完成 Reader 部分（第 7.1 节）：红测 `377e8b8` 新增 17 条单元合同（纯函数、
+组合函数、Reader 接线与“只有一个写入点”）和标签页标题浏览器合同（每个视口三个流程：切章、目录跳转、空和只有空白的
+章节名、失败章、面板、书架换书时挂起新书目录、回首页、后退、401 阻断后同账号重新登录、远程临时阅读），并在连续阅读、
+EPUB、重新认证合同里补了标题断言。旧实现上 17 条单元全部失败（frontend 788/805），浏览器合同都在第一处标题等待处
+得到 `OpenReader`。实现 `4a0aae8` 新增 `utils/documentTitle.js`（唯一写入点）和 `useReaderDocumentTitle`，`Reader.vue`
+只加一次调用：标题由当前书、`currentIndex` 处的目录行派生，目录行的 `bookId` 与 `book.id` 不一致（换书的中间态）时
+只显示书名，Reader 卸载时恢复壳标题。frontend 805/805 与 build 通过；本地 Go 服务加生产前端上，新合同三视口、EPUB
+三视口、连续阅读四视口、重新认证四视口全部通过，移动端、文本模式、首页工作台、远程阅读、换源、音频、CBZ、书源调试
+对照通过；
+六项临时变异（组合函数不写、`Reader.vue` 不调用、只靠首页恢复壳标题、改用已提交的章节名、加序号、去掉同书校验）
+都按预期变红。另记一条观察：书架换书时，新书目录返回前会按旧目录长度为新书预加载正文，与标题无关，建议另行盘点。
+当前状态：Reader 部分 **implementation-complete / regression-validated**；首页、首屏、登录页与书源调试仍是
+**contract-only**，等用户决定 D1。实现改了 `frontend/**`，合入 main 会触发镜像发布，由用户决定；提交只在本地，未推送，
+没有新镜像，生产未动。
 
 ## 2026-10-16 P0 Reader 桌面运行标注盘点
 

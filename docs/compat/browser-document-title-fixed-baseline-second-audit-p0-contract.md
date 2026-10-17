@@ -1,7 +1,9 @@
 # 浏览器标签页标题（document.title）合同盘点（P0）
 
-状态：**contract-only**。本切片只写文档；产品代码、单元合同和浏览器合同都没有改。第 7.1 节（Reader）不依赖用户
-决定，可以直接进入红测；第 7.2、7.3 节的标题文字要等用户先做第 6 节的决定 D1。
+状态：第 7.1 节（Reader）为 **implementation-complete / regression-validated**（红测 `377e8b8`、实现 `4a0aae8`，
+记录见第 12 节，只在本地，未发布）；第 7.2、7.3 节仍是 **contract-only**，标题文字要等用户先做第 6 节的决定 D1。
+下面第 1–11 节是合同提交 `c8ebd30`（在 `claude/xenodochial-carson-5004c3` 上 cherry-pick 为 `c75e730`）的原文，
+写作时的状态是：本切片只写文档；产品代码、单元合同和浏览器合同都没有改。
 
 固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。约定路径
 `/private/tmp/changshengyu-reader-dev` 在本会话沙箱里不可写，上游克隆到会话 scratchpad 后 checkout 同一提交。  
@@ -370,3 +372,153 @@ D1 决定之前，测试里的壳标题一律从 `frontend/index.html` 的 `<tit
   history 路由白名单（[SPA 路由合同](frontend-static-spa-route-boundary-fixed-baseline-second-audit-p2-contract.md)）。
 - 本合同不改 manifest 的 `name/short_name` 和 `apple-mobile-web-app-title`。
 - API、数据库、浏览器存储 key、持久文件、镜像和生产：本切片都不改，不在本地构建或推送镜像，不做任何生产操作。
+
+## 12. Reader 部分实施与验证（2026-10-17）
+
+本节只覆盖第 7.1 节（Reader）和第 9 节的阶段 3、4、6、7。第 7.2、7.3 节（壳标题文字、首页主动设置、登录页与书源调试
+标题）要等用户决定 D1，没有改；`index.html`、首页、`SourceDebug.vue` 都没动。
+
+| 提交 | 阶段 | 内容 |
+| --- | --- | --- |
+| `c8ebd30`（cherry-pick 为 `c75e730`） | 合同 | 第 1–11 节、gap analysis 与 matrix。为了不和桌面计数切片并行改同一批文件，`claude/xenodochial-carson-5004c3` 先快进到桌面计数切片的 `9839270`，再 cherry-pick 合同提交；`claude/youthful-blackburn-9df7fb` 因此被本分支取代，不再单独合入。 |
+| `377e8b8` | 红测 | 8.1 第 1、2 项和第 3 项的 Reader 部分；8.2 第 1 项的 Reader 步骤和第 2–4 项。 |
+| `4a0aae8` | 实现 | 新增 `frontend/src/utils/documentTitle.js`（唯一写入点 `setDocumentTitle`、壳标题常量 `SHELL_DOCUMENT_TITLE`、纯函数 `formatReaderDocumentTitle`）和 `frontend/src/composables/useReaderDocumentTitle.js`；`Reader.vue` 只加一行 import 和一行调用。没有改后端、API、浏览器存储 key、依赖和 `index.html`。 |
+
+**实现要点**
+
+- 标题只由 `book`、`chapters`、`currentIndex` 派生，用默认 pre flush 的 `watch`：同一次同步更新里的中间值会合并，
+  结果为空时不写。`onScopeDispose` 写回壳标题，所以回首页、浏览器后退、认证阻断的 `v-if` 卸载、会话 generation
+  变化后重新挂载，都在 Reader 自己卸载时恢复（R5），不依赖下一个视图。
+- 章节名取 `chapters[currentIndex].title` 去首尾空白，不读已提交的 `chapter`。`useReaderChapterLoader` 在请求正文
+  之前就把 `currentIndex` 设为目标章，所以加载开始即换、正文失败不回退（R2）。
+- R3 的机制（第 7.4 节留给实现阶段决定）：比较目录行的 `bookId` 和 `book.id`。两者都是正整数且相等时才用目录行
+  标题。远程临时会话不入库，接口把 `book.id` 和行的 `bookId` 都序列化为 0，两边都是 0 时视为同一会话内的配对；
+  一边有 id、一边没有（从远程会话换到书架书的中间态）视为不属于当前书。不属于当前书时只显示书名，与上游 `init()`
+  清空 `this.title` 后的状态相同。书架换书的真实顺序、新旧当前章同名、远程行三条单元合同固定了这个规则。
+- R4：书名为 `''`、`null`、`undefined` 或只有空白时不写，保留当前标题。只有空白的书名按未知处理，因为写出去就是
+  以分隔符开头的标题（第 5 节第 12 项的同类情形）。书名本身不做其他处理。
+
+**测试与第 8 节计划的差异**（都在 `377e8b8` 里）：
+
+1. 8.1：`documentTitle.test.mjs` 6 条、`readerDocumentTitle.test.mjs` 9 条、`documentTitleWiringContract.test.mjs`
+   2 条（Reader 以且只以 `book, chapters, currentIndex` 调用组合函数；扫描 `frontend/src/**/*.{js,vue}`，只有
+   `utils/documentTitle.js` 给 `document.title` 赋值）。组合函数测试另外传入一个不变的已提交 `chapter`，模拟“目标章
+   正文还在加载或已经失败”，实现不读它。首页和 `SourceDebug.vue` 的接线断言属于阶段 5，没有写。
+2. 8.2 第 1 项（新增 `scripts/smoke/document-title-contract.mjs`）按视口分三个独立的浏览器 context：
+   - navigation：第 2–9 步。第 5、6 步交错成“第五章 → 空标题章 → 失败章 → 只有空白的章”，每一步标题都会变化。
+     第 3 步之后加了 R6 检查：开关目录和设置面板，标题不变，也没有任何写入。
+   - 第 7 步没有用固定的 800ms 延迟，而是把目标书的目录接口挂起，在挂起期间检查：没有任何以“新书名 - ”开头的
+     写入（目录到达之前，任何章节名都只能来自旧书），当前标题是旧的完整标题、新书名或壳标题之一；之后再放行，等待
+     最终标题。书 2 的当前章 `序章 新书` 与书 1 的所有章节名都不同；同名换书是书 2 停在 `第一章 起点` 时换到当前章
+     同为 `第一章 起点` 的书 3。
+   - auth：第 10 步放在新的 context 里，401 只对没有预加载过的第 5 章（`chapter=4`）返回一次；在同一个 context 里，
+     缓存过的章节会直接从浏览器缓存读取，不发请求。同账号重新登录后等待 `标题契约测试 - 第五章`。
+   - remote：第 12 步；另加一次“远程会话 → 书架书 2”的挂起目录换书，验证没有 id 的会话行不会配上书架书名。
+   - `__titleLog`：init script 运行时 `document.head` 还不存在，所以 `MutationObserver` 观察整个 `document`；另外包装
+     `Document.prototype.title` 的 setter，同一个任务里被覆盖的写入也会被记录。
+   - 第 1、11 步（首页 overlay、登录页和书源调试标题）属于阶段 5，等 D1 之后再写。
+   - `SMOKE_VIEWPORTS` 和 `SMOKE_TITLE_FLOWS` 可以按视口和流程单独运行，逐视口记录不需要临时副本。
+3. 夹具：连续阅读和重新认证合同的目录行补上 `bookId: 1`，与真实 `/books/:id/chapters` 一致（`models.Chapter.BookID`），
+   R3 的机制依赖它。新增 `scripts/smoke/document-title.mjs`：从 `frontend/index.html` 读壳标题，并提供失败时报告实际
+   标题的等待函数。
+4. 8.2 第 3 项（EPUB）和第 4 项（重新认证）按计划加入。重新认证合同在首页、登录页、重新登录后的首页、换账号后的
+   首页断言壳标题且不含 A 的书名；这几处在旧实现上本来就通过，是对照。认证阻断后的壳标题断言（`:292`）在旧实现上
+   排在 `:214` 之后、跑不到，它是否有效由下面的 M2 证明。
+
+**环境**：用本 worktree 构建的 Go 二进制加 `vite build` 生产前端。`git diff 5bc38a3 4a0aae8 -- backend` 为空，
+所有代码状态共用同一个二进制。每个代码状态单独起一个服务，各用独立的临时 data/cache/library 和随机开发 JWT secret
+（未输出）。`377e8b8` 与 `4a0aae8` 实际服务的构建，分别与在这两个提交上重新执行 `vite build` 的产物逐字节相同。
+Go 1.26.9、Node v26.4.0、Playwright 1.61.1 / Chrome Headless Shell 1228。会话沙箱禁止 loopback 监听，服务、浏览器
+合同和完整 `npm test` 都在沙箱外运行。红测的单元结果是用 `git archive 377e8b8` 解出的树（`node_modules` 用符号
+链接）在沙箱外运行得到的。
+
+**单元合同**与 frontend `npm test`：
+
+| 代码状态 | 新增 17 条 | `npm test` |
+| --- | --- | --- |
+| `377e8b8`（红测，产品代码与 `c75e730` 相同） | 17 条全部失败，都是断言失败而不是文件加载错误：`documentTitle.test.mjs:11` 6 条（模块不存在）；`readerDocumentTitle.test.mjs:32` 9 条（模块不存在）；`documentTitleWiringContract.test.mjs:23`（`Reader.vue` 没有导入）、`:41`（写入者是 `[]`） | 788/805，失败的只有这 17 条 |
+| `4a0aae8` | PASS | 805/805 |
+
+**标签页标题浏览器合同**（`document-title-contract.mjs`，按视口、按流程单独运行）：
+
+| 代码状态 | 流程 | 1440×900 | 390×844 | 360×800 |
+| --- | --- | --- | --- | --- |
+| `377e8b8` | navigation | FAIL `:367` 第 2 步等待 `标题契约测试 - 第一章 起点` 超时，实际是 `OpenReader` | 同左 | 同左 |
+| `377e8b8` | auth | FAIL `:426` 第 10 步进入阅读时的同一等待，实际是 `OpenReader` | 同左 | 同左 |
+| `377e8b8` | remote | FAIL `:455` 等待 `远程临时书 - 第一章`，实际是 `OpenReader` | 同左 | 同左 |
+| `4a0aae8` | 三个流程 | PASS | PASS | PASS |
+
+`4a0aae8` 上缺省参数的一次运行（三个视口、三个流程）也通过。
+
+**其他 Reader 浏览器合同**（提交的脚本；红测阶段用于逐视口记录的临时副本见下文）：
+
+| 合同 | `377e8b8` | `4a0aae8`（提交的脚本原样运行一次） |
+| --- | --- | --- |
+| EPUB（真实 Go 服务，`SMOKE_VIEWPORTS` 逐视口） | 1440×900、390×844、360×800 都 FAIL `:715`：跨文档链接到第二章后，等待 `EPUB 浏览器契约 - 第二章` 超时，实际是 `OpenReader` | PASS（三个视口；`:753` 后退到 `/` 后为壳标题） |
+| 连续阅读（模拟接口） | 1440×900、1024×1366、390×844、360×800 的 scroll 与 scroll2 都 FAIL `:182`：`initial` 采样的标签页标题是 `OpenReader`；390×844 进度事务 FAIL `:423`：跨入第 3 章后等待 `连续跨章契约测试 - 第 3 章` 超时。提交的脚本原样运行停在 `1440/scroll :182` | PASS |
+| 重新认证（模拟接口） | 1440×900、1024×1366、390×844、360×800 都 FAIL `:214`：`openReader` 等待 `用户 A 的私有阅读书籍 - 第一章` 超时（正文接口的章节名是 `第1章`，标签页必须用目录标题） | PASS（四个视口 × 显式退出、同账号、换账号） |
+
+连续阅读和重新认证合同没有视口参数。为了逐视口记录红点，在会话 scratchpad 生成了临时副本，只改两处：两个辅助模块
+改用绝对路径导入；`main()` 的视口和模式列表改为从环境变量读取。`main()` 之前的所有行都与提交的脚本相同，所以行号
+一致。实现后的结论以提交的脚本原样运行为准。
+
+**对照**（`4a0aae8`，提交的脚本原样运行）：`reader-mobile-contract`、`reader-text-modes-contract`、
+`index-workspace-contract`（第 8.3 节列出的三项），以及 `remote-reader-contract`、`reader-source-switch-contract`、
+`reader-audio-contract`、`reader-cbz-contract`、`openreader-smoke`，全部通过；`source-debug-contract` 也通过（运行
+方式见下文“书源调试合同”）。
+
+**音频与漫画**（R1“所有书籍类型”，补充观察，没有提交）：临时副本在 `reader-audio-contract` 里加了两处标签页标题等待
+（夹具目录行补上 `bookId`），在 `reader-cbz-contract` 里加了一处。`4a0aae8` 上：音频为 `音频契约测试 - 第一集`，
+手动和自动进入下一集后都是 `音频契约测试 - 第二集`；CBZ 为 `CBZ 浏览器契约 - pages/001.svg`（目录标题就是资源路径）。
+`377e8b8` 上两者都在第一处等待时得到 `OpenReader`。运行标题对这两类书不渲染，标签页标题照样设置。
+
+**服务日志**：红测和实现两个服务都没有 panic，除 WebSocket 外没有 4xx/5xx。401 全部来自 `/ws/sync`：模拟接口的
+合同用假 token，而 `page.route` 拦不到 WebSocket。第 10 步的 401 和第 6 步的 500 是 `page.route` 返回的，不经过服务。
+
+**临时变异**：每一项都只改工作区，先跑三个新增的单元文件，再构建到独立目录，随后立即 `git checkout -- frontend/src`
+还原，确认工作树与 `4a0aae8` 一致，没有提交。每个变异单独起一个服务；标签页标题合同按视口、按流程单独运行，其他三个
+合同原样运行一次（停在第一处失败）。
+
+| 变异 | 单元（新增 17 条） | 标签页标题合同（三个视口结果相同） | 连续阅读 | EPUB | 重新认证 |
+| --- | --- | --- | --- | --- | --- |
+| M1：组合函数不写标题（保留卸载恢复） | 组合函数 9 条失败；纯函数和接线通过 | 三个流程都在第一处等待失败（`:367`、`:426`、`:455`），实际 `OpenReader` | FAIL `:182` | FAIL `:715` | FAIL `:214` |
+| M1b：`Reader.vue` 不调用组合函数 | 只有接线 `:27` 失败 | 同 M1 | FAIL `:182` | FAIL `:715` | FAIL `:214` |
+| M2：去掉卸载恢复，改由首页 `onMounted` 设壳标题 | 只有卸载恢复 `:249` 失败 | navigation PASS（回首页、后退都由首页设回）；auth FAIL `:435`：阻断面的标题仍是 `标题契约测试 - 第五章`；remote PASS | PASS | PASS | FAIL `:292`：认证阻断后标题仍是 `用户 A 的私有阅读书籍 - 第一章` |
+| M3：章节名改用已提交的 `chapter.title`（`Reader.vue` 传入 `chapter`） | 10 条失败：接线 `:27` 和组合函数 9 条 | navigation FAIL `:382`（第 6 步）：失败章停在 `标题契约测试`，即上一个已提交的空标题章；auth PASS；remote FAIL `:347`：挂起目录期间写出 `标题契约测试二 - 第二章`（远程会话已提交的章） | PASS | PASS | FAIL `:214`：实际 `用户 A 的私有阅读书籍 - 第1章` |
+| M4：章节名前加 `第 N 章` 序号 | 组合函数 9 条失败 | 三个流程都在第一处等待失败，实际 `标题契约测试 - 第 1 章 第一章 起点`、`远程临时书 - 第 1 章 第一章` | FAIL `:182`：`连续跨章契约测试 - 第 1 章 第 1 章 …` | FAIL `:715`：`EPUB 浏览器契约 - 第 3 章 第二章` | FAIL `:214`：`… - 第 1 章 第一章` |
+| M5：去掉同书校验 | 3 条失败：`:149`（写出 `书B - 第二章`、`书B - 第一章`）、`:170`、`:194` | navigation FAIL `:347`（第 7 步）：挂起书 2 目录期间写出 `标题契约测试二 - 第一章 起点`；auth PASS；remote FAIL `:347`：写出 `标题契约测试二 - 第一章` | PASS | PASS | PASS |
+
+- M1 按第 8.3 节的写法让组合函数不写，8.1 第 2 项失败；M1b 补充证明：只删掉 `Reader.vue` 里的调用，会被接线合同和
+  所有浏览器等待拦住。
+- M2 下 navigation 流程通过，正好说明第 8.3 节的判断：只靠首页挂载设回，回首页和后退看起来都正常；只有认证阻断
+  （以及重新认证合同）能证明 R5 必须在 Reader 自己卸载时完成。第 8.3 节还预计“退出到登录页”的断言会失败，但重新
+  认证合同是先整页打开首页再退出，标题由 `index.html` 重置，所以这一处在 M2 下仍通过；Reader 本身没有退出入口。
+- M3 下连续阅读和 EPUB 通过，因为它们的正文响应和目录的章节名相同；失败章、重新认证夹具的 `第1章`、挂起目录的
+  换书把它拦住。
+- M4 的序号加在组合函数里（只有那里知道索引）；`formatReaderDocumentTitle` 本身拿不到索引，由 8.1 第 1 项的
+  “不加序号”断言单独守住。
+- M5 只被三条单元合同和挂起目录的换书检查拦住；连续阅读、EPUB 和重新认证合同都不换书，所以通过。
+- 六个变异服务的日志都没有 panic。除 `/ws/sync` 外，只有 M2 服务上的两条 `POST /api/auth/register` 409，来自下面
+  记录的书源调试合同端口冲突，与变异无关。
+
+**书源调试合同**：`source-debug-contract.mjs` 不读 `TARGET_URL`，它自己用 `go run .` 在
+`OPENREADER_SOURCE_DEBUG_PORT`（默认 18093）起后端，并服务 `frontend/dist`。第一次运行时该端口被 M2 变异服务占用，
+脚本连到了 M2 服务，结果作废（上面那两条 409 就是重复注册）。停掉变异服务后，用 `4a0aae8` 构建的 `frontend/dist`
+重跑，通过。
+
+**其余门**：
+
+- frontend `npm run build`：通过。警告与 `377e8b8` 上的构建相同：两条 `@vueuse/core` 的 `#__PURE__` 注释位置警告，
+  一条“chunk 超过 500 kB”提示。
+- 跳过并说明原因：Go `test`/`vet`/`race`（后端与 `5bc38a3` 无 diff）；依赖 advisory 门、Compose 与卷门（依赖、
+  Dockerfile、工作流、数据格式都没改，卷门只在 Actions 上运行）。
+
+**观察（不在本切片）**：书架换书时，如果新书目录还没返回，路由同步会先按旧目录加载目标章，正文加载完成后，附近章节
+预加载也按旧目录的长度计算。新书章节更少时，会请求不存在的章节正文（夹具里得到 404）。这是第 7 步把目录挂起后才
+暴露的，与标签页标题无关；夹具把书 3 设为 3 章避开了它，没有放宽失败收集。建议另行对照上游盘点。第 10 节关于运行
+标题的观察仍然有效：标签页标题现在在加载开始时就换成目标章，运行标题的章节名仍要等正文提交。
+
+**状态**：Git 为 `claude/xenodochial-carson-5004c3` 上的本地提交（`9839270` 之上：`c75e730`、`377e8b8`、`4a0aae8` 与
+本记录），未推送、未合入 main。分支包含桌面计数切片和 EPUB 移动端计数切片的提交；`4a0aae8` 改了 `frontend/**`，
+命中 `docker-publish.yml` 的路径过滤，合入 main 会触发镜像发布，是否合入由用户决定。镜像：未构建、未推送。生产：
+未访问、未操作。

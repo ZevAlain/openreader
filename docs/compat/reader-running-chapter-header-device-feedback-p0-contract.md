@@ -55,3 +55,7 @@
   对照上游重新分类为 `must-fix`，已由 `035762d` 删除，所有视口的页头只含运行标题（本地回归通过，尚未发布）；
   左侧运行标题仍是用户要求的允许差异。第 5 条
   “书名仍由浏览器标题提供”与当前代码不符：OpenReader 没有设置 `document.title`，另行盘点。
+- 2026-10-17 补记（标签页标题）：上一条的另行盘点见
+  [`browser-document-title-fixed-baseline-second-audit-p0-contract.md`](browser-document-title-fixed-baseline-second-audit-p0-contract.md)。
+  Reader 标签页标题已按其第 7.1 节实现为 `书名 - 章节名`（`4a0aae8`，本地回归通过，尚未发布），第 5 条“书名由浏览器
+  标题提供”的前提在 Reader 上成立；首页与书源调试的标题文字仍等用户决定。运行标题本身不变。
