@@ -122,7 +122,7 @@ function collectFailures(page) {
 }
 
 async function openReader(browser, viewport, options = {}) {
-  const context = await browser.newContext({ viewport })
+  const context = await browser.newContext(options.touch ? { viewport, isMobile: true, hasTouch: true } : { viewport })
   await context.addInitScript(({ mode, token }) => {
     localStorage.setItem('openreader_token', token)
     localStorage.setItem('reader', JSON.stringify({
@@ -439,14 +439,83 @@ async function runProgressTransaction(browser) {
   }
 }
 
-async function runFailureRetry(browser) {
-  const fixture = await openReader(browser, { width: 390, height: 844 }, { failOnceAt: 1 })
+// The mouse variant is the original 390x844 check. The banded variants press the inline 重新加载 with a
+// real pointer at 88% of the viewport: on a phone that is outside the center tap region, on the desktop it
+// is inside the lower tap zone (error surface contract R7).
+const FAILURE_RETRY_VARIANTS = [
+  { name: '390x844 mouse', viewport: { width: 390, height: 844 } },
+  { name: '390x844 touch at 88%', viewport: { width: 390, height: 844 }, touch: true, band: 0.88 },
+  { name: '1440x900 mouse at 88% (lower tap zone)', viewport: { width: 1440, height: 900 }, band: 0.88 },
+]
+
+async function placeInlineRetry(page, band) {
+  return page.evaluate((targetBand) => {
+    const button = document.querySelector('.chapter-inline-error button')
+    const usesDocumentScroll = document.querySelector('.reader-shell.document-scroll') !== null
+    const element = usesDocumentScroll
+      ? (document.scrollingElement || document.documentElement)
+      : document.querySelector('.reader-content')
+    const viewport = usesDocumentScroll
+      ? { top: 0, height: window.innerHeight }
+      : { top: element.getBoundingClientRect().top, height: element.clientHeight }
+    const rect = button.getBoundingClientRect()
+    element.scrollTop += rect.top + rect.height / 2 - (viewport.top + viewport.height * targetBand)
+    ;(usesDocumentScroll ? window : element).dispatchEvent(new Event('scroll'))
+  }, band)
+}
+
+async function readInlineRetryState(page) {
+  return page.evaluate(() => {
+    const button = document.querySelector('.chapter-inline-error button')
+    const usesDocumentScroll = document.querySelector('.reader-shell.document-scroll') !== null
+    const element = usesDocumentScroll
+      ? (document.scrollingElement || document.documentElement)
+      : document.querySelector('.reader-content')
+    const state = {
+      scrollTop: Math.round(element.scrollTop),
+      chromeVisible: Boolean(document.querySelector('.reader-mobile-top.visible')),
+    }
+    if (!button) return state
+    const rect = button.getBoundingClientRect()
+    const x = rect.left + rect.width / 2
+    const y = rect.top + rect.height / 2
+    const hit = document.elementFromPoint(x, y)
+    return {
+      ...state,
+      x: Math.round(x),
+      y: Math.round(y),
+      hitIsTarget: Boolean(hit && (hit === button || button.contains(hit))),
+      hit: hit ? hit.tagName.toLowerCase() + [...hit.classList].map(name => `.${name}`).join('') : null,
+    }
+  })
+}
+
+async function runFailureRetry(browser, variant = FAILURE_RETRY_VARIANTS[0]) {
+  const fixture = await openReader(browser, variant.viewport, { failOnceAt: 1, touch: variant.touch })
   const { context, failures, page, requestCounts } = fixture
   try {
     await page.waitForSelector('.chapter-inline-error', { timeout: 10_000 })
     assert(await page.locator('.chapter-content[data-index="0"] [data-reader-block]').count() > 0, 'current chapter disappeared after adjacent failure')
     assert(await page.locator('.chapter-inline-error').innerText().then(text => text.includes('fixture adjacent chapter failure')), 'adjacent error is not visible')
-    await page.locator('.chapter-inline-error button').click()
+    if (variant.band === undefined) {
+      await page.locator('.chapter-inline-error button').click()
+    } else {
+      await placeInlineRetry(page, variant.band)
+      await page.waitForTimeout(350)
+      const before = await readInlineRetryState(page)
+      assert(before.hitIsTarget, `inline 重新加载 at (${before.x},${before.y}) hits ${before.hit}`)
+      if (variant.touch) await page.touchscreen.tap(before.x, before.y)
+      else await page.mouse.click(before.x, before.y)
+      await page.waitForFunction(() => (
+        !document.querySelector('.chapter-content[data-index="1"] .chapter-inline-error')
+        && document.querySelectorAll('.chapter-content[data-index="1"] [data-reader-block]').length > 1
+      ), null, { timeout: 10_000 }).catch(() => {})
+      const after = await readInlineRetryState(page)
+      const detail = `chapter 1 requests ${requestCounts.get(1) || 0}, scroll ${before.scrollTop} -> ${after.scrollTop}, tools ${before.chromeVisible} -> ${after.chromeVisible}`
+      assert(await page.locator('.chapter-inline-error').count() === 0, `retry did not replace adjacent error block (${detail})`)
+      assert(Math.abs(after.scrollTop - before.scrollTop) <= 2, `retry press also moved the reader (${detail})`)
+      assert(after.chromeVisible === before.chromeVisible, `retry press toggled the tool layer (${detail})`)
+    }
     await page.waitForFunction(() => (
       !document.querySelector('.chapter-content[data-index="1"] .chapter-inline-error')
       && document.querySelectorAll('.chapter-content[data-index="1"] [data-reader-block]').length > 1
@@ -474,8 +543,16 @@ async function main() {
       await runContinuousViewport(browser, viewport, 'scroll')
       await runContinuousViewport(browser, viewport, 'scroll2')
     }
-    await runFailureRetry(browser)
+    const retryFailures = []
+    for (const variant of FAILURE_RETRY_VARIANTS) {
+      try {
+        await runFailureRetry(browser, variant)
+      } catch (error) {
+        retryFailures.push(`${variant.name}: ${error.message.split('\n')[0]}`)
+      }
+    }
     await runProgressTransaction(browser)
+    assert(retryFailures.length === 0, `inline failure retry failed:\n${retryFailures.join('\n')}`)
     console.log('reader continuous contract smoke passed')
   } finally {
     await browser.close()
