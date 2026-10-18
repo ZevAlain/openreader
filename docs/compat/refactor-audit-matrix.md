@@ -1,5 +1,44 @@
 # OpenReader 全量上游复审矩阵
 
+## 2026-10-17 当前切片：Reader 正文加载失败错误面盘点
+
+见[`reader-chapter-error-surface-fixed-baseline-second-audit-p0-contract.md`](reader-chapter-error-surface-fixed-baseline-second-audit-p0-contract.md)。
+固定fa22当前章失败时正文区是“错误章节页”：`<h3>`目标章目录标题+`获取章节内容失败！`+原因，EPUB/音频/CBZ错误时同样按
+文字页渲染；每次失败弹一次提示；正文无按钮，重试只走刷新浮动按钮；错误页照常响应点击分区，页码按错误页重算；连续模式失败章
+留在列表、后一章照常加载；目录失败显示`获取章节目录失败！`。当前主错误块只有原因和自有“重新加载”：无标题、无标签、无提示，
+英文`failed to load chapter content`原样显示，stale冲突显示通用兜底。本地Go服务+生产前端三视口复现：1440×900按钮被`tap-upper`
+盖住，真实点击跳上一章末尾并写进度`4:第五章 前邻`；真机触摸page/flip同样跳章，scroll/scroll2上翻、隐藏工具层、写`5:第一章 起点`
+而不重载；只有窄视口+鼠标能重试。已签收的内联错误块按钮桌面下带被盖住、触摸附带翻页或切换工具层；连续模式目标章失败时后一章
+不显示；目录失败后重试显示第0章、不重新请求目录；移动页码沿用上一章`第 1/9 页`。工具栏“重新载入章节”三视口正常。标题、标签、
+提示、stale文案、按钮遮挡与触摸穿透（P0）、内联按钮、连续目标章、目录失败、页码判must-fix；正文内按钮沿用连续合同理由判
+acceptable-change；原因取脱敏消息、纯文本渲染判acceptable-change；英文原因是否中文化判unknown（D1）。运行标题、标签页标题、
+点击翻页区设计、章末入口、加载器与API不重开。状态contract-only；下一步在运行标题/桌面计数/标签页标题切片之上红测（源码合同、
+触摸判定、目录重试、连续窗口、错误面浏览器合同），再分四个提交实现（按钮可达P0优先）。实现提交改frontend，合入main会触发
+发布，由用户决定。
+
+记录（2026-10-18，R7按钮可达与穿透隔离，取代上段中R7的状态）：红测e497358（源码合同4条、handleTouchEnd单元1条、新增
+`reader-error-surface-contract.mjs`的E2/E3/E5相邻章部分、连续合同runFailureRetry的触摸与1440×900下带变体）在0427dd4
+（=已发布Reader）上18/30浏览器用例失败（1440×900鼠标与手机触摸全部用例），连续合同两个新变体失败→a6af2d6两个“重新加载”
+加`position: relative; z-index: 3`（同章末入口）与`@click.stop @touchstart.stop @touchend.stop`，handleTouchEnd对控件目标
+不做点击判定；点击层分区、映射、设备差异不变。修复后30/30与连续合同通过，frontend 793/793与build通过，mobile/text-modes/
+audio/epub/reauthentication/openreader-smoke对照通过；七项临时变异：去掉定位、或同时去掉.stop与触摸判断时浏览器按预期变红，
+只去掉一层时浏览器不变、由源码合同或单元变红。附带：手机触摸音频播放键不再切换工具层（靠拢上游）；桌面面板打开时露出的
+重新加载与章末入口一样点中按钮不关面板，另行裁决（合同第10节第4条）。R7状态implementation-complete / regression-validated；
+R1–R6、R8仍contract-only，D1待用户决定。本地未推送、未合入main；镜像未构建；生产未动。
+
+## 2026-10-17 当前切片：Reader 运行标题加载中与失败时的章节名盘点
+
+见[`reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md`](reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md)。
+固定fa22只有一个`this.title`：`getContent`在请求正文前就写成目标章目录标题，失败不回退，迟到响应丢弃；EPUB内链和连续滚动
+跨章同步写index与标题；连续模式上一章/下一章、搜索和书签跳转把两者一起推迟。当前序号取`currentIndex`（加载开始即写），
+章节名取已提交的`chapter`（成功后才写）。本地Go服务+生产前端三视口复现：文本四模式加载中`第 2 章 第一章 起点`，500后持续
+`第 5 章 第二章 延迟`，重新加载期间不变；目录跳转与EPUB内链相同；缓存命中也有1–4ms中间值；Reader内换书出现“新书序号+旧书
+章节名”；无chapter参数首次进入先显示`第 1 章`；迟到请求不回写（aligned）。加载中/失败/重载/EPUB/换书/目录替换/首次进入判
+must-fix；越界截断与连续模式开始即换判acceptable-change。目标：章节名取`chapters[currentIndex]`，目录行未知为空，导航开始即
+整体切换、失败不回退、不跨书拼接，与标签页标题同源。序号、显示位置、几何与计数裁决不重开。状态contract-only；下一步在桌面
+计数与标签页标题切片之上红测（改写派生断言、纯函数/事务单元合同、MutationObserver浏览器合同、EPUB延迟断言），再实现。
+实现提交改frontend，合入main会触发发布，由用户决定。
+
 ## 2026-10-16 当前切片：浏览器标签页标题（document.title）盘点
 
 见[`browser-document-title-fixed-baseline-second-audit-p0-contract.md`](browser-document-title-fixed-baseline-second-audit-p0-contract.md)。

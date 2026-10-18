@@ -59,3 +59,8 @@
   [`browser-document-title-fixed-baseline-second-audit-p0-contract.md`](browser-document-title-fixed-baseline-second-audit-p0-contract.md)。
   Reader 标签页标题已按其第 7.1 节实现为 `书名 - 章节名`（`4a0aae8`，本地回归通过，尚未发布），第 5 条“书名由浏览器
   标题提供”的前提在 Reader 上成立；首页与书源调试的标题文字仍等用户决定。运行标题本身不变。
+- 2026-10-17 补记（加载中与失败）：第 3 条中间一句“也在章节事务完成后更新”已在
+  [`reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md`](reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md)
+  对照上游重新裁决，第 1 条的“当前激活 Chapter”明确为 `currentIndex` 对应的目录行。真实浏览器在加载中和正文失败后都
+  显示“新序号 + 旧章节名”，判 `must-fix`；目标是导航开始即整体切换到目标章，失败不回退（contract-only，尚未实现）。
+  序号格式和其余条目不变。
