@@ -16,6 +16,16 @@ acceptable-change；原因取脱敏消息、纯文本渲染判acceptable-change�
 触摸判定、目录重试、连续窗口、错误面浏览器合同），再分四个提交实现（按钮可达P0优先）。实现提交改frontend，合入main会触发
 发布，由用户决定。
 
+记录（2026-10-18，R7按钮可达与穿透隔离，取代上段中R7的状态）：红测e497358（源码合同4条、handleTouchEnd单元1条、新增
+`reader-error-surface-contract.mjs`的E2/E3/E5相邻章部分、连续合同runFailureRetry的触摸与1440×900下带变体）在0427dd4
+（=已发布Reader）上18/30浏览器用例失败（1440×900鼠标与手机触摸全部用例），连续合同两个新变体失败→a6af2d6两个“重新加载”
+加`position: relative; z-index: 3`（同章末入口）与`@click.stop @touchstart.stop @touchend.stop`，handleTouchEnd对控件目标
+不做点击判定；点击层分区、映射、设备差异不变。修复后30/30与连续合同通过，frontend 793/793与build通过，mobile/text-modes/
+audio/epub/reauthentication/openreader-smoke对照通过；七项临时变异：去掉定位、或同时去掉.stop与触摸判断时浏览器按预期变红，
+只去掉一层时浏览器不变、由源码合同或单元变红。附带：手机触摸音频播放键不再切换工具层（靠拢上游）；桌面面板打开时露出的
+重新加载与章末入口一样点中按钮不关面板，另行裁决（合同第10节第4条）。R7状态implementation-complete / regression-validated；
+R1–R6、R8仍contract-only，D1待用户决定。本地未推送、未合入main；镜像未构建；生产未动。
+
 ## 2026-10-17 当前切片：Reader 运行标题加载中与失败时的章节名盘点
 
 见[`reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md`](reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md)。

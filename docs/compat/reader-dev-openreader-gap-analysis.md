@@ -23,7 +23,17 @@ stale 文案、按钮被点击层遮挡与触摸穿透（P0）、内联按钮的
 文案、目录失败），并给 EPUB 与连续合同补失败步骤。另记三条观察，不并入本切片：刷新正文的成功提示与服务端 refresh 语义；
 失败态进度载荷（本次第一次实测到 `5:第一章 起点`）；EPUB 内链后路由不同步。完整合同见
 [`reader-chapter-error-surface-fixed-baseline-second-audit-p0-contract.md`](reader-chapter-error-surface-fixed-baseline-second-audit-p0-contract.md)。
-当前状态为 **contract-only**：产品代码和测试都没有改。
+2026-10-18 记录 R7（按钮可达与穿透隔离，合同第 11 节）：红测 `e497358`（两个“重新加载”的源码合同 4 条、`handleTouchEnd`
+单元 1 条、新增 `reader-error-surface-contract.mjs` 的 E2/E3 与 E5 相邻章部分、连续合同 `runFailureRetry` 的触摸与 1440×900
+下带变体）在 `0427dd4`（Reader 与已发布的 `186c762` 相同）上按盘点复现：新浏览器合同 18/30 失败，正好是 1440×900 鼠标与两种
+手机触摸的全部用例，窄视口鼠标 12 组通过；连续合同的两个新变体失败；单元 793 条中只有新增 5 条失败。实现 `a6af2d6` 给两个
+按钮加 `position: relative; z-index: 3`（同章末 `加载下一章`：高于点击层 2、低于调暗层 4）和 `@click.stop @touchstart.stop
+@touchend.stop`，`handleTouchEnd` 对控件目标不做点击判定（与 `handleContentClick` 同一选择器）；点击层分区、映射和设备差异
+不变。修复后新合同 30/30、连续合同全部通过，frontend 793/793 与 build 通过，reader-mobile、text-modes、audio、epub、
+reauthentication 与 openreader-smoke 对照通过。七项临时变异中，去掉定位以及同时去掉 `.stop` 与触摸判断时浏览器按预期变红；
+只去掉其中一层时另一层仍能挡住穿透，浏览器不变，由源码合同或单元变红守住。附带：手机触摸音频播放键不再切换工具层
+（向上游靠拢）；桌面工作区面板打开时露出的“重新加载”与章末入口一样点中按钮、不关面板，记为合同第 10 节第 4 条另行裁决。
+R7 状态为 **implementation-complete / regression-validated**；R1–R6、R8 仍为 **contract-only**，D1 待用户决定。
 
 ## 2026-10-17 P0 Reader 运行标题加载中与失败时的章节名盘点
 

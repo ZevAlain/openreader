@@ -1,7 +1,8 @@
 # Reader 正文加载失败错误面盘点（P0）
 
-状态：**contract-only**。本切片只写文档；Reader 产品代码、单元合同和浏览器合同都没有改。第 4 节的真实浏览器复现用的是会话
-scratchpad 里的临时探针，没有入库。红测与实现按第 9 节在后续阶段进行。
+状态：R7 **implementation-complete / regression-validated**（红测 `e497358`、实现 `a6af2d6`，见第 11 节）；R1–R6、R8 仍为
+**contract-only**，D1 仍待用户决定。盘点提交 `0427dd4` 只写文档；第 4 节的真实浏览器复现用的是会话 scratchpad 里的临时探针，
+没有入库，其中第 4.2、4.3、4.5 节的按钮命中与真实指针部分已由入库的 `scripts/smoke/reader-error-surface-contract.mjs` 承接。
 
 固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。约定路径
 `/private/tmp/changshengyu-reader-dev` 在本会话沙箱里不可写，上游克隆到会话 scratchpad 后 checkout 同一提交。  
@@ -420,7 +421,8 @@ R9. 不变：第 6 节列出的已签收项；`加载下一章` 在错误时隐�
    建议在它们之上切分支。失败态进度载荷盘点会和 R6、R7 的“不写错误进度”交叉，先看它的结论再定 R6 的进度细节。
 3. **红测**：8.1 第 1–6 项、8.2 第 1–3 项，记录每个视口、模式和输入的精确失败点。提交 `test: expose reader chapter error surface gaps`。
 4. **实现**：按风险拆成可独立验证的提交，每个都让对应断言转绿：
-   - `fix: keep reader retry buttons above tap zones and touch handling`（R7，P0，最小改动）；
+   - `fix: keep reader retry buttons above tap zones and touch handling`（R7，P0，最小改动；已完成：红测 `e497358`、实现
+     `a6af2d6`，见第 11 节）；
    - `fix: render upstream chapter error page with title, label and toast`（R1–R4、R8）；
    - `fix: retry the catalog when the reader book load failed`（R5）；
    - `fix: keep failed target chapters in the continuous window`（R6）。
@@ -439,3 +441,103 @@ R9. 不变：第 6 节列出的已签收项；`加载下一章` 在错误时隐�
    第 10 节第 3 条推断的第一个实测样本；1440×900 与触摸 page/flip 的误触则把进度存成上一章末尾。R7 修好后误触路径消失，但载荷
    本身的问题仍需失败态进度载荷盘点裁决。上游失败后 `saveReadingPosition` 直接返回（2.6）。
 3. EPUB 内链跳到另一章后路由仍是进入时的 `?chapter=1`（第 4.8 节第一行重载后显示第 2 行），属于 EPUB 路由同步，不在本文范围。
+4. 桌面工作区面板打开时露出的正文按钮（2026-10-18 R7 实施时实测，见第 11 节“附带影响”第 3 条）：面板外是一层全屏透明的
+   `.reader-workspace-dismiss`（`ReaderDesktopWorkspacePanel.vue`，`z-index: 3`，DOM 在正文之前）。章末 `加载下一章` 与 R7 之后的
+   两个“重新加载”都是 `z-index: 3` 且在 DOM 中更靠后，露在面板下方时点中的是按钮：执行按钮动作，面板不关。上游四个桌面面板是
+   `el-popover trigger="click"`（`Reader.vue` L9–55），没有遮罩：点面板外的控件时控件照常执行，面板也随之关闭；正文的点击分区在
+   面板打开时由 `eventHandler` 直接返回。需要另行裁决这类控件在面板打开时应该怎样响应。
+
+## 11. R7 实施与验证（2026-10-18）
+
+只做 R7（按钮可达与穿透隔离）。R1–R6、R8 与 D1 没有动：第 4.2 节的标题、文字和页码，第 4.6–4.7 节的文案与目录重试，第 3.4 节
+的连续模式目标章失败，在 `a6af2d6` 上与盘点时相同。
+
+| 提交 | 阶段 | 内容 |
+| --- | --- | --- |
+| `0427dd4` | 合同 | 本文件、gap analysis 与 matrix（盘点）。 |
+| `e497358` | 红测 | 8.1 第 1 项中属于 R7 的部分（两个按钮的三个 `.stop`、定位与 `z-index`）和第 4 项；8.2 第 1 项的 E2、E3 与 E5 的相邻章部分（新增 `scripts/smoke/reader-error-surface-contract.mjs`）；8.2 第 3 项。 |
+| `a6af2d6` | 实现 | 见下。 |
+
+分支 `claude/heuristic-payne-80b7a6` 从 `5bc38a3` 用 `git merge --ff-only claude/elastic-albattani-d2ccc7` 快进到 `0427dd4` 后开工；
+`git diff 186c762 0427dd4 -- frontend backend` 为空，红测基线就是已发布的 Reader。`git diff 0427dd4 a6af2d6 -- backend` 为空。
+
+**实现**（产品代码只改两个文件）：
+
+- `ReaderChapterContent.vue`：主错误块按钮 `@click` 改为 `@click.stop`，并加 `@touchstart.stop @touchend.stop`；内联错误块按钮在已有
+  `@click.stop` 上加同样两个触摸 `.stop`。两个按钮共用一条 `position: relative; z-index: 3`，取值同章末 `加载下一章`
+  （`.reader-chapter-end`）：高于 `.reader-tap-zones` 的 2，低于 `.reader-page::after` 调暗层的 4，调暗时按钮仍和正文一起变暗。
+  触摸修饰符不带 `.prevent`，轻点照常合成 click。按钮的外观没有改。
+- `useReaderPointer.js`：`handleTouchEnd` 的短按分支在触摸目标位于 `button, a, input, textarea, select, [role="button"]` 内时不再调用
+  `tapPoint()`；`handleContentClick` 改用同一个选择器常量，行为不变。横向滑动翻页、长按选择、点击抑制计时不变。两个按钮的触摸
+  事件已被 `.stop` 截在按钮上，这条判断是第二层保护，并对 `.reader-page` 里的其他控件同样生效（见“附带影响”）。
+- 没改：点击层的 30/40/30 分区、zone 与触摸点到动作的映射、只在细指针桌面渲染与移动端隐藏、`加载下一章`、工具栏重试、加载器、
+  API、数据和存储 key。
+
+**单元**（`node --test`，沙箱外）：
+
+| 代码 | 结果 |
+| --- | --- |
+| `e497358` | 793 条中 788 通过；新增 5 条全部失败：`chapter-load-error 重新加载 click is missing .stop`；`.chapter-load-error button needs a position, got undefined`；`chapter-inline-error 重新加载 is missing @touchstart.stop`；`.chapter-inline-error button needs a position, got undefined`；`page tap on BUTTON at 150,60 reached the page actions`（实际 `[['previous']]`）。 |
+| `a6af2d6` | 793/793（新增 5 条：`readerChapterErrorSurface.test.mjs` 4 条、`readerPointer.test.mjs` 1 条）。 |
+
+沙箱内会多出 3 条 `dependencyAdvisoryLifecycleContract` 失败（app-client worker `listen EPERM 127.0.0.1`），与本切片无关。
+`npm run build` 通过，只有既有的 Rolldown `#__PURE__` 注释警告。
+
+**浏览器**：环境同第 4.1 节（本 worktree 构建的 go1.26.9 二进制加 `vite build` 生产前端，每个服务独立的临时 data/cache/library 与
+随机 JWT secret（未输出），Playwright 1.61.1 / chromium-headless-shell 1228，Node v26.4.0，服务与浏览器都在沙箱外）。红测基线和
+修复各自构建到独立目录、各起一个服务。`reader-error-surface-contract.mjs` 每个用例跑完全部检查再汇总；“12%” 位置受文档底部限制，
+记录的是实际 y：
+
+| 视口 / 输入 | 主错误块 page · flip · scroll · scroll2（E2、E3） | 内联 scroll · scroll2（E5） |
+| --- | --- | --- |
+| 1440×900 鼠标 | 红：4 组 FAIL。按钮中心 (720,157) 命中 `button.tap-zone.tap-upper`；按下后请求 `[4,5,3,6]`（page 为 `[4,5,3,6,2]`），路由 `?chapter=4&offset=-1`，进度 `PUT 4:第五章 前邻`。绿：命中按钮；请求 `[5,6,4,7,3]`，路由 `?chapter=5`，无进度写入，显示第六章 失败 | 红：2 组 FAIL。88%（y=792）命中 `tap-lower`，按下没有请求，文档 3752→4259px；12%（只能到 y=285）与 50% 命中按钮并重试。绿：三处命中按钮；12%、88% 按下（源仍失败）各只请求 `[1]`，滚动不变；50% 按下（源恢复）请求 `[1]` 并原位替换 |
+| 390×844 触摸 | 红：4 组 FAIL。page/flip 跳到 `?chapter=4&offset=-1`，工具层隐藏，`PUT 4:第五章 前邻`；scroll/scroll2 不重载（请求 `[3]` 或 `[]`），工具层隐藏，`PUT 5:第一章 起点`。绿：请求 `[5,6,4,7,3]`，路由不变，工具层保持显示，无进度写入 | 红：2 组 FAIL。12%（只能到 y=406，落在中间区）重试但隐藏工具层；88%（y=742）没有请求，下翻 5733→6069px；50% 重试成功但工具层又切回显示。绿：三处命中按钮，三次按下各只请求 `[1]`，滚动与工具层不变 |
+| 390×844 鼠标 | 红、绿都 PASS（与盘点一致：原来只有这种组合能重试） | 红、绿都 PASS |
+| 360×800 触摸 | 同 390×844 触摸（按钮 (180,158)/(180,143)/(180,128)） | 同 390×844 触摸（12% 只能到 y=372，88% 为 y=704，下翻 5762→6094px） |
+| 360×800 鼠标 | 红、绿都 PASS | 红、绿都 PASS |
+
+合计：`e497358` 上 18/30 FAIL，正好是 1440×900 鼠标与两种手机触摸的全部用例；`a6af2d6` 上 30/30 PASS。
+
+`reader-continuous-contract.mjs`：原有 4 视口 × 2 模式、原有 390×844 鼠标重试和进度事务在两份代码上都通过。新增变体在红测基线上
+`390x844 touch at 88%` FAIL（没有重试，`scroll 10838 -> 11175`，`tools true -> false`），`1440x900 mouse at 88% (lower tap zone)`
+FAIL（`(720,792)` 命中 `button.tap-zone.tap-lower`）；修复后全部通过。
+
+对照（`a6af2d6`）：`reader-mobile-contract`、`reader-text-modes-contract`、`reader-audio-contract`、`reader-epub-contract`（真实服务、
+3 视口）、`reader-reauthentication-contract`（4 视口）和 `openreader-smoke`（3 视口）全部通过。服务日志除注册、导入、书签的 201 外
+都是 200，另有模拟上下文 `/ws/sync` 的 401（假 token，`page.route` 拦不到 WebSocket）；没有 5xx，没有 panic。
+
+**临时变异**（只改工作区并构建到独立目录，构建后立即 `git checkout` 还原，未提交；每次还原后 `git status` 干净）：
+
+| 变异 | 改动 | 单元 | 浏览器（只跑相关用例） |
+| --- | --- | --- | --- |
+| M1a | 主错误块按钮去掉定位与 `z-index` | `chapter-load-error 重新加载 sits above the desktop tap zones…` FAIL | `^(main\|inline) 1440x900`：主错误块 4 组 FAIL（E2 命中 `tap-upper`；E3 跳到 `?chapter=4&offset=-1`，`PUT 4:第五章 前邻`），内联 2 组 PASS |
+| M1b | 主错误块按钮去掉三个 `.stop`，保留触摸判断 | `chapter-load-error 重新加载 stops click and touch…` FAIL | `^main` 20/20 PASS |
+| M1c | M1b 再去掉 `handleTouchEnd` 的判断 | 上一条和 `short touch taps on reader buttons…` FAIL | `^main` 触摸 8 组 FAIL，与红测基线相同（page/flip 跳上一章末尾；scroll/scroll2 不重载，写 `5:第一章 起点`）；鼠标 12 组 PASS |
+| M2a | 内联按钮去掉两个触摸 `.stop`，保留触摸判断 | `chapter-inline-error 重新加载 stops click and touch…` FAIL | `^inline` 10/10 PASS；连续合同 PASS |
+| M2b | M2a 再去掉 `handleTouchEnd` 的判断 | 上一条和 `short touch taps…` FAIL | `^inline` 触摸 4 组 FAIL（12% 切换工具层，88% 下翻 5733→6069px 且不重试），其余 6 组 PASS；连续合同 `390x844 touch at 88%` FAIL |
+| M2c | 内联按钮去掉定位与 `z-index` | `chapter-inline-error 重新加载 sits above…` FAIL | `^inline` 1440×900 两组 FAIL（88% 命中 `tap-lower`，下翻 3752→4259px），其余 8 组 PASS；连续合同 `1440x900 mouse at 88%` FAIL |
+| MG | 只去掉 `handleTouchEnd` 的判断 | `short touch taps…` FAIL | `(390x844\|360x800) touch` 12/12 PASS |
+
+合同 8.3 把 M1 写成“去掉定位或 `.stop`”、把 M2 写成“去掉内联按钮的 `.stop`”。去掉定位（M1a、M2c）时浏览器直接变红；只去掉
+`.stop`（M1b、M2a）或只去掉触摸判断（MG）时，另一层仍然挡住触摸穿透（`handleContentClick` 本来就跳过按钮），浏览器合同不会变红，
+由源码合同和 `readerPointer` 单元分别守住；两层都去掉（M1c、M2b）时浏览器重现红测基线的触摸红点。
+
+**附带影响**（同一改动带来的、`.reader-page` 内其他控件的变化）：
+
+1. 音频章节：手机触摸轻点播放器自己的按钮不再切换工具层。390×844、360×800 上播放键在中间区（195,410 / 180,410），修复前轻点会
+   隐藏工具层，修复后不变；-15s/+15s 在中间区外，前后都不变（scratchpad 探针，`isMobile + hasTouch`，`touchscreen.tap`）。上游音频
+   控件用 `click.stop.prevent`（`Content.vue` L316–359），音频模式下 `handleTouchStart` 直接返回，轻点控件从不切换菜单，所以这是向
+   上游靠拢。`reader-audio-contract` 用鼠标，前后都通过。
+2. 正文 HTML 里的链接等控件：触摸轻点只交给控件本身，不再同时翻页或切换工具层，与现有鼠标点击（`handleContentClick`）的规则一致
+   （读代码，未单独实测）。
+3. 桌面工作区面板（目录、书架、书源、设置）打开时，面板外有一层全屏透明的 `.reader-workspace-dismiss`（`z-index: 3`，DOM 在正文之前）。
+   主错误块按钮在 y=157，被面板本身（底边 390–503px）盖住，前后一样；内联按钮在 88%（y=792）时露在面板下方，修复前命中的是关闭层
+   （它的 `@click` 关闭面板，按钮不重试），修复后命中的是按钮（按钮 `@click.stop` 重试，面板不关）。章末 `加载下一章`（同为
+   `z-index: 3`）在红测基线和修复后都命中按钮（同一探针，y=792）。以上是 `elementFromPoint` 命中测试加两个处理函数的代码，没有
+   逐一点击。所以两个“重新加载”现在与已签收的章末入口一致；它们在面板打开时应该怎样响应，记为第 10 节第 4 条另行裁决，
+   不在 R7 里改（改关闭层或面板的层级会同时改变章末入口以及面板与左右栏、进度条的叠放）。
+
+**其余门**：Go `test`/`vet`/`race` 跳过（后端无改动）；依赖 advisory、Compose 与卷门跳过（依赖、Dockerfile、数据格式都没有改，卷门
+只在 Actions 上运行）。实现提交改了 `frontend/**`，命中 `docker-publish.yml` 的路径过滤，合入 main 会触发镜像发布，是否合入由用户决定。
+
+**状态**：Git 为本地分支 `claude/heuristic-payne-80b7a6` 上的提交，未推送，未合入 main。镜像：未构建，未推送。生产：未访问，未操作。
