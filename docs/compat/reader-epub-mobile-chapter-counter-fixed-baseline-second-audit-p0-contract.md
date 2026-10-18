@@ -153,3 +153,18 @@ M3 就是 `e1631d0` 之前的形态：旧断言只读 `textContent`，所以发�
 
 **状态**：Git 为 `claude/sleepy-moser-50391e` 上的本地提交，记录时未推送、未合入 main。镜像：未构建、未推送，
 产品行为已随 `186c762` 发布。生产：未访问、未操作。
+
+## 10. 发布记录（2026-10-17）
+
+经用户确认，`refs/heads/claude/xenodochial-carson-5004c3` 快进合入，main 由 `5bc38a3` 快进至
+`2528d9c2f905f0098f98155aa733f9138f926052`（非 force，ls-remote 核验）。发布前本地门：Go 29 包与 vet、frontend
+805/805 与 build、审计门测试 128/128、Go/npm 实际扫描、Compose；本地 Go 服务（临时数据）加生产前端跑 openreader-smoke
+三视口、document-title 三视口 × navigation/auth/remote、EPUB 三视口、连续阅读、重新认证四视口、移动端（含 iPad）合同，
+全部通过，访问日志无 5xx（401 只来自 mock 合同伪造 token 的 `/ws/sync`）。可信 Actions `39039046891` 成功（20m49s，
+两平台 OS 门 pass-with-unknown-origins，新旧卷与 portable 备份通过）。`ghcr.io/changshengyu/openreader:2528d9c` 与
+`latest` 指向 index `sha256:18b6c2992d9ef02bb89474186501afa8c9f72b3575bf60cfab1ba2d7ac9121fa`（amd64
+`sha256:e47d2f6984e3075f0ef6ee4f9ba068ba9bdaf95eed2238424fbe54963a802906`，arm64
+`sha256:bd61d51d650f10f58e08e82176bc2695743234a9dad7114df3f653cb93b7c090`）。按 digest 独立核验两平台：`/app/public`
+63 个文件与本地同一提交的 build 逐字节一致，bundle 含 document.title 写入；zlib 1.3.2-r1、SQLite 3.51.3 与完整
+revision 标签保持。生产未访问，实际运行版本未知。
+本切片只改浏览器合同脚本，产品行为不变；合同已随 `2528d9c` 进入 main，状态 **aligned / merged**。

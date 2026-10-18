@@ -21,6 +21,13 @@ scroll/scroll2`:182`与进度事务`:423`、重新认证四视口`:214`同样失
 按旧目录长度为新书预加载正文，另行盘点。状态：Reader部分implementation-complete / regression-validated，首页/首屏/
 登录/书源调试仍contract-only等D1；合入main会触发发布，由用户决定；本地未推送，无新镜像，生产未动。
 
+发布（2026-10-17，取代上段Git/镜像状态）：经用户确认，xenodochial-carson线（EPUB移动端合同、桌面计数、Reader
+document.title及记录）快进合入，main 5bc38a3→2528d9c。发布前本地Go/vet、frontend 805/805与build、门测试128/128、
+实际扫描、Compose，以及本地Go服务+生产前端的smoke、document-title、EPUB、连续、重新认证、移动端合同三视口（含iPad）
+通过。可信Actions 39039046891成功；`2528d9c`/`latest` = index `18b6c299…ac9121fa`（amd64 `e47d2f69…`、arm64
+`bd61d51d…`）。按digest独立核验两平台：前端63个文件与本地同提交build逐字节一致，zlib 1.3.2-r1、SQLite 3.51.3、
+revision标签保持。状态Reader部分released / awaiting-device-verification；D1仍待用户决定；生产未操作，实际版本未知。
+
 ## 2026-10-16 当前切片：Reader 桌面运行标注盘点
 
 见[`reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md`](reader-desktop-running-header-fixed-baseline-second-audit-p0-contract.md)。

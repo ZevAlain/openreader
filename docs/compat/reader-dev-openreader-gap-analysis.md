@@ -32,6 +32,11 @@ EPUB、重新认证合同里补了标题断言。旧实现上 17 条单元全部
 **contract-only**，等用户决定 D1。实现改了 `frontend/**`，合入 main 会触发镜像发布，由用户决定；提交只在本地，未推送，
 没有新镜像，生产未动。
 
+发布（2026-10-17）：经用户确认快进合入，main 为 `2528d9c`；可信 Actions `39039046891` 成功，`2528d9c`/`latest` 指向 index
+`sha256:18b6c2992d9ef02bb89474186501afa8c9f72b3575bf60cfab1ba2d7ac9121fa`，两平台按 digest 核验前端产物与本地同提交 build
+逐字节一致。桌面计数与 EPUB 移动端合同随同一提交进入 main。Reader 部分 **released / awaiting-device-verification**，
+D1 仍待决定；生产未操作。
+
 ## 2026-10-16 P0 Reader 桌面运行标注盘点
 
 固定上游桌面 `.top-bar` 渲染空字符串（`Reader.vue` L227–229，桌面样式只是一条 44px 空白），模板不引用 `catalog`

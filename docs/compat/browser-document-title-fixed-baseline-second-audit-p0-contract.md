@@ -522,3 +522,18 @@ Go 1.26.9、Node v26.4.0、Playwright 1.61.1 / Chrome Headless Shell 1228。会�
 本记录），未推送、未合入 main。分支包含桌面计数切片和 EPUB 移动端计数切片的提交；`4a0aae8` 改了 `frontend/**`，
 命中 `docker-publish.yml` 的路径过滤，合入 main 会触发镜像发布，是否合入由用户决定。镜像：未构建、未推送。生产：
 未访问、未操作。
+
+## 13. 发布记录（2026-10-17）
+
+经用户确认，`refs/heads/claude/xenodochial-carson-5004c3` 快进合入，main 由 `5bc38a3` 快进至
+`2528d9c2f905f0098f98155aa733f9138f926052`（非 force，ls-remote 核验）。发布前本地门：Go 29 包与 vet、frontend
+805/805 与 build、审计门测试 128/128、Go/npm 实际扫描、Compose；本地 Go 服务（临时数据）加生产前端跑 openreader-smoke
+三视口、document-title 三视口 × navigation/auth/remote、EPUB 三视口、连续阅读、重新认证四视口、移动端（含 iPad）合同，
+全部通过，访问日志无 5xx（401 只来自 mock 合同伪造 token 的 `/ws/sync`）。可信 Actions `39039046891` 成功（20m49s，
+两平台 OS 门 pass-with-unknown-origins，新旧卷与 portable 备份通过）。`ghcr.io/changshengyu/openreader:2528d9c` 与
+`latest` 指向 index `sha256:18b6c2992d9ef02bb89474186501afa8c9f72b3575bf60cfab1ba2d7ac9121fa`（amd64
+`sha256:e47d2f6984e3075f0ef6ee4f9ba068ba9bdaf95eed2238424fbe54963a802906`，arm64
+`sha256:bd61d51d650f10f58e08e82176bc2695743234a9dad7114df3f653cb93b7c090`）。按 digest 独立核验两平台：`/app/public`
+63 个文件与本地同一提交的 build 逐字节一致，bundle 含 document.title 写入；zlib 1.3.2-r1、SQLite 3.51.3 与完整
+revision 标签保持。生产未访问，实际运行版本未知。
+状态：Reader 部分 **released / awaiting-device-verification**；首页、首屏、登录与书源调试标题仍 contract-only，等用户决定 D1。
