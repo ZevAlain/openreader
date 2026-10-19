@@ -34,6 +34,9 @@ reauthentication 与 openreader-smoke 对照通过。七项临时变异中，去
 只去掉其中一层时另一层仍能挡住穿透，浏览器不变，由源码合同或单元变红守住。附带：手机触摸音频播放键不再切换工具层
 （向上游靠拢）；桌面工作区面板打开时露出的“重新加载”与章末入口一样点中按钮、不关面板，记为合同第 10 节第 4 条另行裁决。
 R7 状态为 **implementation-complete / regression-validated**；R1–R6、R8 仍为 **contract-only**，D1 待用户决定。
+2026-10-18 发布：合并提交 `238e3f3` 快进 main，可信 Actions `39125862052` 成功，`238e3f3`/`latest` 指向 index
+`sha256:f45c8995a47c7ce696c07600533e620bf68b5b4e8df77d684539bb823afca4cf`，两平台前端产物与本地同提交 build 逐字节一致；
+R7 **released / awaiting-device-verification**，生产未操作。
 
 ## 2026-10-17 P0 Reader 运行标题加载中与失败时的章节名盘点
 

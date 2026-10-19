@@ -26,6 +26,11 @@ audio/epub/reauthentication/openreader-smoke对照通过；七项临时变异：
 重新加载与章末入口一样点中按钮不关面板，另行裁决（合同第10节第4条）。R7状态implementation-complete / regression-validated；
 R1–R6、R8仍contract-only，D1待用户决定。本地未推送、未合入main；镜像未构建；生产未动。
 
+发布（2026-10-18，取代上段Git/镜像状态）：自动推送要求下合并为238e3f3并快进main；发布前frontend 810/810与build、
+本地Go服务+生产前端9个浏览器合同（含错误面30例）通过。可信Actions 39125862052成功；`238e3f3`/`latest` = index
+`f45c8995…afca4cf`（amd64 `d11f20f9…`、arm64 `79086bcd…`），两平台前端63个文件与本地同提交build逐字节一致，
+zlib/SQLite/revision保持。R7 released / awaiting-device-verification；生产未操作，实际版本未知。
+
 ## 2026-10-17 当前切片：Reader 运行标题加载中与失败时的章节名盘点
 
 见[`reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md`](reader-running-title-load-failure-fixed-baseline-second-audit-p0-contract.md)。

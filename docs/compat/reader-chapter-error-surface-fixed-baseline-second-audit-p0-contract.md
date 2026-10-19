@@ -541,3 +541,19 @@ FAIL（`(720,792)` 命中 `button.tap-zone.tap-lower`）；修复后全部通过
 只在 Actions 上运行）。实现提交改了 `frontend/**`，命中 `docker-publish.yml` 的路径过滤，合入 main 会触发镜像发布，是否合入由用户决定。
 
 **状态**：Git 为本地分支 `claude/heuristic-payne-80b7a6` 上的提交，未推送，未合入 main。镜像：未构建，未推送。生产：未访问，未操作。
+
+## 12. R7 发布记录（2026-10-18）
+
+按用户“每段进度自动推送并构建”的要求，`refs/heads/claude/heuristic-payne-80b7a6` 以合并提交
+`238e3f3357a4d99d0f804c6458ffd835dfa091f5` 进入本分支并快进 main（非 force，ls-remote 核验）；冲突只在四份文档，
+逐块保留两侧条目，代码自动合并。发布前本地门：frontend 810/810 与 build；本地 Go 服务（临时数据）加生产前端跑
+openreader-smoke、错误面合同 30 例、连续阅读、document-title、EPUB、重新认证四视口、text-modes、音频、移动端（含 iPad），
+全部通过，访问日志无 5xx（401 只来自 mock 合同伪造 token 的 `/ws/sync`）。后端与锁文件相对已验证的 `2528d9c` 无改动，
+本地未重跑 Go，由 Actions 执行。可信 Actions `39125862052` 成功（19m34s，两平台 OS 门 pass-with-unknown-origins，新旧卷与
+portable 通过）。`ghcr.io/changshengyu/openreader:238e3f3` 与 `latest` 指向 index
+`sha256:f45c8995a47c7ce696c07600533e620bf68b5b4e8df77d684539bb823afca4cf`（amd64
+`sha256:d11f20f9c94682c922692596c6a03e4cb839b3ca064e310e2fe276061a196060`，arm64
+`sha256:79086bcd96c3e5447c379199e2805744864778ab92142cc6eaf0114c4644f77e`）。按 digest 独立核验两平台：`/app/public`
+63 个文件与本地同一提交的 build 逐字节一致；zlib 1.3.2-r1、SQLite 3.51.3 与完整 revision 标签保持。
+
+状态：R7 **released / awaiting-device-verification**；R1–R6、R8 仍 contract-only，D1 待用户决定。生产未访问，实际运行版本未知。
