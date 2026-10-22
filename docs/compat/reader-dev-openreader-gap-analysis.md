@@ -1,5 +1,15 @@
 # Reader-dev vs OpenReader Gap Analysis
 
+## 2026-10-22 P1 依赖维护 发布门新增公告
+
+认证会话 P0 修复的本地发布门里，两个失败关闭的 advisory 门在当前树上失败（上次成功发布为 10-18 的 `238e3f3`）：Go 门报
+未审查的 GO-2026-6809（`crypto/x509` 不再信任被攻破的中间证书，修复于 Go 1.26.10，经 `crypto/tls` 客户端握手可达）；前端
+全锁门报 vite 8.0.16（开发服务器公告，8.0 线无修复，最小修复 8.1.6）和经 axios 引入的 follow-redirects 1.16.0（修复 1.16.1，
+预期不进浏览器产物）。CI 在构建镜像前运行同样的门，不修就发布不了。判定三项均为 **`must-fix`（发布阻塞）**：go 指令与
+后端构建镜像升到 Go 1.26.10（官方 index pin），vite 精确升到 8.1.6，follow-redirects 用精确 override 固定 1.16.1；不加门例外、
+不改门脚本、不升级其他依赖，README 的 Go 版本字样留给进行中的 README 改写。上游行为不涉及。完整合同见
+[`dependency-advisory-release-blockers-fixed-baseline-second-audit-p1-contract.md`](dependency-advisory-release-blockers-fixed-baseline-second-audit-p1-contract.md)。
+
 ## 2026-10-22 P0 认证会话 旧格式 JWT 收编与公开默认密钥
 
 会话合同的七天旧格式 JWT 收编窗把“签名能验证”当作“本实例签发过”。`OPENREADER_JWT_SECRET` 未设置时用仓库公开的

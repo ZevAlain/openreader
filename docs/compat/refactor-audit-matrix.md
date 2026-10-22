@@ -1,5 +1,13 @@
 # OpenReader 全量上游复审矩阵
 
+## 2026-10-22 当前切片：发布门新增依赖公告维护（P1，阻塞 P0 发布）
+
+见[`dependency-advisory-release-blockers-fixed-baseline-second-audit-p1-contract.md`](dependency-advisory-release-blockers-fixed-baseline-second-audit-p1-contract.md)。
+P0认证修复的本地发布门中，Go门报GO-2026-6809（Go 1.26.10修复，crypto/tls可达），前端全锁门报vite 8.0.16（开发服务器，
+最小修复8.1.6）与follow-redirects 1.16.0（经axios，修复1.16.1）。三项must-fix：go指令与后端构建镜像升Go 1.26.10（官方index
+pin），vite精确8.1.6，follow-redirects精确override 1.16.1；不加门例外、不改门脚本、不升级其他依赖，README Go版本字样留给
+README改写。既有发布门即红测。状态contract-only；下一步build提交、全量回归，与P0修复一起合入main发布。
+
 ## 2026-10-22 当前切片：认证会话旧格式 JWT 收编与公开默认密钥（P0 安全）
 
 见[`authenticated-session-legacy-public-secret-fixed-baseline-second-audit-p0-contract.md`](authenticated-session-legacy-public-secret-fixed-baseline-second-audit-p0-contract.md)。
