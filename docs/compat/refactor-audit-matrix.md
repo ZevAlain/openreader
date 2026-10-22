@@ -6,7 +6,10 @@
 P0认证修复的本地发布门中，Go门报GO-2026-6809（Go 1.26.10修复，crypto/tls可达），前端全锁门报vite 8.0.16（开发服务器，
 最小修复8.1.6）与follow-redirects 1.16.0（经axios，修复1.16.1）。三项must-fix：go指令与后端构建镜像升Go 1.26.10（官方index
 pin），vite精确8.1.6，follow-redirects精确override 1.16.1；不加门例外、不改门脚本、不升级其他依赖，README Go版本字样留给
-README改写。既有发布门即红测。状态contract-only；下一步build提交、全量回归，与P0修复一起合入main发布。
+README改写。既有发布门即红测。实施中发现vite 8.1.6产物空白页（rolldown 1.1+把运行时放进共享应用chunk，与
+http-vendor循环导入），加`strictExecutionOrder: true`修复（第8节）。提交37503a3/99a8900/6ca7fbf/a673c61/3351458；两个
+实际advisory门exit 0，前端810/810（Node 26与Node 22.23.3镜像）、build、三视口启动smoke与两项真实API浏览器合同、
+Go 1.26.10 full/vet通过。状态implementation-complete/regression-validated；O3（发布流程无浏览器启动门）另起后续。
 
 ## 2026-10-22 当前切片：认证会话旧格式 JWT 收编与公开默认密钥（P0 安全）
 
@@ -16,7 +19,9 @@ README改写。既有发布门即红测。状态contract-only；下一步build�
 账号早于 marker）判must-fix P0：公开值下查询账号前拒绝旧格式token（T1）；其余情况只收编`created_at`严格早于marker的账号
 （T2），全新安装无收编窗。新格式会话、自定义密钥已升级实例的合法收编、marker、schema、备份、启动与前端都不变；公开默认值
 实例的升级前旧token明确放弃。F3资源capability（封面中、其余低）must-fix P1另起切片S2（不用公开值签名）；F4文档不一致随
-记录/README处理；O1、O2只记录。状态contract-only；下一步红测（api三入口+服务层+正常对照），再实现。合入main会触发发布。
+记录/README处理；O1、O2只记录。提交a7bdc8b/cfdcd8a/9e77cd9：红测在a1a1795上按预期失败、在9e77cd9上转绿，正常对照
+始终通过，两次临时变异分别只让T1、T2的用例变红；真实二进制（不设密钥、全新卷）上新版四个入口都拒绝；安全检查清单
+F4已更正。状态implementation-complete/regression-validated；与依赖维护切片一起合入main发布，S2、O1、O2仍开放。
 
 ## 2026-10-17 当前切片：Reader 正文加载失败错误面盘点
 

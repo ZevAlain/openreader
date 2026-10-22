@@ -5,7 +5,7 @@
 当前实施基线：`OpenReader@a1a1795`（`origin/main`）
 
 审查日期：2026-10-22
-状态：**contract-only**
+状态：**implementation-complete / regression-validated**（证据见第 13 节；发布状态见第 13.6 节）
 
 前置合同：[`authenticated-session-lifecycle-fixed-baseline-second-audit-p2-contract.md`](authenticated-session-lifecycle-fixed-baseline-second-audit-p2-contract.md)
 （下称“会话合同”）。本合同只收紧会话合同第 4 节“旧 JWT 过渡窗”的适用条件，并补充第 5 节“双默认值兼容”
@@ -202,3 +202,60 @@ HS256 token，只要签名能验证、`iat` 不晚于 marker、账号 `auth_vers
 - 不改 `config.Load()` 默认值、不生成实例密钥（S2）、不改资源 capability、不改前端或 API 形状。
 - 不处理 O1、O2；不改变新格式会话的双默认值兼容。
 - 不把其它弱的自定义密钥列入公开值名单：T2 已让这类实例的风险只剩“升级后七天内、升级前的账号”。
+
+## 13. 实施与验证证据（2026-10-22）
+
+### 13.1 提交
+
+| 提交 | 内容 |
+| --- | --- |
+| `a7bdc8b` | 本合同及 gap-analysis / matrix 登记 |
+| `cfdcd8a` | 红测（9.1、9.2）及 9.2 第 4 条的夹具更正（断言不变） |
+| `9e77cd9` | 实现：只改 `backend/services/authsession/service.go` 的旧格式分支 |
+
+同一分支随后是依赖维护切片
+[`dependency-advisory-release-blockers-fixed-baseline-second-audit-p1-contract.md`](dependency-advisory-release-blockers-fixed-baseline-second-audit-p1-contract.md)，
+它是本修复能够发布的前提。
+
+### 13.2 红 → 绿
+
+- `a1a1795` 上：api 层 R1（2 个子测试）、R2（2 个子测试）、R3 在 REST、两个 WebDAV 前缀和 `/ws/sync` 上全部按预期
+  失败，且各产生 1 条 legacy 行；服务层 T1 用例 6 个子测试、T2 用例 4 个子测试按预期失败。正常对照（新格式会话
+  ×2 种密钥、未知 `jti` 的新格式 token、已升级自定义密钥实例的合法收编与退出墓碑、早于 marker 的收编、两个公开
+  默认值之间的新格式兼容）与夹具更正后的既有服务层测试全部通过。
+- `9e77cd9` 上：同一组断言全部通过；既有会话、删用户、改密、过期、WebSocket 握手合同测试照常通过。
+- 临时变异（未提交）：只去掉 T1 时 T1 服务层用例与 R2 变红；只去掉 T2 时 T2 服务层用例与 R3 变红；两种情况下
+  R1 都仍为绿，说明两条规则各自独立生效。
+
+### 13.3 真实二进制与浏览器
+
+- 用 `a1a1795` 与修复后的提交分别构建二进制，不设置 `OPENREADER_JWT_SECRET`、使用全新数据目录：旧二进制复现
+  第 1 节的问题；新二进制在 REST、两个 WebDAV 前缀和 `/ws/sync` 都返回 401，正常登录照常可用。
+- `scripts/smoke/authenticated-session-lifecycle-real-api-contract.mjs` 在同样的默认密钥实例上通过（双登录、
+  logout 204/401、改密与删用户后 401，REST/WebDAV/WS）；服务日志未出现 token 类内容。
+- 浏览器：`openreader-smoke.mjs` 三视口、`book-management-real-api-contract.mjs` 与
+  `reader-progress-multiclient-contract.mjs` 三视口通过（结果在维护切片合同第 9 节）。
+
+### 13.4 回归
+
+| 门 | 结果 |
+| --- | --- |
+| `go test ./...` | `9e77cd9`（Go 1.26.9）29 包通过；最终 Go 代码（Go 1.26.10）29 包通过 |
+| `go vet ./...` | 两次均 exit 0 |
+| `go test -race -timeout 40m ./api ./db ./services/...` | `9e77cd9` 24 包通过，api 1029.9 s，无 DATA RACE；最终树结果见维护切片合同第 9 节 |
+| advisory 门 | 离线合同测试 128/128；实际扫描在维护切片后通过（见维护切片合同第 9 节） |
+| 其它 | `docker compose config --quiet`、`store-read-list-lifecycle-contract.mjs` 通过 |
+
+本切片不改启动、数据卷、备份和前端，本地未跑 fresh / historical 卷门，由 Actions 在合入 main 后执行。
+
+### 13.5 推送方式
+
+仓库公开。为避免修复发布前公开问题细节，合同、红测和实现没有按阶段逐个推送，而是在全部本地门通过后与
+依赖维护切片一起合入 main，Actions 发布镜像。
+
+### 13.6 状态
+
+- Git：分支 `claude/auth-legacy-public-secret-forgery`，以上提交在本记录提交前均未推送。
+- 镜像：未发布（合入 main 后由 Actions 发布，发布记录另行提交）。
+- 生产：未访问，运行版本未知。
+- 后续：F3 的 S2 切片、O1、O2 仍开放；README 密钥一节按第 10 节在发布后复核。

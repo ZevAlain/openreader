@@ -7,7 +7,11 @@
 全锁门报 vite 8.0.16（开发服务器公告，8.0 线无修复，最小修复 8.1.6）和经 axios 引入的 follow-redirects 1.16.0（修复 1.16.1，
 预期不进浏览器产物）。CI 在构建镜像前运行同样的门，不修就发布不了。判定三项均为 **`must-fix`（发布阻塞）**：go 指令与
 后端构建镜像升到 Go 1.26.10（官方 index pin），vite 精确升到 8.1.6，follow-redirects 用精确 override 固定 1.16.1；不加门例外、
-不改门脚本、不升级其他依赖，README 的 Go 版本字样留给进行中的 README 改写。上游行为不涉及。完整合同见
+不改门脚本、不升级其他依赖，README 的 Go 版本字样留给进行中的 README 改写。上游行为不涉及。实施中发现 vite 8.1.6 的生产
+产物是空白页（rolldown 1.1+ 的运行时寄放导致 chunk 循环导入，8.2.4/8.3.5 同样复现），按合同第 8 节加
+`strictExecutionOrder: true`，产物结构恢复与旧构建一致。状态 **implementation-complete / regression-validated**：两个实际
+advisory 门通过，前端 810/810（含 Node 22.23.3 镜像）、三视口启动与真实 API 浏览器合同、Go 1.26.10 全量测试通过；发布流程
+不在浏览器里加载产物（O3）另起后续。完整合同见
 [`dependency-advisory-release-blockers-fixed-baseline-second-audit-p1-contract.md`](dependency-advisory-release-blockers-fixed-baseline-second-audit-p1-contract.md)。
 
 ## 2026-10-22 P0 认证会话 旧格式 JWT 收编与公开默认密钥
@@ -23,7 +27,10 @@
 （无法与伪造区分，代价是重新登录一次）。同一密钥派生的资源 capability（F3：封面可被当作匿名图片代理，中风险；EPUB/
 CBZ/音频/章节图片绑定内容指纹，低风险）判 `must-fix（P1）`，方向定为“永远不用公开值签名”，因改变启动与数据卷行为另起
 切片 S2。安全检查清单“必填”与 README“无需修改”的不一致（F4）在记录与发布后处理；窗口结束后已收编行也被拒绝（O1）、
-未注入会话服务时的中间件旧路径（O2，生产不可达）只记录。不改 schema、文件、启动、备份、前端。完整合同见
+未注入会话服务时的中间件旧路径（O2，生产不可达）只记录。不改 schema、文件、启动、备份、前端。实现 `9e77cd9` 只改
+`authsession` 的旧格式分支；红测 `cfdcd8a` 在旧实现上按预期失败、修复后转绿，正常对照始终通过，真实二进制上新版四个
+入口都拒绝；安全检查清单 F4 已更正。状态 **implementation-complete / regression-validated**，与依赖维护切片一起发布。
+完整合同见
 [`authenticated-session-legacy-public-secret-fixed-baseline-second-audit-p0-contract.md`](authenticated-session-legacy-public-secret-fixed-baseline-second-audit-p0-contract.md)。
 
 ## 2026-10-17 P0 Reader 正文加载失败错误面盘点
