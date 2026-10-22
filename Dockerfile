@@ -47,9 +47,10 @@ ENV OPENREADER_ADDR=:8080 \
     OPENREADER_DB=/app/data/openreader.db \
     OPENREADER_PUBLIC_DIR=/app/public \
     GIN_MODE=release
-# The Go builder includes the standard CA bundle; time/tzdata is embedded in
-# the binary, so the zlib fix above is the runtime stage's only package install.
-COPY --from=backend-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+# The runtime base's own ca-certificates-bundle provides the CA bundle (copying
+# the builder's would overwrite an APK-owned file whenever the builder's Alpine
+# point release differs); time/tzdata is embedded in the binary, so the zlib
+# fix above is the runtime stage's only package install.
 COPY --from=backend-builder /out/openreader /app/openreader
 COPY --from=frontend-builder /src/frontend/dist /app/public
 RUN mkdir -p /app/data /app/cache /app/library
