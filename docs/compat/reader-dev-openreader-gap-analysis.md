@@ -9,9 +9,11 @@
 后端构建镜像升到 Go 1.26.10（官方 index pin），vite 精确升到 8.1.6，follow-redirects 用精确 override 固定 1.16.1；不加门例外、
 不改门脚本、不升级其他依赖，README 的 Go 版本字样留给进行中的 README 改写。上游行为不涉及。实施中发现 vite 8.1.6 的生产
 产物是空白页（rolldown 1.1+ 的运行时寄放导致 chunk 循环导入，8.2.4/8.3.5 同样复现），按合同第 8 节加
-`strictExecutionOrder: true`，产物结构恢复与旧构建一致。状态 **implementation-complete / regression-validated**：两个实际
-advisory 门通过，前端 810/810（含 Node 22.23.3 镜像）、三视口启动与真实 API 浏览器合同、Go 1.26.10 全量测试通过；发布流程
-不在浏览器里加载产物（O3）另起后续。完整合同见
+`strictExecutionOrder: true`，产物结构恢复与旧构建一致。合入 main 后可信 Actions 又在 OS APK 门两次拦下：复制的构建镜像
+证书包与运行时 APK 记录不符（改为保留运行时自带证书包），以及 musl 1.2.5-r24（CVE-2026-107891）待修复（按 zlib 先例构建期
+安装签名精确版本、先行门测试、更新基线）。状态 **Docker-published**：run `39768628680` 全部门通过，
+`ghcr.io/changshengyu/openreader:92c98a9` / `latest` 为 OCI index `sha256:3b29f501…18d2`（amd64 + arm64）；发布流程不在浏览器里
+加载产物（O3）另起后续。完整合同见
 [`dependency-advisory-release-blockers-fixed-baseline-second-audit-p1-contract.md`](dependency-advisory-release-blockers-fixed-baseline-second-audit-p1-contract.md)。
 
 ## 2026-10-22 P0 认证会话 旧格式 JWT 收编与公开默认密钥
@@ -29,7 +31,8 @@ CBZ/音频/章节图片绑定内容指纹，低风险）判 `must-fix（P1）`�
 切片 S2。安全检查清单“必填”与 README“无需修改”的不一致（F4）在记录与发布后处理；窗口结束后已收编行也被拒绝（O1）、
 未注入会话服务时的中间件旧路径（O2，生产不可达）只记录。不改 schema、文件、启动、备份、前端。实现 `9e77cd9` 只改
 `authsession` 的旧格式分支；红测 `cfdcd8a` 在旧实现上按预期失败、修复后转绿，正常对照始终通过，真实二进制上新版四个
-入口都拒绝；安全检查清单 F4 已更正。状态 **implementation-complete / regression-validated**，与依赖维护切片一起发布。
+入口都拒绝；安全检查清单 F4 已更正。状态 **Docker-published**：与依赖维护切片一起由 run `39768628680` 发布为
+`ghcr.io/changshengyu/openreader:92c98a9` / `latest`；生产版本未知。
 完整合同见
 [`authenticated-session-legacy-public-secret-fixed-baseline-second-audit-p0-contract.md`](authenticated-session-legacy-public-secret-fixed-baseline-second-audit-p0-contract.md)。
 

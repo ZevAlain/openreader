@@ -5,8 +5,11 @@
 GO-2026-6809 (crypto/x509, reachable through crypto/tls) is fixed by Go 1.26.10 and the official
 golang:1.26.10-alpine3.23 index pin; vite moves to 8.1.6 (dev-server advisories) with
 `strictExecutionOrder` so the production bundle still boots; follow-redirects is pinned to 1.16.1 and is
-not part of the browser bundle. Both fail-closed advisory gates pass without new exceptions. The release
-workflow still does not load the built bundle in a browser (observation O3, follow-up).
+not part of the browser bundle. The runtime image keeps its own CA bundle instead of the builder's, and
+musl/musl-utils 1.2.5-r24 (CVE-2026-107891) are installed at build time from the signed index with pinned
+identities, following the zlib precedent. All fail-closed advisory gates, including the OS APK gate, pass without
+new exceptions; published as `92c98a9`. The release workflow still does not load the built bundle in a browser
+(observation O3, follow-up).
 
 2026-10-16 SQLite/WAL/OS-C contract-only supplement:
 [`compat/sqlite-wal-os-c-advisory-fixed-baseline-second-audit-p2-contract.md`](compat/sqlite-wal-os-c-advisory-fixed-baseline-second-audit-p2-contract.md).
@@ -411,7 +414,8 @@ Contract `31b2963`, red tests `5734f74` and implementation `3bb465f` landed in o
 
 Target contract:
 [`docs/compat/authenticated-session-legacy-public-secret-fixed-baseline-second-audit-p0-contract.md`](compat/authenticated-session-legacy-public-secret-fixed-baseline-second-audit-p0-contract.md).
-Status is `implementation-complete / regression-validated`; release evidence is recorded in that contract.
+Status is `Docker-published`: trusted Actions run `39768628680` published `ghcr.io/changshengyu/openreader:92c98a9` and
+`latest` (OCI index `sha256:3b29f501e659454ea096fddcc4e0a05ba3c881cccacf8c3a684218649ba218d2`, amd64 + arm64).
 
 ### P2 Bookmark write boundary (2026-08-12 implementation)
 

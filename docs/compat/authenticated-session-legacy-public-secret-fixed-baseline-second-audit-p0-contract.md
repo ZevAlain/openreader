@@ -5,7 +5,7 @@
 当前实施基线：`OpenReader@a1a1795`（`origin/main`）
 
 审查日期：2026-10-22
-状态：**implementation-complete / regression-validated**（证据见第 13 节；发布状态见第 13.6 节）
+状态：**implementation-complete / regression-validated / Docker-published**（证据见第 13 节，发布见第 13.6 节）
 
 前置合同：[`authenticated-session-lifecycle-fixed-baseline-second-audit-p2-contract.md`](authenticated-session-lifecycle-fixed-baseline-second-audit-p2-contract.md)
 （下称“会话合同”）。本合同只收紧会话合同第 4 节“旧 JWT 过渡窗”的适用条件，并补充第 5 节“双默认值兼容”
@@ -251,11 +251,20 @@ HS256 token，只要签名能验证、`iat` 不晚于 marker、账号 `auth_vers
 ### 13.5 推送方式
 
 仓库公开。为避免修复发布前公开问题细节，合同、红测和实现没有按阶段逐个推送，而是在全部本地门通过后与
-依赖维护切片一起合入 main，Actions 发布镜像。
+依赖维护切片一起合入 main。首次合入（`ae4736d`，09:49Z）后，可信 Actions 两次在 OS APK 门失败、没有发布镜像
+（复制的构建镜像证书包、musl 待修复项，见维护切片合同第 10、11 节）；修复后第三次运行于 11:36Z 发布。问题细节在
+main 上公开到镜像可用之间约 1 小时 47 分钟。
 
-### 13.6 状态
+### 13.6 发布与状态
 
-- Git：分支 `claude/auth-legacy-public-secret-forgery`，以上提交在本记录提交前均未推送。
-- 镜像：未发布（合入 main 后由 Actions 发布，发布记录另行提交）。
-- 生产：未访问，运行版本未知。
-- 后续：F3 的 S2 切片、O1、O2 仍开放；README 密钥一节按第 10 节在发布后复核。
+- Git：`main` 与分支 `claude/auth-legacy-public-secret-forgery` 都在 `92c98a971dce5c9166c0426695f89cd75f37cf94`
+  （`git ls-remote` 核验）；其间 `9f94117`（README 改写，另一会话）位于 `ae4736d` 之后。
+- 镜像：可信 Actions run `39768628680` 成功（Go 测试、advisory 门、前端测试与构建、Compose、存储 HTTP 合同、双平台
+  候选镜像、OS APK 门、fresh 卷与 portable 备份、历史卷兼容、发布、平台核验全部通过）。
+  `ghcr.io/changshengyu/openreader:92c98a9` 与 `latest` 为同一 OCI index
+  `sha256:3b29f501e659454ea096fddcc4e0a05ba3c881cccacf8c3a684218649ba218d2`：`linux/amd64`
+  `sha256:f102c6af2681bd1b3ad97fd698100df297f3866dbc0e5429e27a2ebb18a6d7f0`、`linux/arm64`
+  `sha256:7cfba03369e47c35660bae197dae2307d61747320b0def443fab2987cfc99e17`，两平台 revision 标签均为完整提交号。
+- 生产：未访问，运行版本未知；用户更新容器后才生效（标准 Compose 用 `latest` 加 `pull_policy: always`）。
+- README：改写版（`9f94117`）“在公网上使用”一节的理由与修复后的行为一致，不需要再改。
+- 后续：F3 的 S2 切片、O1、O2 仍开放。

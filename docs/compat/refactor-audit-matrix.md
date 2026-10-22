@@ -9,7 +9,9 @@ pin），vite精确8.1.6，follow-redirects精确override 1.16.1；不加门例�
 README改写。既有发布门即红测。实施中发现vite 8.1.6产物空白页（rolldown 1.1+把运行时放进共享应用chunk，与
 http-vendor循环导入），加`strictExecutionOrder: true`修复（第8节）。提交37503a3/99a8900/6ca7fbf/a673c61/3351458；两个
 实际advisory门exit 0，前端810/810（Node 26与Node 22.23.3镜像）、build、三视口启动smoke与两项真实API浏览器合同、
-Go 1.26.10 full/vet通过。状态implementation-complete/regression-validated；O3（发布流程无浏览器启动门）另起后续。
+Go 1.26.10 full/vet通过。合入后CI的OS APK门又两次拦下：复制的构建镜像证书包（改为保留运行时自带证书包）、musl
+1.2.5-r24（CVE-2026-107891，按zlib先例构建期安装并更新基线，门测试131/131）。run 39768628680全部门通过，发布
+`92c98a9`/`latest`（index `sha256:3b29f501…18d2`，amd64+arm64）。状态Docker-published；O3（发布流程无浏览器启动门）另起后续。
 
 ## 2026-10-22 当前切片：认证会话旧格式 JWT 收编与公开默认密钥（P0 安全）
 
@@ -21,7 +23,8 @@ Go 1.26.10 full/vet通过。状态implementation-complete/regression-validated�
 实例的升级前旧token明确放弃。F3资源capability（封面中、其余低）must-fix P1另起切片S2（不用公开值签名）；F4文档不一致随
 记录/README处理；O1、O2只记录。提交a7bdc8b/cfdcd8a/9e77cd9：红测在a1a1795上按预期失败、在9e77cd9上转绿，正常对照
 始终通过，两次临时变异分别只让T1、T2的用例变红；真实二进制（不设密钥、全新卷）上新版四个入口都拒绝；安全检查清单
-F4已更正。状态implementation-complete/regression-validated；与依赖维护切片一起合入main发布，S2、O1、O2仍开放。
+F4已更正。状态Docker-published：与依赖维护切片一起由run 39768628680发布为`92c98a9`/`latest`，生产版本未知；S2、O1、
+O2仍开放。
 
 ## 2026-10-17 当前切片：Reader 正文加载失败错误面盘点
 

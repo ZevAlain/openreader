@@ -7,7 +7,7 @@
 `origin/main` 为 `a1a1795`。
 
 审查日期：2026-10-22
-状态：**implementation-complete / regression-validated**（证据见第 9 节）
+状态：**implementation-complete / regression-validated / Docker-published**（证据见第 9 节，发布见第 12 节）
 
 前置合同：Go 依赖与工具链见
 [`runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md`](runtime-dependency-advisory-fixed-baseline-second-audit-p2-contract.md)
@@ -127,6 +127,54 @@ GO-2026-6809 涉及的具体中间证书不在本仓库可控范围内，不编�
 观察 O3：CI 只跑前端单元测试和构建，不在浏览器里加载产物；同样的空白页如果合入 main，Actions 会照常发布
 镜像。给发布流程补一个“产物能启动”的浏览器门另起后续，不在本切片修改 workflow。
 
+## 9. 实施与验证证据（2026-10-22）
+
+### 9.1 提交
+
+| 提交 | 内容 |
+| --- | --- |
+| `37503a3` | 本合同（第 1–7 节）及两份前置合同、gap-analysis、matrix 的指针 |
+| `99a8900` | `vite` 8.0.16 → 8.1.6；`overrides` 增加 `follow-redirects` 1.16.1；锁文件重算 |
+| `6ca7fbf` | `go 1.26.10`；后端构建镜像改为官方 `golang:1.26.10-alpine3.23` index pin |
+| `a673c61` | 第 8 节：vite 8.1.6 产物空白页的根因与决定 |
+| `3351458` | `frontend/vite.config.js` 增加 `strictExecutionOrder: true` |
+
+锁文件变化只有 `vite`、它要求的 `rolldown` 1.1.5 链（`@oxc-project/types` 0.139.0、`@emnapi/core`/`runtime`
+1.11.1、`@emnapi/wasi-threads` 1.2.2、各平台 binding）和 `follow-redirects` 1.16.1；`go mod verify` 全部通过，
+`go mod tidy` 不改 `go.sum`。
+
+### 9.2 发布门（失败 → 通过）
+
+| 门 | 升级前 | 升级后 |
+| --- | --- | --- |
+| Go advisory 实际扫描 | exit 1：未审查的 GO-2026-6809 | exit 0：`pass-with-not-applicable`，go1.26.10，符号级，数据库时点 2026-10-21T00:27:29Z，247 条公告，唯一发现仍是既有不适用的 GO-2026-5932 |
+| 前端全锁 advisory 实际扫描 | exit 1：2 个 high | exit 0：全锁 132 包 0 发现，lockHash `1a4f72372dafdedcb3c48e04b6c229bb509c4d8556d6c4271061c3d8649e530b` |
+| 门的离线合同测试 | 128/128 | 128/128（脚本未改） |
+
+### 9.3 前端
+
+- 本机 Node 26.4.0 / npm 11.17.0：`npm ci`、`npm test` 810/810（0 失败 0 跳过）、`npm run build` 通过。
+- 与 Dockerfile 前端阶段同一镜像（`node:22-alpine3.23@sha256:baf676f7…`，Node 22.23.3 / npm 10.9.9），仓库
+  布局下 `npm ci`、`npm test` 810/810、`npm run build` 通过，`rolldown-runtime` chunk 哈希与本机构建一致。
+- A3 核验：follow-redirects 独有的 `ERR_FR_REDIRECTION_FAILURE`、`ERR_FR_MAX_BODY_LENGTH_EXCEEDED` 在新旧产物里都
+  不存在，产物中只有 axios 自己定义的错误码常量和 fetch 适配器文案。
+- 第 8 节的红：`99a8900` 产物上 `openreader-smoke.mjs` 在 1440×900 失败；`3351458` 产物三视口通过，与 `a1a1795`
+  产物结果相同（`/login`，可见节点 26、文字 33）。
+- 真实 API 浏览器合同：`book-management-real-api-contract.mjs`（1440×900、390×844、360×800，元数据编辑、分组、
+  批量分类、批量删除）与 `reader-progress-multiclient-contract.mjs`（三视口双客户端 CAS、WebSocket 收敛、冷启动
+  恢复、WebDAV 镜像，以及 ingress 三视口）通过。
+
+### 9.4 后端
+
+- backend 内 `go version` 为 go1.26.10；`go test ./...` 29 包通过；`go vet ./...` exit 0。
+- `go test -race -timeout 40m ./api ./db ./services/...`（Go 1.26.10，最终 Go 代码）：24 包通过，api 1040.8 s，
+  无 DATA RACE，总耗时 17 分 46 秒。
+- `docker compose config --quiet`、`node scripts/smoke/store-read-list-lifecycle-contract.mjs` 通过。
+
+### 9.5 状态
+
+本节写于首次合入 main 之前；之后的 CI 失败、补充修复与发布见第 10–12 节。
+
 ## 10. 补充：CI 的 OS APK 门拦下复制的 CA 证书包（2026-10-22）
 
 `ae4736d` 合入 main 后，可信 Actions run `39758440810` 的 Go 测试、两项 advisory 门、前端测试与构建、Compose、
@@ -186,53 +234,26 @@ r23 相同；`etc/apk/world` 变为 `musl=1.2.5-r24`、`musl-utils=1.2.5-r24`，
 
 红就是 run `39762716947` 的 OS 门失败与上述先行测试。修复后由下一次可信 Actions 完成双平台构建、OS 门、卷门与发布。
 
-## 9. 实施与验证证据（2026-10-22）
+## 12. 发布（2026-10-22）
 
-### 9.1 提交
-
-| 提交 | 内容 |
-| --- | --- |
-| `37503a3` | 本合同（第 1–7 节）及两份前置合同、gap-analysis、matrix 的指针 |
-| `99a8900` | `vite` 8.0.16 → 8.1.6；`overrides` 增加 `follow-redirects` 1.16.1；锁文件重算 |
-| `6ca7fbf` | `go 1.26.10`；后端构建镜像改为官方 `golang:1.26.10-alpine3.23` index pin |
-| `a673c61` | 第 8 节：vite 8.1.6 产物空白页的根因与决定 |
-| `3351458` | `frontend/vite.config.js` 增加 `strictExecutionOrder: true` |
-
-锁文件变化只有 `vite`、它要求的 `rolldown` 1.1.5 链（`@oxc-project/types` 0.139.0、`@emnapi/core`/`runtime`
-1.11.1、`@emnapi/wasi-threads` 1.2.2、各平台 binding）和 `follow-redirects` 1.16.1；`go mod verify` 全部通过，
-`go mod tidy` 不改 `go.sum`。
-
-### 9.2 发布门（失败 → 通过）
-
-| 门 | 升级前 | 升级后 |
+| 可信 Actions run | 提交 | 结论 |
 | --- | --- | --- |
-| Go advisory 实际扫描 | exit 1：未审查的 GO-2026-6809 | exit 0：`pass-with-not-applicable`，go1.26.10，符号级，数据库时点 2026-10-21T00:27:29Z，247 条公告，唯一发现仍是既有不适用的 GO-2026-5932 |
-| 前端全锁 advisory 实际扫描 | exit 1：2 个 high | exit 0：全锁 132 包 0 发现，lockHash `1a4f72372dafdedcb3c48e04b6c229bb509c4d8556d6c4271061c3d8649e530b` |
-| 门的离线合同测试 | 128/128 | 128/128（脚本未改） |
+| `39758440810` | `ae4736d` | 失败：OS APK 门，复制的构建镜像证书包（第 10 节）；未发布 |
+| `39762716947` | `d15c384` | 失败：OS APK 门，musl 待修复项（第 11 节）；未发布 |
+| `39768628680` | `92c98a9` | 成功：Go 测试、Go/前端 advisory 门、OS 门测试、前端测试与构建、Compose、存储 HTTP 合同、native 与 arm64 候选镜像、OS APK 门、fresh 卷与 portable 备份、历史卷兼容、发布、平台核验 |
 
-### 9.3 前端
+补充提交：`2acff2e` / `d15c384`（不再复制构建镜像的证书包）、`b3f8ef3` / `7d81858` / `92c98a9`（musl 构建期修复：
+合同、先行门测试、实现）。门测试 131/131（基线更新前 9 条按预期失败），`docker compose config` 通过。
 
-- 本机 Node 26.4.0 / npm 11.17.0：`npm ci`、`npm test` 810/810（0 失败 0 跳过）、`npm run build` 通过。
-- 与 Dockerfile 前端阶段同一镜像（`node:22-alpine3.23@sha256:baf676f7…`，Node 22.23.3 / npm 10.9.9），仓库
-  布局下 `npm ci`、`npm test` 810/810、`npm run build` 通过，`rolldown-runtime` chunk 哈希与本机构建一致。
-- A3 核验：follow-redirects 独有的 `ERR_FR_REDIRECTION_FAILURE`、`ERR_FR_MAX_BODY_LENGTH_EXCEEDED` 在新旧产物里都
-  不存在，产物中只有 axios 自己定义的错误码常量和 fetch 适配器文案。
-- 第 8 节的红：`99a8900` 产物上 `openreader-smoke.mjs` 在 1440×900 失败；`3351458` 产物三视口通过，与 `a1a1795`
-  产物结果相同（`/login`，可见节点 26、文字 33）。
-- 真实 API 浏览器合同：`book-management-real-api-contract.mjs`（1440×900、390×844、360×800，元数据编辑、分组、
-  批量分类、批量删除）与 `reader-progress-multiclient-contract.mjs`（三视口双客户端 CAS、WebSocket 收敛、冷启动
-  恢复、WebDAV 镜像，以及 ingress 三视口）通过。
+镜像：`ghcr.io/changshengyu/openreader:92c98a9` 与 `latest` 为同一 OCI index
+`sha256:3b29f501e659454ea096fddcc4e0a05ba3c881cccacf8c3a684218649ba218d2`，`linux/amd64`
+`sha256:f102c6af2681bd1b3ad97fd698100df297f3866dbc0e5429e27a2ebb18a6d7f0`、`linux/arm64`
+`sha256:7cfba03369e47c35660bae197dae2307d61747320b0def443fab2987cfc99e17`；两平台 revision 标签为
+`92c98a971dce5c9166c0426695f89cd75f37cf94`，创建于 2026-10-22T11:10:55Z。
 
-### 9.4 后端
+状态：
 
-- backend 内 `go version` 为 go1.26.10；`go test ./...` 29 包通过；`go vet ./...` exit 0。
-- `go test -race -timeout 40m ./api ./db ./services/...`（Go 1.26.10，最终 Go 代码）：24 包通过，api 1040.8 s，
-  无 DATA RACE，总耗时 17 分 46 秒。
-- `docker compose config --quiet`、`node scripts/smoke/store-read-list-lifecycle-contract.mjs` 通过。
-
-### 9.5 状态
-
-- Git：与认证会话 P0 修复同一分支 `claude/auth-legacy-public-secret-forgery`，本记录提交前均未推送。
-- 镜像：未发布；合入 main 后由 Actions 运行双平台候选构建、OS APK 门、fresh / historical 卷门并发布。
+- Git：`main` 与分支 `claude/auth-legacy-public-secret-forgery` 在 `92c98a9`（`git ls-remote` 核验）。
+- 镜像：已发布，见上。
 - 生产：未访问，运行版本未知。
-- 后续：O3（发布流程补浏览器启动门）；README 的 Go 版本字样随 README 改写同步为 1.26.10。
+- 后续：O3（发布流程补浏览器启动门）。README 的 Go 版本字样已由 README 改写（`9f94117`）更新为 1.26.10。
