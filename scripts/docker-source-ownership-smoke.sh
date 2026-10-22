@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-IMAGE="${IMAGE:-ghcr.io/changshengyu/openreader:latest}"
+IMAGE="${IMAGE:-ghcr.io/zevalain/openreader:latest}"
 PORT="${PORT:-18120}"
 LEGACY_PORT="${LEGACY_PORT:-$((PORT + 1))}"
 PASSWORD="password123"

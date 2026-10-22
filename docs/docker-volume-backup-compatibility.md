@@ -18,10 +18,10 @@ scripts/docker-volume-backup-smoke.sh
 Optional overrides:
 
 ```bash
-IMAGE=ghcr.io/changshengyu/openreader:latest scripts/docker-volume-backup-smoke.sh
+IMAGE=ghcr.io/zevalain/openreader:latest scripts/docker-volume-backup-smoke.sh
 PORT=18080 scripts/docker-volume-backup-smoke.sh
 KEEP_OPENREADER_SMOKE=1 scripts/docker-volume-backup-smoke.sh
-HISTORICAL_VOLUME=1 IMAGE=ghcr.io/changshengyu/openreader:latest scripts/docker-volume-backup-smoke.sh
+HISTORICAL_VOLUME=1 IMAGE=ghcr.io/zevalain/openreader:latest scripts/docker-volume-backup-smoke.sh
 ```
 
 ## What the smoke checks

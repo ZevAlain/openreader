@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-IMAGE="${IMAGE:-ghcr.io/changshengyu/openreader}"
+IMAGE="${IMAGE:-ghcr.io/zevalain/openreader}"
 TAG="${TAG:-$(git rev-parse --short HEAD)}"
 VERSION="${VERSION:-$TAG}"
 VCS_REF="${VCS_REF:-$(git rev-parse HEAD)}"

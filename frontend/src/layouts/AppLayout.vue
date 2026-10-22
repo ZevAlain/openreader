@@ -116,7 +116,7 @@
       </div>
 
       <div class="sidebar-bottom-icons" aria-label="侧栏快捷入口">
-        <a class="sidebar-bottom-icon" href="https://github.com/changshengyu/openreader" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+        <a class="sidebar-bottom-icon" href="https://github.com/ZevAlain/openreader" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path
               fill="currentColor"

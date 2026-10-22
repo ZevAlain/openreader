@@ -1,7 +1,7 @@
 services:
   openreader:
     # Use :latest for automatic upgrades, or replace it with :<commit> for a pinned release.
-    image: ghcr.io/changshengyu/openreader:latest
+    image: ghcr.io/zevalain/openreader:latest
     # Always refresh the selected tag before the container is recreated.
     pull_policy: always
     container_name: openreader

@@ -6,12 +6,12 @@
 
 It works with online book sources in the Legado (阅读) format and can import local TXT, EPUB, and other files. Everything stays on your own server.
 
-[![Docker image](https://github.com/changshengyu/openreader/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/changshengyu/openreader/actions/workflows/docker-publish.yml)
+[![Docker image](https://github.com/ZevAlain/openreader/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/ZevAlain/openreader/actions/workflows/docker-publish.yml)
 ![Runs on amd64 and arm64](https://img.shields.io/badge/platform-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white)
 [![License: GPL v3](https://img.shields.io/badge/license-GPL%20v3-blue)](LICENSE)
 
 > [!NOTE]
-> OpenReader is under active development, and the everyday reading features are ready to use. Back up before upgrading, and please report problems in [Issues](https://github.com/changshengyu/openreader/issues).
+> OpenReader is under active development, and the everyday reading features are ready to use. Back up before upgrading, and please report problems in [Issues](https://github.com/ZevAlain/openreader/issues).
 >
 > The interface is currently in Chinese only. This guide quotes on-screen labels in Chinese, followed by an English translation.
 
@@ -39,7 +39,7 @@ You need a computer, server, or NAS with [Docker](https://docs.docker.com/get-do
 
 ```bash
 mkdir openreader && cd openreader
-curl -fsSLO https://raw.githubusercontent.com/changshengyu/openreader/main/docker-compose.yml
+curl -fsSLO https://raw.githubusercontent.com/ZevAlain/openreader/main/docker-compose.yml
 docker compose up -d
 ```
 
@@ -48,7 +48,7 @@ Your data is stored in `data/`, `cache/`, and `library/` in this folder, which m
 **Option B: a single `docker run` command**
 
 ```bash
-docker run -d --name openreader --restart unless-stopped -p 8080:8080 -v openreader-data:/app/data -v openreader-cache:/app/cache -v openreader-library:/app/library ghcr.io/changshengyu/openreader:latest
+docker run -d --name openreader --restart unless-stopped -p 8080:8080 -v openreader-data:/app/data -v openreader-cache:/app/cache -v openreader-library:/app/library ghcr.io/zevalain/openreader:latest
 ```
 
 Your data lives in three Docker-managed volumes, so removing and recreating the container doesn't lose anything.
@@ -210,7 +210,7 @@ The second line writes a full backup to the parent folder. It contains every use
 **docker run**: first save and download a portable backup in the web page, then run:
 
 ```bash
-docker pull ghcr.io/changshengyu/openreader:latest
+docker pull ghcr.io/zevalain/openreader:latest
 docker stop openreader
 docker rm openreader
 ```
@@ -219,7 +219,7 @@ Then run the `docker run` command from [step 1](#1-start-the-server) again. The 
 
 **Check the version**: the sidebar shows the running version next to the app name, 阅读. You can also open `http://<server-ip>:8080/api/health` and look at `version` and `commit`.
 
-**Pinning and rolling back**: besides `latest`, every release gets a 7-character commit tag, listed on the [package page](https://github.com/changshengyu/openreader/pkgs/container/openreader). Replace `latest` in `image` with a specific tag (such as `ghcr.io/changshengyu/openreader:<commit>`) to stay on that version. To roll back, stop the container, restore all three folders from the pre-upgrade backup, and start the older tag. Never mix database files from different versions.
+**Pinning and rolling back**: besides `latest`, every release gets a 7-character commit tag, listed on the [package page](https://github.com/ZevAlain/openreader/pkgs/container/openreader). Replace `latest` in `image` with a specific tag (such as `ghcr.io/zevalain/openreader:<commit>`) to stay on that version. To roll back, stop the container, restore all three folders from the pre-upgrade backup, and start the older tag. Never mix database files from different versions.
 
 ## Configuration
 
@@ -416,7 +416,7 @@ OpenReader rebuilds the web reading experience of [reader-dev](https://github.co
 OpenReader is built with Go (Gin, GORM, SQLite) and Vue 3 (Vite, Pinia, Element Plus), and both parts ship in the same Docker image. To run it from source you need Go 1.26.10 or newer (with CGO enabled for SQLite) and Node.js 22.
 
 ```bash
-git clone https://github.com/changshengyu/openreader.git
+git clone https://github.com/ZevAlain/openreader.git
 cd openreader
 ```
 

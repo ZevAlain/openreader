@@ -6,12 +6,12 @@
 
 支持「阅读（Legado）」格式的在线书源，也能导入 TXT、EPUB 等本地书。所有数据都保存在你自己的服务器上。
 
-[![Docker 镜像](https://github.com/changshengyu/openreader/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/changshengyu/openreader/actions/workflows/docker-publish.yml)
+[![Docker 镜像](https://github.com/ZevAlain/openreader/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/ZevAlain/openreader/actions/workflows/docker-publish.yml)
 ![支持 amd64 与 arm64](https://img.shields.io/badge/platform-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white)
 [![许可证 GPL v3](https://img.shields.io/badge/license-GPL%20v3-blue)](LICENSE)
 
 > [!NOTE]
-> OpenReader 仍在积极开发中，日常阅读需要的功能已经可用。升级前请先备份；遇到问题欢迎在 [Issues](https://github.com/changshengyu/openreader/issues) 反馈。
+> OpenReader 仍在积极开发中，日常阅读需要的功能已经可用。升级前请先备份；遇到问题欢迎在 [Issues](https://github.com/ZevAlain/openreader/issues) 反馈。
 
 [快速开始](#快速开始) · [使用指南](#使用指南) · [备份与迁移](#备份与迁移) · [升级](#升级) · [常用设置](#常用设置) · [常见问题](#常见问题)
 
@@ -37,7 +37,7 @@
 
 ```bash
 mkdir openreader && cd openreader
-curl -fsSLO https://raw.githubusercontent.com/changshengyu/openreader/main/docker-compose.yml
+curl -fsSLO https://raw.githubusercontent.com/ZevAlain/openreader/main/docker-compose.yml
 docker compose up -d
 ```
 
@@ -46,7 +46,7 @@ docker compose up -d
 **方式二：一条 `docker run` 命令**
 
 ```bash
-docker run -d --name openreader --restart unless-stopped -p 8080:8080 -v openreader-data:/app/data -v openreader-cache:/app/cache -v openreader-library:/app/library ghcr.io/changshengyu/openreader:latest
+docker run -d --name openreader --restart unless-stopped -p 8080:8080 -v openreader-data:/app/data -v openreader-cache:/app/cache -v openreader-library:/app/library ghcr.io/zevalain/openreader:latest
 ```
 
 数据保存在 Docker 管理的三个数据卷里，删除并重建容器不会丢失数据。
@@ -208,7 +208,7 @@ docker compose up -d
 **docker run**：先在页面里保存并下载一份完整可移植备份，然后执行：
 
 ```bash
-docker pull ghcr.io/changshengyu/openreader:latest
+docker pull ghcr.io/zevalain/openreader:latest
 docker stop openreader
 docker rm openreader
 ```
@@ -217,7 +217,7 @@ docker rm openreader
 
 **确认版本**：左侧边栏「阅读」旁边会显示当前版本号；也可以访问 `http://服务器IP:8080/api/health`，查看 `version` 和 `commit`。
 
-**固定版本与回退**：除了 `latest`，每次发布还会有一个 7 位提交号标签，可以在[镜像页面](https://github.com/changshengyu/openreader/pkgs/container/openreader)查看。把 `image` 里的 `latest` 换成具体标签（如 `ghcr.io/changshengyu/openreader:<提交号>`）即可固定版本。回退时，先停止容器、完整恢复升级前备份的三个文件夹，再用旧标签启动；不要把新旧数据库文件混在一起。
+**固定版本与回退**：除了 `latest`，每次发布还会有一个 7 位提交号标签，可以在[镜像页面](https://github.com/ZevAlain/openreader/pkgs/container/openreader)查看。把 `image` 里的 `latest` 换成具体标签（如 `ghcr.io/zevalain/openreader:<提交号>`）即可固定版本。回退时，先停止容器、完整恢复升级前备份的三个文件夹，再用旧标签启动；不要把新旧数据库文件混在一起。
 
 ## 常用设置
 
@@ -414,7 +414,7 @@ OpenReader 用 Go 和 Vue 3 重新实现了 [reader-dev](https://github.com/chan
 技术栈：Go（Gin、GORM、SQLite）+ Vue 3（Vite、Pinia、Element Plus），前后端打包在同一个 Docker 镜像里。本地运行需要 Go 1.26.10 或更新版本（需启用 CGO，用于 SQLite）和 Node.js 22。
 
 ```bash
-git clone https://github.com/changshengyu/openreader.git
+git clone https://github.com/ZevAlain/openreader.git
 cd openreader
 ```
 

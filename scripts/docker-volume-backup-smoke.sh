@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-IMAGE="${IMAGE:-ghcr.io/changshengyu/openreader:latest}"
+IMAGE="${IMAGE:-ghcr.io/zevalain/openreader:latest}"
 PORT="${PORT:-18080}"
 PORTABLE_PORT="${PORTABLE_PORT:-$((PORT + 1))}"
 HISTORICAL_VOLUME="${HISTORICAL_VOLUME:-0}"

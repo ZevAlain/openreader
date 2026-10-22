@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 set -eu
 
-IMAGE="${IMAGE:-ghcr.io/changshengyu/openreader:latest}"
+IMAGE="${IMAGE:-ghcr.io/zevalain/openreader:latest}"
 PORT="${PORT:-18280}"
 FIXTURE_PORT="${FIXTURE_PORT:-$((PORT + 100))}"
-PUBLIC_SOURCE_URL="${PUBLIC_SOURCE_URL:-https://raw.githubusercontent.com/changshengyu/openreader/main/README.md}"
+PUBLIC_SOURCE_URL="${PUBLIC_SOURCE_URL:-https://raw.githubusercontent.com/ZevAlain/openreader/main/README.md}"
 ROOT="$(mktemp -d "${TMPDIR:-/tmp}/openreader-source-network.XXXXXX")"
 NAME="${NAME:-openreader-source-network-$(basename "$ROOT")}"
 INVALID_NAME="${INVALID_NAME:-${NAME}-invalid}"

@@ -36,7 +36,7 @@ ARG BUILD_DATE=unknown
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="OpenReader" \
       org.opencontainers.image.description="OpenReader web reader service" \
-      org.opencontainers.image.source="https://github.com/changshengyu/openreader" \
+      org.opencontainers.image.source="https://github.com/ZevAlain/openreader" \
       org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.revision="${VCS_REF}"
 WORKDIR /app
