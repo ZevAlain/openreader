@@ -33,6 +33,7 @@ jobs:
         run: |
           echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          echo "image=${IMAGE_NAME,,}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -160,8 +161,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ steps.metadata.outputs.short_sha }}
+            ${{ steps.metadata.outputs.image }}:latest
+            ${{ steps.metadata.outputs.image }}:${{ steps.metadata.outputs.short_sha }}
           build-args: |
             VERSION=${{ steps.metadata.outputs.short_sha }}
             VCS_REF=${{ github.sha }}
@@ -174,14 +175,14 @@ jobs:
       - name: Verify published platforms
         shell: bash
         run: |
-          docker buildx imagetools inspect "${IMAGE_NAME}@${{ steps.publish.outputs.digest }}" | tee /tmp/openreader-image-index.txt
+          docker buildx imagetools inspect "${IMAGE_NAME,,}@${{ steps.publish.outputs.digest }}" | tee /tmp/openreader-image-index.txt
           grep -q 'linux/amd64' /tmp/openreader-image-index.txt
           grep -q 'linux/arm64' /tmp/openreader-image-index.txt
           {
             echo "### Published image"
             echo
             echo "- Commit: \`${GITHUB_SHA}\`"
-            echo "- Tags: \`${IMAGE_NAME}:latest\`, \`${IMAGE_NAME}:${{ steps.metadata.outputs.short_sha }}\`"
+            echo "- Tags: \`${IMAGE_NAME,,}:latest\`, \`${IMAGE_NAME,,}:${{ steps.metadata.outputs.short_sha }}\`"
             echo "- Digest: \`${{ steps.publish.outputs.digest }}\`"
             echo "- Platforms: \`linux/amd64\`, \`linux/arm64\`"
           } >> "$GITHUB_STEP_SUMMARY"
