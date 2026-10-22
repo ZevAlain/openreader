@@ -62,6 +62,7 @@
       <el-table
         ref="tableRef"
         :key="isFailureMode"
+        v-loading="listLoading"
         :data="pagedSources"
         :height="tableHeight"
         class="source-table"
@@ -205,6 +206,7 @@ const operations = useAuthenticatedOperationGuard()
 const tableRef = ref(null)
 const sources = ref([])
 const failureSources = ref([])
+const listLoading = ref(false)
 const selection = ref([])
 const selectedGroup = ref('')
 const sourcePage = ref(1)
@@ -354,25 +356,35 @@ function requestClose() {
 async function loadSources(parentOperation = null) {
   if (parentOperation && !operations.canCommit(parentOperation)) return false
   const operation = operations.begin('load-source-list')
-  const { data } = await listSources()
-  if (!operations.canCommit(operation)) return false
-  sources.value = Array.isArray(data) ? data : []
-  return true
+  listLoading.value = true
+  try {
+    const { data } = await listSources()
+    if (!operations.canCommit(operation)) return false
+    sources.value = Array.isArray(data) ? data : []
+    return true
+  } finally {
+    if (operations.canCommit(operation)) listLoading.value = false
+  }
 }
 
 async function loadInvalidSourceHealth(parentOperation = null) {
   if (parentOperation && !operations.canCommit(parentOperation)) return false
   const operation = operations.begin('load-invalid-source-health')
-  const { data } = await listInvalidSources()
-  if (!operations.canCommit(operation)) return false
-  failureSources.value = (Array.isArray(data) ? data : []).map(source => ({
-    ...source,
-    errorMessage: visibleFailureCategory(source.errorMessage),
-    usedBookNames: Array.isArray(source.usedBookNames)
-      ? source.usedBookNames
-      : sourceNamesFromActiveList(source.id),
-  }))
-  return true
+  listLoading.value = true
+  try {
+    const { data } = await listInvalidSources()
+    if (!operations.canCommit(operation)) return false
+    failureSources.value = (Array.isArray(data) ? data : []).map(source => ({
+      ...source,
+      errorMessage: visibleFailureCategory(source.errorMessage),
+      usedBookNames: Array.isArray(source.usedBookNames)
+        ? source.usedBookNames
+        : sourceNamesFromActiveList(source.id),
+    }))
+    return true
+  } finally {
+    if (operations.canCommit(operation)) listLoading.value = false
+  }
 }
 
 function sourceNamesFromActiveList(sourceId) {

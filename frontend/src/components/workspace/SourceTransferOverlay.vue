@@ -9,11 +9,59 @@
   />
 
   <el-dialog
+    :model-value="visible && intent === 'remote'"
+    title="远程书源管理"
+    width="min(1000px, max(750px, 70vw))"
+    top="15vh"
+    :fullscreen="isMobile"
+    class="source-remote-manage-dialog"
+    @update:model-value="value => !value && requestClose()"
+  >
+    <section
+      v-loading="remoteLoading"
+      element-loading-text="正在读取远程书源文件…"
+      class="source-remote-list"
+    >
+      <p v-if="!remoteEntries.length && !remoteLoading" class="source-remote-tip">
+        暂无远程书源，点击“新增”输入远程书源链接导入。
+      </p>
+      <div v-for="url in remoteEntries" :key="url" class="source-remote-item">
+        <el-link type="primary" :href="url" target="_blank" class="source-remote-url">
+          {{ url }}
+        </el-link>
+        <span class="source-remote-actions">
+          <el-button link type="primary" :disabled="remoteLoading" @click="syncRemoteEntry(url)">
+            同步
+          </el-button>
+          <el-button link type="danger" :disabled="remoteLoading" @click="removeRemoteEntry(url)">
+            删除
+          </el-button>
+        </span>
+      </div>
+    </section>
+    <template #footer>
+      <div class="source-import-footer">
+        <el-button
+          type="primary"
+          class="float-left"
+          :loading="remoteLoading"
+          @click="addRemoteEntry"
+        >
+          新增
+        </el-button>
+        <span class="check-tip">共 {{ remoteEntries.length }} 个</span>
+        <el-button :disabled="remoteLoading" @click="requestClose">关闭</el-button>
+      </div>
+    </template>
+  </el-dialog>
+
+  <el-dialog
     v-model="showImportPreview"
     title="导入书源"
     width="min(1000px, max(750px, 70vw))"
     top="15vh"
     :fullscreen="isMobile"
+    append-to-body
     class="source-import-preview-dialog"
     @closed="handlePreviewClosed"
   >
@@ -52,7 +100,7 @@
           全选
         </el-checkbox>
         <span class="check-tip">已选择 {{ checkedImportSourceIndexes.length }} 个</span>
-        <el-button @click="closePreviewAndOwner">取消</el-button>
+        <el-button @click="cancelImportPreview">取消</el-button>
         <el-button type="primary" :loading="importPreviewSaving" @click="confirmImport">
           确定
         </el-button>
@@ -82,10 +130,13 @@ const emit = defineEmits(['close'])
 const operations = useAuthenticatedOperationGuard()
 const user = useUserStore()
 const ownerClosing = ref(false)
+const remoteEntries = ref([])
+const pendingRemoteURL = ref('')
 let activation = 0
 
 const {
   remoteURL,
+  remoteLoading,
   sourceUploadRef,
   showImportPreview,
   importPreviewSources,
@@ -129,6 +180,7 @@ watch(
     ownerClosing.value = false
     if (!visible) {
       closeImportPreview()
+      pendingRemoteURL.value = ''
       return
     }
     if (intent === 'import') {
@@ -139,7 +191,7 @@ watch(
       return
     }
     if (intent === 'remote') {
-      await openRemotePrompt(current)
+      loadRemoteEntries()
       return
     }
     requestClose()
@@ -158,36 +210,100 @@ async function handleSourceFile(event) {
   if (!showImportPreview.value) requestClose()
 }
 
-async function openRemotePrompt(current) {
-  const storageKey = `${user.profile?.username || user.profile?.id || 'user'}@lastRemoteSourceUrl`
-  const inputValue = safeLocalStorageGet(storageKey)
+function userStorageScope() {
+  return user.profile?.username || user.profile?.id || 'user'
+}
+
+function loadRemoteEntries() {
+  const scope = userStorageScope()
+  const stored = safeLocalStorageGet(`${scope}@remoteSourceUrls`)
+  const urls = parseRemoteURLs(stored)
+  if (!stored) {
+    // Migrate the remembered URL from the retired prompt flow exactly once.
+    const legacy = safeLocalStorageGet(`${scope}@lastRemoteSourceUrl`).trim()
+    if (legacy) urls.push(legacy)
+  }
+  remoteEntries.value = urls
+}
+
+function parseRemoteURLs(raw) {
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      return [...new Set(parsed.map(item => String(item || '').trim()).filter(Boolean))]
+    }
+  } catch {
+    // A corrupted cache must not break the management list.
+  }
+  return []
+}
+
+function saveRemoteEntries(urls) {
+  safeLocalStorageSet(`${userStorageScope()}@remoteSourceUrls`, JSON.stringify(urls))
+}
+
+function rememberRemoteEntry(url) {
+  if (!url || remoteEntries.value.includes(url)) return
+  remoteEntries.value = [url, ...remoteEntries.value]
+  saveRemoteEntries(remoteEntries.value)
+}
+
+async function addRemoteEntry() {
   let result
   try {
-    result = await ElMessageBox.prompt('请输入远程书源链接', '导入远程书源文件', {
-      inputValue,
+    result = await ElMessageBox.prompt('请输入远程书源链接', '新增远程书源', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
     })
   } catch {
-    if (current === activation) requestClose()
     return
   }
-  if (current !== activation || !props.visible) return
-  remoteURL.value = String(result?.value || '').trim()
-  if (!remoteURL.value) {
-    requestClose()
-    return
-  }
-  const acceptedURL = remoteURL.value
+  if (!props.visible) return
+  await startRemoteImport(String(result?.value || '').trim())
+}
+
+async function syncRemoteEntry(url) {
+  await startRemoteImport(url)
+}
+
+async function startRemoteImport(url) {
+  if (!url || !props.visible || remoteLoading.value) return
+  remoteURL.value = url
+  pendingRemoteURL.value = url
   await importRemote()
-  if (current !== activation || !props.visible) return
-  if (showImportPreview.value) safeLocalStorageSet(storageKey, acceptedURL)
-  else requestClose()
+  if (!showImportPreview.value) pendingRemoteURL.value = ''
+}
+
+async function removeRemoteEntry(url) {
+  try {
+    await ElMessageBox.confirm(
+      '确认要移除该远程书源链接吗？已导入的书源不会被删除。',
+      '移除远程书源',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  remoteEntries.value = remoteEntries.value.filter(item => item !== url)
+  saveRemoteEntries(remoteEntries.value)
 }
 
 async function confirmImport() {
   await saveSelectedImportSources()
-  if (!showImportPreview.value) requestClose()
+  if (showImportPreview.value) return
+  if (pendingRemoteURL.value) {
+    rememberRemoteEntry(pendingRemoteURL.value)
+    pendingRemoteURL.value = ''
+  }
+  if (props.intent !== 'remote') requestClose()
+}
+
+function cancelImportPreview() {
+  if (props.intent === 'remote') {
+    closeImportPreview()
+    return
+  }
+  closePreviewAndOwner()
 }
 
 function closePreviewAndOwner() {
@@ -197,6 +313,8 @@ function closePreviewAndOwner() {
 }
 
 function handlePreviewClosed() {
+  pendingRemoteURL.value = ''
+  if (props.intent === 'remote') return
   if (ownerClosing.value || !showImportPreview.value) requestClose()
 }
 
@@ -271,6 +389,51 @@ function readError(error, fallback) {
 
 .source-compatibility-hint {
   color: #b26a00;
+}
+
+.source-remote-list {
+  display: grid;
+  min-height: 96px;
+  min-width: 0;
+  max-height: min(62dvh, 560px);
+  overflow: auto;
+  align-content: start;
+  gap: 4px;
+}
+
+.source-remote-tip {
+  margin: 0;
+  padding: 24px 0;
+  color: var(--app-text-muted);
+  text-align: center;
+}
+
+.source-remote-item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.source-remote-url {
+  min-width: 0;
+  flex: 1;
+}
+
+.source-remote-url :deep(.el-link__inner) {
+  overflow-wrap: anywhere;
+}
+
+.source-remote-actions {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.source-remote-actions :deep(.el-button + .el-button) {
+  margin-left: 8px;
 }
 
 .source-import-footer {
