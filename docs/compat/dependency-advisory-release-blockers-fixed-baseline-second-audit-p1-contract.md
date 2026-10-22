@@ -99,3 +99,30 @@ GO-2026-6809 涉及的具体中间证书不在本仓库可控范围内，不编�
 
 - 不升级到 vite 8.3.x，不升级 axios 或其他依赖，不改 Node 22 构建镜像。
 - 不修改 README（见 4.3）；不处理与本次发布无关的其它开放审计项。
+
+## 8. 补充：vite 8.1.6 生产产物空白页（2026-10-22，实施中发现）
+
+`99a8900`（vite 8.1.6）的 `npm test` 810/810 和 `npm run build` 都通过，但产物在真实浏览器里是空白页。
+`scripts/smoke/openreader-smoke.mjs` 对“`6ca7fbf` 二进制 + 新产物”在 1440×900 即失败（`blank page at /`），
+对“`a1a1795` 二进制 + 旧产物”三视口都正常渲染 `/login`。Playwright 捕获的页面错误为
+`TypeError: e is not a function`（`http-vendor` chunk），Vue 没有挂载。
+
+根因：rolldown 1.0.3（vite 8.0.16）把运行时辅助函数（`__export`、`__toESM` 等）单独输出成无依赖的
+`rolldown-runtime` chunk；rolldown 1.1+ 把它们寄放进一个共享的应用 chunk（这里是
+`_plugin-vue_export-helper`，其中还有导入 axios 的前端拦截器代码）。于是 `http-vendor` 从该 chunk 导入运行时，
+该 chunk 又从 `http-vendor` 导入 axios，形成循环；`http-vendor` 先求值时运行时函数仍是 `undefined`。
+`manualChunks` 收不到 `\0rolldown/runtime.js`，无法把运行时单独分包。vite 8.2.4、8.3.5（rolldown 1.2.15）
+在同一配置下复现同一错误，所以换修复版本绕不开。
+
+决定（**must-fix**，属于依赖升级的必要适配）：在 `frontend/vite.config.js` 的 `build.rolldownOptions.output`
+增加 `strictExecutionOrder: true`（rolldown 文档用来保证模块按导入顺序执行、避免无效 chunk 的选项）。试验
+构建中 rolldown 重新输出独立的 `rolldown-runtime` chunk，`http-vendor` 从它导入；产物文件结构与旧构建一致
+（63 个文件、同名 chunk），总字节 3,742,107 → 3,800,368（+1.56%，主要是 element-plus/图标的初始化包装），
+`/login` 正常渲染。`manualChunks` 分包规则、源码和界面不变。
+
+本节的红就是既有浏览器 smoke 在 `99a8900` 产物上的失败。实现后必须重跑：`npm test`、`npm run build`、
+`openreader-smoke.mjs` 三视口，以及登录后进入工作台与阅读器的真实 API 浏览器合同
+（`book-management-real-api-contract.mjs`、`reader-progress-multiclient-contract.mjs`）。
+
+观察 O3：CI 只跑前端单元测试和构建，不在浏览器里加载产物；同样的空白页如果合入 main，Actions 会照常发布
+镜像。给发布流程补一个“产物能启动”的浏览器门另起后续，不在本切片修改 workflow。
