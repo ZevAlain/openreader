@@ -26,11 +26,12 @@ COPY backend/ ./
 RUN CGO_ENABLED=1 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-$(go env GOARCH)} go build -mod=vendor -trimpath -ldflags="-s -w -X openreader/backend/api.Version=${VERSION} -X openreader/backend/api.Commit=${VCS_REF} -X openreader/backend/api.BuildDate=${BUILD_DATE}" -o /out/openreader .
 
 FROM alpine:3.23.6@sha256:85fe1e81d6758c208f3e1eed4338a1997e19d4be002d4dd32d3100c9a8c010a0
-# The pinned official 3.23.6 base still ships zlib 1.3.2-r0. Install only the exact
-# v3.23 main maintenance fix at build time: apk verifies the signed repository index,
-# the release OS gate pins the package identity, and nothing upgrades at container start.
-# Kept before the ARGs so the validated layer is reused by the published build.
-RUN apk add --no-cache 'zlib=1.3.2-r1'
+# The pinned official 3.23.6 base still ships zlib 1.3.2-r0 and musl 1.2.5-r23. Install
+# only the exact v3.23 main maintenance fixes at build time: apk verifies the signed
+# repository index, the release OS gate pins the package identities, and nothing
+# upgrades at container start. Kept before the ARGs so the validated layer is reused
+# by the published build.
+RUN apk add --no-cache 'zlib=1.3.2-r1' 'musl=1.2.5-r24' 'musl-utils=1.2.5-r24'
 ARG BUILD_DATE=unknown
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="OpenReader" \
