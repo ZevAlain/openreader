@@ -328,8 +328,8 @@ test('collector arguments accept only the two release image references', () => {
 test('release workflow builds both validation images and runs the OS gate before publish', async () => {
   const source = await readFile(new URL('../.github/workflows/docker-publish.yml', import.meta.url), 'utf8')
   const triggers = source.slice(0, source.indexOf('workflow_dispatch:'))
-  for (const path of ['scripts/check-os-advisories.mjs', 'scripts/check-os-advisories.test.mjs', 'scripts/os-apk-baseline.json', 'scripts/testdata/os-apk/**'])
-    assert.ok(triggers.includes(`- ${path}`), path)
+  assert.ok(triggers.includes('push:'), 'push triggers the workflow')
+  assert.ok(!triggers.includes('paths:'), 'every push must trigger the OS gate, including gate-only changes')
   const at = text => {const index = source.indexOf(text); assert.ok(index > 0, text); return index}
   const tests = at('run: node --test scripts/check-os-advisories.test.mjs')
   const amd64 = at('- name: Build native validation image'), arm64 = at('- name: Build arm64 validation image')

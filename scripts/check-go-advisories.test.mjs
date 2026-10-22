@@ -133,9 +133,9 @@ test('tool stream preserves UTF-8 split across chunks',async()=>{
 })
 test('release workflow triggers for gate changes and runs both checks before native build/publish',async()=>{
   const source=await readFile(new URL('../.github/workflows/docker-publish.yml',import.meta.url),'utf8')
-  for(const path of ['scripts/check-go-advisories.mjs','scripts/check-go-advisories.test.mjs']) {
-    assert.ok(source.slice(0,source.indexOf('workflow_dispatch:')).includes(`- ${path}`))
-  }
+  const triggers=source.slice(0,source.indexOf('workflow_dispatch:'))
+  assert.ok(triggers.includes('push:'))
+  assert.ok(!triggers.includes('paths:'),'every push must trigger the gate, including gate-only changes')
   const tests=source.indexOf('run: node --test scripts/check-go-advisories.test.mjs')
   const scan=source.indexOf('run: node scripts/check-go-advisories.mjs')
   const build=source.indexOf('- name: Build native validation image')
