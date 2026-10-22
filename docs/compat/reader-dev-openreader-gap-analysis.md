@@ -1,5 +1,21 @@
 # Reader-dev vs OpenReader Gap Analysis
 
+## 2026-10-22 P0 认证会话 旧格式 JWT 收编与公开默认密钥
+
+会话合同的七天旧格式 JWT 收编窗把“签名能验证”当作“本实例签发过”。`OPENREADER_JWT_SECRET` 未设置时用仓库公开的
+`change-this-before-deploy`（标准 Compose 不设置它），全新安装首次启动写下的 marker 又早于所有账号，两者叠加时任何人
+都能用公开密钥签 `{"userId":1,"iat":<2020>}`，在首次启动后七天内拿到管理员会话；今天才从早于 `a0edce3` 的镜像升级、
+没设密钥的实例，升级前的账号同样可被接管。REST、WebDAV Bearer、`/ws/sync` 共用同一个 `Authenticate`。另一会话已用临时
+测试复现（未提交）。固定上游没有 JWT（每次登录随机 token 写 `token_map`），这是 OpenReader 自有过渡设计的缺口。判定：
+公开值/空值下仍信任旧格式签名（F1）、收编不要求账号早于 marker（F2）为 **`must-fix`（P0）**。目标：公开值下在查询账号前
+拒绝旧格式 token（T1）；其余情况只收编 `created_at` 严格早于 marker 的账号（T2），全新安装因此没有收编窗。新格式会话靠
+随机 `jti` 摘要认证，不受影响、不重开；自定义密钥已升级实例的合法收编不变；公开默认值实例上的升级前旧 token 明确放弃
+（无法与伪造区分，代价是重新登录一次）。同一密钥派生的资源 capability（F3：封面可被当作匿名图片代理，中风险；EPUB/
+CBZ/音频/章节图片绑定内容指纹，低风险）判 `must-fix（P1）`，方向定为“永远不用公开值签名”，因改变启动与数据卷行为另起
+切片 S2。安全检查清单“必填”与 README“无需修改”的不一致（F4）在记录与发布后处理；窗口结束后已收编行也被拒绝（O1）、
+未注入会话服务时的中间件旧路径（O2，生产不可达）只记录。不改 schema、文件、启动、备份、前端。完整合同见
+[`authenticated-session-legacy-public-secret-fixed-baseline-second-audit-p0-contract.md`](authenticated-session-legacy-public-secret-fixed-baseline-second-audit-p0-contract.md)。
+
 ## 2026-10-17 P0 Reader 正文加载失败错误面盘点
 
 固定上游当前章失败时，正文区是一个“错误章节页”：`<h3>` 目标章目录标题，加 `获取章节内容失败！` 和原因

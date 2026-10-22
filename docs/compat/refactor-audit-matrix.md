@@ -1,5 +1,15 @@
 # OpenReader 全量上游复审矩阵
 
+## 2026-10-22 当前切片：认证会话旧格式 JWT 收编与公开默认密钥（P0 安全）
+
+见[`authenticated-session-legacy-public-secret-fixed-baseline-second-audit-p0-contract.md`](authenticated-session-legacy-public-secret-fixed-baseline-second-audit-p0-contract.md)。
+旧格式收编窗信任签名来源，而默认密钥是公开值、全新安装的 marker 早于所有账号：全新安装首次启动后七天内可用公开密钥伪造
+管理员会话，三个 Bearer 入口（REST、WebDAV Bearer、`/ws/sync`）都受影响。F1（公开值/空值下信任旧格式签名）、F2（不要求
+账号早于 marker）判must-fix P0：公开值下查询账号前拒绝旧格式token（T1）；其余情况只收编`created_at`严格早于marker的账号
+（T2），全新安装无收编窗。新格式会话、自定义密钥已升级实例的合法收编、marker、schema、备份、启动与前端都不变；公开默认值
+实例的升级前旧token明确放弃。F3资源capability（封面中、其余低）must-fix P1另起切片S2（不用公开值签名）；F4文档不一致随
+记录/README处理；O1、O2只记录。状态contract-only；下一步红测（api三入口+服务层+正常对照），再实现。合入main会触发发布。
+
 ## 2026-10-17 当前切片：Reader 正文加载失败错误面盘点
 
 见[`reader-chapter-error-surface-fixed-baseline-second-audit-p0-contract.md`](reader-chapter-error-surface-fixed-baseline-second-audit-p0-contract.md)。
