@@ -148,6 +148,44 @@ on both platforms”失败：`linux/amd64 APK file changed after install: etc/ss
 红就是 run `39758440810` 的 OS 门失败。修复后由下一次可信 Actions 运行双平台候选镜像构建、OS APK 门、fresh /
 historical 卷门并发布；本地不构建镜像。
 
+## 11. 补充：OS APK 门报 musl 待修复项（2026-10-22）
+
+删除复制的证书包后，可信 Actions run `39762716947`（`d15c384`）在 OS APK 门之前全部通过，OS 门失败：
+`pending Alpine secfix blocks release: linux/amd64 musl 1.2.5-r23 < 1.2.5-r24 CVE-2026-107891`，`musl-utils` 与
+`linux/arm64` 同样。卷门和发布被跳过，**没有发布镜像**。v3.23 main secdb（Last-Modified Wed, 21 Oct 2026 18:11:19 GMT）
+相对 10-13 快照只新增这一项；运行时其余 14 个包都不低于各自的修复版本。
+
+决定（**must-fix**，与
+[`sqlite-wal-os-c-advisory-fixed-baseline-second-audit-p2-contract.md`](sqlite-wal-os-c-advisory-fixed-baseline-second-audit-p2-contract.md)
+的 zlib 构建期修复同一做法）：运行时基础镜像仍为固定的 `alpine:3.23.6`，构建期在同一条 `apk add` 中安装签名索引里的精确
+`musl=1.2.5-r24` 与 `musl-utils=1.2.5-r24`。不升级基础镜像，不加门例外，不改门脚本逻辑。
+
+证据（固定 `alpine:3.23.6`，两平台，在容器内执行与运行时阶段相同的安装）：
+
+| | x86_64 | aarch64 |
+| --- | --- | --- |
+| v3.23 main APKINDEX sha256 | `e9e83b0cca8e0b7857cf8dd2c95e04eb27429ddff0619f8260c91db756b1e718` | `6f2b3dbd90d2bd502f811caffd2b0d10f5d1710ef24acbe0d17dfb0fcb62e60e` |
+| `apk verify`（镜像自带可信密钥） | OK，`.SIGN.RSA.alpine-devel@lists.alpinelinux.org-6165ee59.rsa.pub` | OK，`…-616ae350.rsa.pub` |
+| 索引描述 / Last-Modified | `v3.23.7-2-gddd3ce4d481` / Thu, 22 Oct 2026 07:45:27 GMT | 同描述 / 07:45:32 GMT |
+| `musl` 1.2.5-r24 `C:` | `Q1XUI1pl90RATg8vH/H5+0fF2ukao=` | `Q1Gpmv84P2QM7qzmrxAM68h3dvVVQ=` |
+| `musl-utils` 1.2.5-r24 `C:` | `Q1rtAC/LK9HesmJYexXp60XOc2Ii8=` | `Q19Wb50/jiOW4Y3ETW/Ke1KcyIHgk=` |
+
+两个包的 aports 提交为 `fd05fc094264bce4fb76efc6c7f61ba4abfcb609`；安装后的数据库身份行与签名索引记录逐字相同，文件清单与
+r23 相同；`etc/apk/world` 变为 `musl=1.2.5-r24`、`musl-utils=1.2.5-r24`，其余条目不变。`apk --no-network version -t`
+（apk-tools 3.0.8，`--network none`，两平台结果相同）：r24 对全部 7 个 musl 修复版本为 `>` 或 `=`，r23 对 r24 为 `<`。
+
+实施：
+
+- `Dockerfile` 运行时阶段：`RUN apk add --no-cache 'zlib=1.3.2-r1' 'musl=1.2.5-r24' 'musl-utils=1.2.5-r24'`。
+- `scripts/os-apk-baseline.json`：world 加两个精确版本，`buildTimeFixes` 增加 musl（r23 → r24、CVE-2026-107891、上述
+  aports 提交与索引描述），两平台 `musl`/`musl-utils` 改为上表身份。
+- 门测试先行：夹具加入签名索引记录与真实安装块（`musl-1.2.5-r24-apkindex.json`）、10-21 secdb 子集
+  （`secdb-v3.23-main-subset-2026-10-21.json`）及对应原生比较；候选镜像包含两项构建期修复；“只有 zlib 修复”的镜像
+  在 10-21 secdb 下必须精确报出 4 条 musl 待修复项，完整候选在 10-21 secdb 下通过；运行时 Dockerfile 只允许这一条
+  精确安装。这些测试在基线与 Dockerfile 更新前失败。
+
+红就是 run `39762716947` 的 OS 门失败与上述先行测试。修复后由下一次可信 Actions 完成双平台构建、OS 门、卷门与发布。
+
 ## 9. 实施与验证证据（2026-10-22）
 
 ### 9.1 提交
