@@ -10,6 +10,8 @@
 ![支持 amd64 与 arm64](https://img.shields.io/badge/platform-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white)
 [![许可证 GPL v3](https://img.shields.io/badge/license-GPL%20v3-blue)](LICENSE)
 
+本仓库基于 [changshengyu/openreader](https://github.com/changshengyu/openreader) 修改，遵循 GPL-3.0 发布。
+
 > [!NOTE]
 > OpenReader 仍在积极开发中，日常阅读需要的功能已经可用。升级前请先备份；遇到问题欢迎在 [Issues](https://github.com/ZevAlain/openreader/issues) 反馈。
 

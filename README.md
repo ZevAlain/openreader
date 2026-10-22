@@ -10,6 +10,8 @@ It works with online book sources in the Legado (阅读) format and can import l
 ![Runs on amd64 and arm64](https://img.shields.io/badge/platform-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white)
 [![License: GPL v3](https://img.shields.io/badge/license-GPL%20v3-blue)](LICENSE)
 
+This repository is a modified fork of [changshengyu/openreader](https://github.com/changshengyu/openreader) and is distributed under GPL-3.0.
+
 > [!NOTE]
 > OpenReader is under active development, and the everyday reading features are ready to use. Back up before upgrading, and please report problems in [Issues](https://github.com/ZevAlain/openreader/issues).
 >
