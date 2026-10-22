@@ -127,6 +127,27 @@ GO-2026-6809 涉及的具体中间证书不在本仓库可控范围内，不编�
 观察 O3：CI 只跑前端单元测试和构建，不在浏览器里加载产物；同样的空白页如果合入 main，Actions 会照常发布
 镜像。给发布流程补一个“产物能启动”的浏览器门另起后续，不在本切片修改 workflow。
 
+## 10. 补充：CI 的 OS APK 门拦下复制的 CA 证书包（2026-10-22）
+
+`ae4736d` 合入 main 后，可信 Actions run `39758440810` 的 Go 测试、两项 advisory 门、前端测试与构建、Compose、
+存储 HTTP 合同、native 与 arm64 候选镜像构建都通过，但“Check runtime APK packages against official Alpine secdb
+on both platforms”失败：`linux/amd64 APK file changed after install: etc/ssl/certs/ca-certificates.crt`，
+实际 `Q1mT0WUgIZu3o4++yVm+9ubDFAdCA=`，期望 `Q1reWe8OzoZ6gWJYQl50oNHcmLboc=`。后续卷门和发布步骤被跳过，**没有发布镜像**。
+
+根因：运行时阶段 `COPY --from=backend-builder /etc/ssl/certs/ca-certificates.crt …` 用构建镜像里的证书包覆盖了
+运行时镜像里由 APK 包 `ca-certificates-bundle` 管理的同一文件。只读检查官方镜像（`--network none`，两平台）：
+`alpine:3.23.6` 与旧构建镜像 `golang:1.26.9-alpine3.23` 都是 Alpine 3.23.6、`ca-certificates-bundle 20260909-r0`，
+该文件的 APK 记录为 `Z:Q1reWe8O…`；新构建镜像 `golang:1.26.10-alpine3.23` 基于 Alpine 3.23.7、
+`ca-certificates-bundle 20261020-r0`，记录为 `Z:Q1mT0WUg…`。SQLite/OS-C 合同已记录“builder 复制的 CA bundle 与包内
+字节相同”这一前提，OS 门的测试也专门断言字节不同即失败关闭，这次是门按设计生效。
+
+决定（**must-fix**，属于构建镜像升级的必要适配）：删除这行复制。运行时镜像本来就安装 `ca-certificates-bundle`
+20260909-r0，而此前复制进来的文件与它逐字节相同，所以删除后运行时信任库与上次已发布镜像完全一致；不升级运行时
+证书包，不改 OS 门脚本、基线或其测试。门的离线测试（含“运行时 Dockerfile 只安装签名 zlib 修复”）不依赖这行。
+
+红就是 run `39758440810` 的 OS 门失败。修复后由下一次可信 Actions 运行双平台候选镜像构建、OS APK 门、fresh /
+historical 卷门并发布；本地不构建镜像。
+
 ## 9. 实施与验证证据（2026-10-22）
 
 ### 9.1 提交
