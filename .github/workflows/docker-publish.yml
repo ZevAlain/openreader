@@ -4,25 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - .github/workflows/docker-publish.yml
-      - .dockerignore
-      - Dockerfile
-      - docker-compose.yml
-      - backend/**
-      - frontend/**
-      - scripts/docker-volume-backup-smoke.sh
-      - scripts/smoke/store-read-list-lifecycle-contract.mjs
-      - scripts/smoke/webdav-protocol-contract.sh
-      - scripts/smoke/local-store-directory-lifecycle-contract.mjs
-      - scripts/check-go-advisories.mjs
-      - scripts/check-go-advisories.test.mjs
-      - scripts/check-frontend-advisories.mjs
-      - scripts/check-frontend-advisories.test.mjs
-      - scripts/check-os-advisories.mjs
-      - scripts/check-os-advisories.test.mjs
-      - scripts/os-apk-baseline.json
-      - scripts/testdata/os-apk/**
   workflow_dispatch:
 
 permissions:
