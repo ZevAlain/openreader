@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - ci-native-arm
   workflow_dispatch:
     inputs:
       platforms:
