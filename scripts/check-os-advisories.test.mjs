@@ -108,6 +108,12 @@ test('pre-fix policies keep the exact published identities and drop only the bui
     }
   }
 })
+test('single-platform release inventories gate exactly the published platform', () => {
+  check(value => { value.images = [value.images[0]] })
+  check(value => { value.images = [value.images[1]] })
+  assert.throws(() => check(value => { value.images = [] }), /one or two distinct release platforms/)
+  assert.throws(() => check(value => { value.images = [value.images[0], value.images[0]] }), /one or two distinct release platforms/)
+})
 test('published fc4692c inventory is rejected by the reviewed identity pin on both platforms', () => {
   assert.throws(() => check(() => {}, {database:arch => published[arch], world:baseOnly.world}),
     /musl 1\.2\.5-r23 .* expected 1\.2\.5-r24/s)
@@ -174,7 +180,6 @@ test('image platform, variant, command and entrypoint must match the release ima
     value => {value.images[0].config.os = 'windows'},
     value => {value.images[0].config.config.Cmd = ['/bin/sh','-c','apk upgrade && /app/openreader']},
     value => {value.images[0].config.config.Entrypoint = ['/sbin/apk']},
-    value => {value.images.pop()},
     value => {value.images[1].platform = 'linux/amd64'},
     value => {value.images.push(value.images[0])},
   ]) assert.throws(() => check(change))
@@ -317,15 +322,17 @@ test('docker save archive requires one manifest and layers matching config diff_
     {diffIds:[`sha256:${sha256(layer)}`]}, {layers:[layer, Buffer.concat([Buffer.from([0x28,0xb5,0x2f,0xfd]), Buffer.alloc(508)])]},
     {rootfs:'other'}, {configPath:`blobs/sha256/${'0'.repeat(64)}`}]) assert.throws(() => readImageArchive(archive(options)))
 })
-test('collector arguments accept only the two release image references', () => {
+test('collector arguments accept one or both release image references', () => {
   assert.deepEqual(parseArguments(['openreader-ci:abc123', 'openreader-ci-arm64:abc123']),
     {'linux/amd64':'openreader-ci:abc123', 'linux/arm64':'openreader-ci-arm64:abc123'})
-  for (const argv of [[], ['openreader-ci:a'], ['openreader-ci:a','openreader-ci-arm64:a','--skip'], ['--allow-pending','openreader-ci-arm64:a'],
+  assert.deepEqual(parseArguments(['openreader-ci:abc123']), {'linux/amd64':'openreader-ci:abc123'})
+  assert.deepEqual(parseArguments(['openreader-ci-arm64:abc123']), {'linux/arm64':'openreader-ci-arm64:abc123'})
+  for (const argv of [[], ['openreader-ci:a','openreader-ci:a'], ['openreader-ci:a','openreader-ci-arm64:a','--skip'], ['--allow-pending','openreader-ci-arm64:a'],
     ['openreader-ci:a','openreader-ci-arm64:b'], ['openreader-ci-arm64:a','openreader-ci:a'],
     ['ghcr.io/x/y:latest','openreader-ci-arm64:a'], ['openreader-ci:a','openreader-ci-arm64:a;rm'], ['openreader-ci@sha256:00','openreader-ci-arm64:a']])
     assert.throws(() => parseArguments(argv))
 })
-test('release workflow builds both validation images and runs the OS gate before publish', async () => {
+test('release workflow builds validation images natively and runs the OS gate before publish', async () => {
   const source = await readFile(new URL('../.github/workflows/docker-publish.yml', import.meta.url), 'utf8')
   const triggers = source.slice(0, source.indexOf('workflow_dispatch:'))
   assert.ok(triggers.includes('push:'), 'push triggers the workflow')
@@ -333,9 +340,10 @@ test('release workflow builds both validation images and runs the OS gate before
   const at = text => {const index = source.indexOf(text); assert.ok(index > 0, text); return index}
   const tests = at('run: node --test scripts/check-os-advisories.test.mjs')
   const amd64 = at('- name: Build native validation image'), arm64 = at('- name: Build arm64 validation image')
-  const gate = at('run: node scripts/check-os-advisories.mjs openreader-ci:${{ github.sha }} openreader-ci-arm64:${{ github.sha }}')
+  const gate = at('node scripts/check-os-advisories.mjs openreader-ci:${{ github.sha }} openreader-ci-arm64:${{ github.sha }}')
   const login = at('- name: Log in to GHCR'), publish = at('- name: Build and publish multi-platform image')
-  assert.ok(tests < amd64 && amd64 < arm64 && arm64 < gate && gate < login && login < publish)
+  assert.ok(tests < amd64 && amd64 < arm64 && arm64 < gate && gate < publish && login < publish)
+  assert.ok(source.includes('ubuntu-24.04-arm'), 'arm64 validation images build on the native arm64 runner')
   const arm64Step = source.slice(arm64, source.indexOf('\n      - name:', arm64 + 1))
   for (const line of ['platforms: linux/arm64', 'load: true', 'push: false', 'tags: openreader-ci-arm64:${{ github.sha }}'])
     assert.ok(arm64Step.includes(line), line)

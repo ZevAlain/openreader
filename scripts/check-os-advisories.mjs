@@ -349,12 +349,18 @@ export function inspectImage(image, baseline) {
 
 export function evaluateOsInventory({baseline, images, secdb, comparisons, now = Date.now()}) {
   validateBaseline(baseline)
-  assert.ok(Array.isArray(images) && images.length === 2, 'exactly the two release platforms required')
-  assert.deepEqual(images.map(image => image?.platform).sort(), Object.keys(releasePlatforms).sort(), 'release platforms changed')
+  // A release may publish one platform or both; gate exactly the platforms being published.
+  const platforms = Array.isArray(images) ? images.map(image => image?.platform) : []
+  assert.ok(platforms.length >= 1 && platforms.length <= 2
+    && platforms.every(platform => releasePlatforms[platform])
+    && new Set(platforms).size === platforms.length,
+  'one or two distinct release platforms required')
   const reviewed = Object.keys(baseline.modifiedFiles ?? {}).sort()
   const inventories = images.map(image => inspectImage(image, baseline))
   const shape = packages => [...packages.values()].map(pkg => `${pkg.name} ${pkg.version} ${pkg.origin}`).sort()
-  assert.deepEqual(shape(inventories[0].packages), shape(inventories[1].packages), 'release platforms install different package versions')
+  if (inventories.length === 2) {
+    assert.deepEqual(shape(inventories[0].packages), shape(inventories[1].packages), 'release platforms install different package versions')
+  }
 
   const databases = ['main', 'community'].map(name => validateSecdb(name, secdb?.[name], now))
   const fixes = mergeFixes(databases)
@@ -396,11 +402,24 @@ export function evaluateOsInventory({baseline, images, secdb, comparisons, now =
 }
 
 export function parseArguments(argv) {
-  assert.equal(argv.length, 2, 'usage: check-os-advisories.mjs openreader-ci:TAG openreader-ci-arm64:TAG')
-  const amd64 = /^openreader-ci:([A-Za-z0-9._-]{1,128})$/.exec(argv[0])
-  const arm64 = /^openreader-ci-arm64:([A-Za-z0-9._-]{1,128})$/.exec(argv[1])
-  assert.ok(amd64 && arm64 && amd64[1] === arm64[1], 'only the two loaded release validation images are accepted')
-  return {'linux/amd64':argv[0], 'linux/arm64':argv[1]}
+  assert.ok(argv.length >= 1 && argv.length <= 2,
+    'usage: check-os-advisories.mjs [openreader-ci:TAG] [openreader-ci-arm64:TAG]')
+  const references = {}
+  let tag = null
+  for (const reference of argv) {
+    const amd64 = /^openreader-ci:([A-Za-z0-9._-]{1,128})$/.exec(reference)
+    const arm64 = /^openreader-ci-arm64:([A-Za-z0-9._-]{1,128})$/.exec(reference)
+    assert.ok(amd64 || arm64, 'only the loaded release validation images are accepted')
+    const platform = amd64 ? 'linux/amd64' : 'linux/arm64'
+    const current = (amd64 || arm64)[1]
+    assert.ok(!references[platform], 'each release validation image may be passed once')
+    assert.ok(!(platform === 'linux/amd64' && references['linux/arm64']),
+      'release validation images must be passed in canonical order')
+    if (tag === null) tag = current
+    assert.equal(current, tag, 'release validation image tags must match')
+    references[platform] = reference
+  }
+  return references
 }
 
 async function fetchSecdb(name) {
@@ -452,8 +471,12 @@ async function main() {
     const comparisons = new Map()
     if (pairs.length) {
       const script = 'while [ "$#" -ge 2 ]; do /sbin/apk --no-network version -t "$1" "$2" || exit 1; shift 2; done; [ "$#" -eq 0 ]'
-      const result = await runTool('docker', ['run', '--rm', '--pull', 'never', '--network', 'none', '--platform', 'linux/amd64',
-        '--entrypoint', '/bin/sh', references['linux/amd64'], '-c', script, 'sh', ...pairs.flatMap(pair => pair.split('|'))],
+      // Prefer the amd64 image for the native helper; fall back to arm64 when only it was built.
+      const [helperPlatform, helperReference] = references['linux/amd64']
+        ? ['linux/amd64', references['linux/amd64']]
+        : ['linux/arm64', references['linux/arm64']]
+      const result = await runTool('docker', ['run', '--rm', '--pull', 'never', '--network', 'none', '--platform', helperPlatform,
+        '--entrypoint', '/bin/sh', helperReference, '-c', script, 'sh', ...pairs.flatMap(pair => pair.split('|'))],
       {timeout:300_000, maxBytes:1 << 20})
       assert.ok(result.endsWith('\n'), 'incomplete native comparison output')
       const lines = result.slice(0, -1).split('\n')

@@ -4,36 +4,39 @@ on:
   push:
     branches:
       - main
+      - ci-native-arm
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Platforms to build and publish'
+        required: true
+        default: 'arm64'
+        type: choice
+        options:
+          - arm64
+          - amd64
+          - all
 
 permissions:
   contents: read
   packages: write
 
 concurrency:
-  group: docker-publish-main
+  group: docker-publish-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}
 
 jobs:
-  publish:
-    name: Validate and publish multi-platform image
+  validate:
+    name: Tests, advisory gates, and contracts
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
-
-      - name: Prepare image metadata
-        id: metadata
-        shell: bash
-        run: |
-          echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-          echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
-          echo "image=${IMAGE_NAME,,}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -44,10 +47,6 @@ jobs:
       - name: Test backend
         working-directory: backend
         run: go test ./...
-
-      - name: Generate vendored Go build context
-        working-directory: backend
-        run: go mod vendor -o "${RUNNER_TEMP}/openreader-go-vendor"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -89,11 +88,45 @@ jobs:
       - name: Validate isolated storage read-list and import HTTP contracts
         run: node scripts/smoke/store-read-list-lifecycle-contract.mjs
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
+  build-amd64:
+    name: Build, smoke-test, and push amd64 by digest
+    if: ${{ inputs.platforms == 'amd64' || inputs.platforms == 'all' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      digest: ${{ steps.push_amd64.outputs.digest }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Prepare image metadata
+        id: metadata
+        shell: bash
+        run: |
+          echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          echo "image=${IMAGE_NAME,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Generate vendored Go build context
+        working-directory: backend
+        run: go mod vendor -o "${RUNNER_TEMP}/openreader-go-vendor"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+
+      - name: Authenticate with GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build native validation image
         uses: docker/build-push-action@v7
@@ -112,7 +145,73 @@ jobs:
           cache-from: type=gha,scope=openreader-docker
           cache-to: type=gha,mode=max,scope=openreader-docker
 
-      # The OS gate must see both published platforms before anything is pushed.
+      - name: Validate fresh volumes and portable backups
+        env:
+          IMAGE: openreader-ci:${{ github.sha }}
+        run: ./scripts/docker-volume-backup-smoke.sh
+
+      - name: Validate historical volume compatibility
+        env:
+          HISTORICAL_VOLUME: "1"
+          IMAGE: openreader-ci:${{ github.sha }}
+        run: ./scripts/docker-volume-backup-smoke.sh
+
+      - name: Push amd64 image by digest
+        id: push_amd64
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          build-contexts: |
+            go_vendor=${{ runner.temp }}/openreader-go-vendor
+          platforms: linux/amd64
+          provenance: false
+          outputs: type=image,name=${{ steps.metadata.outputs.image }},push-by-digest=true,name-canonical=true,push=true
+          build-args: |
+            VERSION=${{ steps.metadata.outputs.short_sha }}
+            VCS_REF=${{ github.sha }}
+            BUILD_DATE=${{ steps.metadata.outputs.build_date }}
+          cache-from: type=gha,scope=openreader-docker
+
+  build-arm64:
+    name: Build and push arm64 natively by digest
+    if: ${{ inputs.platforms == 'arm64' || inputs.platforms == 'all' || github.event_name == 'push' }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    outputs:
+      digest: ${{ steps.push_arm64.outputs.digest }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Prepare image metadata
+        id: metadata
+        shell: bash
+        run: |
+          echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          echo "image=${IMAGE_NAME,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Generate vendored Go build context
+        working-directory: backend
+        run: go mod vendor -o "${RUNNER_TEMP}/openreader-go-vendor"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Authenticate with GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build arm64 validation image
         uses: docker/build-push-action@v7
         with:
@@ -130,19 +229,63 @@ jobs:
           cache-from: type=gha,scope=openreader-docker-arm64
           cache-to: type=gha,mode=max,scope=openreader-docker-arm64
 
-      - name: Check runtime APK packages against official Alpine secdb on both platforms
-        run: node scripts/check-os-advisories.mjs openreader-ci:${{ github.sha }} openreader-ci-arm64:${{ github.sha }}
-
       - name: Validate fresh volumes and portable backups
         env:
-          IMAGE: openreader-ci:${{ github.sha }}
+          IMAGE: openreader-ci-arm64:${{ github.sha }}
         run: ./scripts/docker-volume-backup-smoke.sh
 
       - name: Validate historical volume compatibility
         env:
           HISTORICAL_VOLUME: "1"
-          IMAGE: openreader-ci:${{ github.sha }}
+          IMAGE: openreader-ci-arm64:${{ github.sha }}
         run: ./scripts/docker-volume-backup-smoke.sh
+
+      - name: Push arm64 image by digest
+        id: push_arm64
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          build-contexts: |
+            go_vendor=${{ runner.temp }}/openreader-go-vendor
+          platforms: linux/arm64
+          provenance: false
+          outputs: type=image,name=${{ steps.metadata.outputs.image }},push-by-digest=true,name-canonical=true,push=true
+          build-args: |
+            VERSION=${{ steps.metadata.outputs.short_sha }}
+            VCS_REF=${{ github.sha }}
+            BUILD_DATE=${{ steps.metadata.outputs.build_date }}
+          cache-from: type=gha,scope=openreader-docker-arm64
+
+  release:
+    name: Gate the built platforms and publish
+    needs: [validate, build-amd64, build-arm64]
+    if: ${{ !cancelled()
+      && needs.validate.result == 'success'
+      && (needs.build-amd64.result == 'success' || needs.build-amd64.result == 'skipped')
+      && (needs.build-arm64.result == 'success' || needs.build-arm64.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BUILT_AMD64: ${{ needs.build-amd64.result == 'success' }}
+      BUILT_ARM64: ${{ needs.build-arm64.result == 'success' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Prepare image metadata
+        id: metadata
+        shell: bash
+        run: |
+          echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      # Only the tiny apk comparison helper may run through emulation (arm64-only releases).
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -151,38 +294,68 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Restore validation images from the pushed digests
+        shell: bash
+        run: |
+          set -eu
+          if [ "${BUILT_AMD64}" = true ]; then
+            docker pull --platform linux/amd64 "${IMAGE_NAME,,}@${{ needs.build-amd64.outputs.digest }}"
+            docker tag "${IMAGE_NAME,,}@${{ needs.build-amd64.outputs.digest }}" "openreader-ci:${GITHUB_SHA}"
+          fi
+          if [ "${BUILT_ARM64}" = true ]; then
+            docker pull --platform linux/arm64 "${IMAGE_NAME,,}@${{ needs.build-arm64.outputs.digest }}"
+            docker tag "${IMAGE_NAME,,}@${{ needs.build-arm64.outputs.digest }}" "openreader-ci-arm64:${GITHUB_SHA}"
+          fi
+
+      - name: Check runtime APK packages against official Alpine secdb
+        shell: bash
+        run: |
+          set -eu
+          if [ "${BUILT_AMD64}" = true ] && [ "${BUILT_ARM64}" = true ]; then
+            node scripts/check-os-advisories.mjs openreader-ci:${{ github.sha }} openreader-ci-arm64:${{ github.sha }}
+          elif [ "${BUILT_ARM64}" = true ]; then
+            node scripts/check-os-advisories.mjs openreader-ci-arm64:${{ github.sha }}
+          else
+            node scripts/check-os-advisories.mjs openreader-ci:${{ github.sha }}
+          fi
+
       - name: Build and publish multi-platform image
-        id: publish
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          build-contexts: |
-            go_vendor=${{ runner.temp }}/openreader-go-vendor
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ steps.metadata.outputs.image }}:latest
-            ${{ steps.metadata.outputs.image }}:${{ steps.metadata.outputs.short_sha }}
-          build-args: |
-            VERSION=${{ steps.metadata.outputs.short_sha }}
-            VCS_REF=${{ github.sha }}
-            BUILD_DATE=${{ steps.metadata.outputs.build_date }}
-          cache-from: |
-            type=gha,scope=openreader-docker
-            type=gha,scope=openreader-docker-arm64
-          cache-to: type=gha,mode=max,scope=openreader-docker
+        shell: bash
+        run: |
+          set -eu
+          refs=()
+          if [ "${BUILT_AMD64}" = true ]; then
+            refs+=("${IMAGE_NAME,,}@${{ needs.build-amd64.outputs.digest }}")
+          fi
+          if [ "${BUILT_ARM64}" = true ]; then
+            refs+=("${IMAGE_NAME,,}@${{ needs.build-arm64.outputs.digest }}")
+          fi
+          docker buildx imagetools create \
+            -t "${IMAGE_NAME,,}:latest" \
+            -t "${IMAGE_NAME,,}:${{ steps.metadata.outputs.short_sha }}" \
+            "${refs[@]}"
 
       - name: Verify published platforms
         shell: bash
         run: |
-          docker buildx imagetools inspect "${IMAGE_NAME,,}@${{ steps.publish.outputs.digest }}" | tee /tmp/openreader-image-index.txt
-          grep -q 'linux/amd64' /tmp/openreader-image-index.txt
-          grep -q 'linux/arm64' /tmp/openreader-image-index.txt
+          set -eu
+          docker buildx imagetools inspect "${IMAGE_NAME,,}:latest" | tee /tmp/openreader-image-index.txt
+          if [ "${BUILT_AMD64}" = true ]; then
+            grep -q 'linux/amd64' /tmp/openreader-image-index.txt
+          fi
+          if [ "${BUILT_ARM64}" = true ]; then
+            grep -q 'linux/arm64' /tmp/openreader-image-index.txt
+          fi
+          platforms='linux/arm64'
+          if [ "${BUILT_AMD64}" = true ] && [ "${BUILT_ARM64}" = true ]; then
+            platforms='linux/amd64, linux/arm64'
+          elif [ "${BUILT_AMD64}" = true ]; then
+            platforms='linux/amd64'
+          fi
           {
             echo "### Published image"
             echo
             echo "- Commit: \`${GITHUB_SHA}\`"
             echo "- Tags: \`${IMAGE_NAME,,}:latest\`, \`${IMAGE_NAME,,}:${{ steps.metadata.outputs.short_sha }}\`"
-            echo "- Digest: \`${{ steps.publish.outputs.digest }}\`"
-            echo "- Platforms: \`linux/amd64\`, \`linux/arm64\`"
+            echo "- Platforms: \`${platforms}\`"
           } >> "$GITHUB_STEP_SUMMARY"
