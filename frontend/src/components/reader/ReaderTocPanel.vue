@@ -203,12 +203,12 @@ function scrollToBottom() {
 }
 
 .toc-item:hover {
-  color: #409eff;
+  color: var(--reader-active-text, #0f5451);
   background: #f5f7fa;
 }
 
 .toc-item.active {
-  color: #409eff;
+  color: var(--reader-active-text, #0f5451);
   font-weight: 600;
   background: #ecf5ff;
 }

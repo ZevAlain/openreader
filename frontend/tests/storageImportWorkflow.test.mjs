@@ -77,7 +77,7 @@ test('distinguishes multi-book batch, sequential, and close cancellation transit
   const rows = [previewRow('one.txt', 'a'.repeat(48)), previewRow('two.txt', 'b'.repeat(48))]
 
   const batch = createWorkflow({ previewItems: rows })
-  await batch.workflow.start({ source: 'webdav', paths: ['one.txt', 'two.txt'] })
+  await batch.workflow.start({ source: 'local-store', paths: ['one.txt', 'two.txt'] })
   assert.equal(batch.workflow.phase.value, 'choose-mode')
   batch.workflow.chooseBatch()
   assert.equal(batch.workflow.phase.value, 'batch-groups')
@@ -86,7 +86,7 @@ test('distinguishes multi-book batch, sequential, and close cancellation transit
   assert.equal(batch.calls.filter(([kind]) => kind === 'import').length, 0, 'cancelling shared groups must not write a book')
 
   const sequential = createWorkflow({ previewItems: rows })
-  await sequential.workflow.start({ source: 'webdav', paths: ['one.txt', 'two.txt'] })
+  await sequential.workflow.start({ source: 'local-store', paths: ['one.txt', 'two.txt'] })
   sequential.workflow.chooseSequential()
   assert.equal(sequential.workflow.currentLabel.value, '（1/2）')
   sequential.workflow.skipCurrent()
@@ -94,7 +94,7 @@ test('distinguishes multi-book batch, sequential, and close cancellation transit
   await sequential.workflow.confirmCurrent()
   assert.equal(sequential.workflow.phase.value, 'idle')
   assert.deepEqual(sequential.calls.filter(([kind]) => kind === 'import'), [
-    ['import', 'webdav', 'two.txt', 'b'.repeat(48), []],
+    ['import', 'local-store', 'two.txt', 'b'.repeat(48), []],
   ])
 
   const closed = createWorkflow({ previewItems: rows })

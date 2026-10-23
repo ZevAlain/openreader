@@ -28,8 +28,6 @@ test('keeps sidebar bottom icons outside the scrollable navigation content', () 
 test('locks sidebar bottom icons to the frame and isolates pointer events', () => {
   assert.match(source, /\.sidebar-bottom-icons\s*\{[\s\S]*position:\s*absolute;[\s\S]*bottom:\s*30px;[\s\S]*left:\s*36px;[\s\S]*pointer-events:\s*none;/)
   assert.match(source, /\.sidebar-bottom-icon\s*\{[\s\S]*pointer-events:\s*auto;/)
-  assert.match(source, /\.app-shell\.mobile-shell \.sidebar-bottom-icons\s*\{[\s\S]*position:\s*absolute;[\s\S]*bottom:\s*30px;[\s\S]*left:\s*36px;[\s\S]*pointer-events:\s*none;/)
-  assert.match(source, /transform:\s*translateX\(calc\(-1 \* var\(--mobile-nav-drag-offset, 0px\)\)\);/)
 })
 
 test('uses the upstream Index tag flow instead of a rewritten two-column navigation grid', () => {

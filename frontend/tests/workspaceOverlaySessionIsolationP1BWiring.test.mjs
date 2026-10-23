@@ -41,7 +41,6 @@ test('remaining async controllers accept the shared operation guard', () => {
     '../src/composables/useBookContentSearch.js',
     '../src/composables/useSourceTransfer.js',
     '../src/composables/useOverlayReplaceRules.js',
-    '../src/composables/useWorkspaceBackupActions.js',
   ]
 
   for (const file of files) {

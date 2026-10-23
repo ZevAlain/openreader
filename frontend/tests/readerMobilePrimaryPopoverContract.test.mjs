@@ -10,7 +10,8 @@ test('primary reader popovers expose an upstream-like root without generic works
   assert.match(workspaceSource, /primary:\s*\{/, 'mobile workspace must expose a primary-popover presentation')
   assert.match(workspaceSource, /reader-mobile-workspace-primary/, 'primary workspace must have a dedicated root class')
   assert.match(workspaceSource, /\.reader-mobile-workspace-primary\s*\{[\s\S]*?padding:\s*calc\(58px \+ env\(safe-area-inset-top\)\) 0 0/, 'primary workspace root must reserve the interactive mobile tool strip')
-  assert.match(workspaceSource, /\.reader-mobile-workspace-primary\s*\{[\s\S]*?backdrop-filter:\s*none/, 'primary workspace must not add a glass drawer effect over the upstream popover')
+  assert.match(workspaceSource, /\.reader-mobile-workspace-primary\s*\{[\s\S]*?backdrop-filter:\s*blur\(20px\)/, 'primary workspace must use the bounded reader glass')
+  assert.doesNotMatch(workspaceSource, /\.reader-mobile-workspace-primary\s*\{[^}]*backdrop-filter:\s*blur\((?:3[3-9]|[4-9]\d)px\)/, 'reader glass blur stays at or below 32px for weak hardware')
 
   const primaryPanels = readerSource.match(/<ReaderMobileWorkspacePanel[\s\S]*?\/>|<ReaderMobileWorkspacePanel[\s\S]*?<\/ReaderMobileWorkspacePanel>/g) || []
   const markedPrimaryPanels = primaryPanels.filter(block => /\bprimary\b/.test(block) && /:show-header="false"/.test(block))

@@ -34,7 +34,6 @@ function defaultOverlayState() {
     searchBookContentJumpSerial: 0,
     localStoreVisible: false,
     rssVisible: false,
-    webdavVisible: false,
     userManageVisible: false,
     replaceRulesVisible: false,
     replaceRuleEditorDraft: null,
@@ -100,7 +99,7 @@ export const useOverlayStore = defineStore('overlay', {
       this.importBookVisible = true
     },
     openStorageImport(source, paths) {
-      const normalizedSource = ['direct', 'local-store', 'webdav'].includes(source) ? source : ''
+      const normalizedSource = ['direct', 'local-store'].includes(source) ? source : ''
       if (normalizedSource === 'direct') {
         const files = Array.isArray(paths)
           ? paths.filter(file => file && typeof file.name === 'string')
@@ -216,9 +215,6 @@ export const useOverlayStore = defineStore('overlay', {
     },
     openLocalStore() {
       this.localStoreVisible = true
-    },
-    openWebDAV() {
-      this.webdavVisible = true
     },
     reconcileDeletedBooks(bookIds) {
       const deleted = new Set(normalizeDeletedBookIds(bookIds))

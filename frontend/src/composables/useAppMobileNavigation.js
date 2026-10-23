@@ -1,14 +1,10 @@
 import { computed, ref } from 'vue'
 
+// The mobile shell replaced the legacy hamburger drawer with a floating glass
+// tab bar, so this composable now only answers "are we on the compact
+// interface?" plus the viewport listener that keeps the answer current.
 export function useAppMobileNavigation(options) {
   const windowWidth = ref(options.currentViewportWidth())
-  const visible = ref(false)
-  const touchStart = ref(null)
-  const touchMoveX = ref(0)
-  const touchAxis = ref('')
-  const navigationWidth = computed(() => 260)
-  const dragLimit = computed(() => 270)
-  let ignoreWorkspaceClickUntil = 0
 
   const isMobile = computed(() => (
     options.shouldUseMiniInterface(
@@ -16,145 +12,14 @@ export function useAppMobileNavigation(options) {
       windowWidth.value,
     )
   ))
-  const navigationStyle = computed(() => {
-    const width = navigationWidth.value
-    const limit = dragLimit.value
-    const base = { '--mobile-nav-width': `${width}px` }
-    if (!isMobile.value || !touchMoveX.value) return base
-    if (
-      !visible.value &&
-      touchMoveX.value > 0 &&
-      touchMoveX.value <= limit
-    ) {
-      const offset = touchMoveX.value - limit
-      return {
-        ...base,
-        '--mobile-nav-drag-offset': `${offset}px`,
-        marginLeft: `${offset}px`,
-        transition: 'none',
-      }
-    }
-    if (
-      visible.value &&
-      touchMoveX.value < 0 &&
-      touchMoveX.value >= -limit
-    ) {
-      const offset = touchMoveX.value
-      return {
-        ...base,
-        '--mobile-nav-drag-offset': `${offset}px`,
-        marginLeft: `${offset}px`,
-        transition: 'none',
-      }
-    }
-    return base
-  })
 
   function updateViewport() {
     windowWidth.value = options.currentViewportWidth()
   }
 
-  function handleTouchStart(event) {
-    if (!isMobile.value || event.touches?.length !== 1) return
-    const touch = event.touches[0]
-    const viewportHeight = options.getViewportHeight()
-    const viewportWidth = options.getViewportWidth()
-    if (
-      touch.clientY <= 20 ||
-      touch.clientY >= viewportHeight - 20 ||
-      touch.clientX <= 20 ||
-      touch.clientX >= viewportWidth - 20
-    ) {
-      touchStart.value = null
-      return
-    }
-    touchStart.value = { x: touch.clientX, y: touch.clientY }
-    touchMoveX.value = 0
-    touchAxis.value = ''
-  }
-
-  function handleTouchMove(event) {
-    if (
-      !isMobile.value ||
-      !touchStart.value ||
-      event.touches?.length !== 1
-    ) {
-      return
-    }
-    const touch = event.touches[0]
-    const moveX = touch.clientX - touchStart.value.x
-    const moveY = touch.clientY - touchStart.value.y
-    if (
-      !touchAxis.value &&
-      Math.max(Math.abs(moveX), Math.abs(moveY)) >= 8
-    ) {
-      touchAxis.value = Math.abs(moveX) > Math.abs(moveY) ? 'x' : 'y'
-    }
-    if (touchAxis.value === 'y') {
-      touchMoveX.value = 0
-      return
-    }
-    if (touchAxis.value !== 'x') return
-    const limit = dragLimit.value
-    if (
-      (!visible.value && moveX > 0 && moveX <= limit) ||
-      (visible.value && moveX < 0 && moveX >= -limit)
-    ) {
-      event.preventDefault()
-      event.stopPropagation()
-      touchMoveX.value = moveX
-    }
-  }
-
-  function handleTouchEnd() {
-    if (!isMobile.value) return
-    if (touchAxis.value === 'x' && touchMoveX.value > 0) {
-      visible.value = true
-    }
-    if (touchAxis.value === 'x' && touchMoveX.value < 0) {
-      visible.value = false
-    }
-    if (touchAxis.value === 'x' && touchMoveX.value !== 0) {
-      ignoreWorkspaceClickUntil = options.now() + 350
-    }
-    resetTouch()
-  }
-
-  function handleTouchCancel() {
-    resetTouch()
-  }
-
-  function resetTouch() {
-    touchStart.value = null
-    touchMoveX.value = 0
-    touchAxis.value = ''
-  }
-
-  function close() {
-    if (options.now() < ignoreWorkspaceClickUntil) return
-    if (isMobile.value && visible.value) visible.value = false
-  }
-
-  function toggle() {
-    if (isMobile.value) visible.value = !visible.value
-  }
-
   return {
     windowWidth,
-    visible,
-    touchStart,
-    touchMoveX,
-    touchAxis,
-    navigationWidth,
-    dragLimit,
     isMobile,
-    navigationStyle,
     updateViewport,
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd,
-    handleTouchCancel,
-    close,
-    toggle,
   }
 }

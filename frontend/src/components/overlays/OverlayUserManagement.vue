@@ -34,18 +34,6 @@
             {{ formatUserTime(row.createdAt, '—') }}
           </template>
         </el-table-column>
-        <el-table-column prop="canAccessWebdav" label="WebDAV" min-width="90">
-          <template #default="{ row }">
-            <el-switch
-              v-if="isUserMutable(row)"
-              v-model="row.canAccessWebdav"
-              size="small"
-              active-text="WebDAV"
-              :loading="isPermissionUpdating(row, 'canAccessWebdav')"
-              @change="value => updateUserPermission(row, 'canAccessWebdav', value)"
-            />
-          </template>
-        </el-table-column>
         <el-table-column prop="canAccessStore" label="书仓" min-width="80">
           <template #default="{ row }">
             <el-switch
@@ -125,7 +113,6 @@
       <el-form-item label="权限">
         <div class="permission-row">
           <el-switch v-model="userDraft.canEditSources" active-text="书源" />
-          <el-switch v-model="userDraft.canAccessWebdav" active-text="WebDAV" />
           <el-switch v-model="userDraft.canAccessStore" active-text="书仓" />
         </div>
       </el-form-item>

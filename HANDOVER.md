@@ -1,6 +1,6 @@
 # OpenReader 交接文档
 
-> 更新：2026-10-23 · 维护者交接材料 · 配合仓库根目录的 README 使用
+> 更新：2026-10-24 · 维护者交接材料 · 配合仓库根目录的 README 使用
 
 ## 一、项目是什么
 
@@ -8,8 +8,10 @@
 技术栈：Go（Gin、GORM、SQLite/CGO）+ Vue 3（Vite、Pinia、Element Plus），单 Docker 容器交付，支持 amd64/arm64（NAS、树莓派、Apple Silicon 等）。
 
 - 后端：`backend/`（api / services / engine 分层清晰，几乎每个子系统都有契约测试）
-- 前端：`frontend/`（composable 化，172 个测试文件）
+- 前端：`frontend/`（composable 化，约 170 个测试文件；液态玻璃重设计基线见 `docs/compat/design-tokens-glass-baseline.md`）
 - 契约文档：`docs/compat/`（100+ 份，记录每个子系统的行为边界与设计原因）
+
+2026-10-24 功能面变化：WebDAV 协议与手动备份/恢复已整体移除（见 `docs/compat/webdav-removal-notice.md`，每日自动备份保留）；远程书源 URL 列表服务端化多端同步；iOS 主屏 PWA（图标/全屏/安全区/应用壳离线缓存，`docs/compat/pwa-application-shell-contract.md`）；移动端改为底部悬浮玻璃标签栏。
 
 ## 二、仓库与发布
 
@@ -65,7 +67,7 @@ node --test scripts/check-*-advisories.test.mjs
 docker compose up -d   # 镜像 ghcr.io/zevalain/openreader:latest，pull_policy: always
 ```
 
-- 三个卷：`data`（数据库/配置）、`cache`、`library`（书仓）——**升级前备份三卷**，应用内另有每日自动备份
+- 三个卷：`data`（数据库/配置/每日自动备份）、`cache`、`library`（书仓）——**升级前备份三卷**
 - 回滚：把 `image` 固定为具体 commit 标签即可；不要混用新旧数据库文件
 
 ## 六、维护责任（脱离上游后自负）
@@ -74,6 +76,7 @@ docker compose up -d   # 镜像 ghcr.io/zevalain/openreader:latest，pull_policy
 2. **每 1–2 个月主动升级依赖**：`backend/go.mod` 的 Go 版本（stdlib CVE 靠它）、`go get -u` 谨慎升、npm 侧让门禁验证，推上去让 CI 把关
 3. **部署面收敛**：尽量内网/VPN 访问，不要裸暴露公网
 4. 书源失效基本是数据问题：Legado 格式书源 JSON 由社区维护，换源即可，很少需要改解析代码
+5. Service Worker 只做应用壳缓存；离线阅读（章节正文缓存）是已确认的后续迭代，改动时必须保持 `/api/` 永不缓存的整体策略，只为章节内容开受控白名单
 5. `docs/compat/` 里的 `changshengyu/reader-dev@fa22f27`、`ghcr.io/changshengyu/openreader:<sha>`、Actions run 链接是**历史验证记录**，不要改成自己的
 
 ## 七、AI 协作工作记录（2026-10-22 ~ 10-23）

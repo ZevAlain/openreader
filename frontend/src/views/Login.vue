@@ -31,8 +31,42 @@ async function handleSuccess(result = {}) {
 </script>
 
 <style scoped>
-.auth-page { min-height: 100vh; display: grid; place-items: center; background: #faf8f2; padding: 20px; }
-.auth-card { background: #fff; border-radius: 12px; padding: 40px 36px; width: 400px; max-width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-.auth-title { font-size: 28px; font-weight: 700; color: #1e293b; margin: 0 0 4px; text-align: center; }
-.auth-sub { font-size: 14px; color: #94a3b8; text-align: center; margin: 0 0 28px; }
+.auth-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(1200px 700px at 18% -8%, color-mix(in srgb, var(--app-primary) 16%, transparent), transparent 62%),
+    radial-gradient(900px 620px at 96% 104%, color-mix(in srgb, var(--app-primary) 12%, transparent), transparent 58%),
+    var(--app-bg);
+}
+
+.auth-card {
+  width: 400px;
+  max-width: 100%;
+  padding: 42px 36px;
+  border: 1px solid var(--glass-panel-border);
+  border-radius: var(--app-radius-xl);
+  background: var(--glass-panel-bg);
+  backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+}
+
+.auth-title {
+  margin: 0 0 4px;
+  color: var(--app-text);
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.auth-sub {
+  margin: 0 0 28px;
+  color: var(--app-text-muted);
+  font-size: 14px;
+  text-align: center;
+}
 </style>

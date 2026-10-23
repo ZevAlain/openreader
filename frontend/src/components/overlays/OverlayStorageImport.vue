@@ -8,7 +8,7 @@
     @update:model-value="handlePreflightVisible"
   >
     <p class="storage-import-tip">
-      已先冻结所选文件的字节。修正规则后可在同一份暂存数据上重新解析，不会重新读取书仓或 WebDAV 原文件。
+      已先冻结所选文件的字节。修正规则后可在同一份暂存数据上重新解析，不会重新读取书仓原文件。
     </p>
     <div class="storage-import-preflight-list">
       <article v-for="row in rows" :key="row.key" :class="['storage-import-preflight-row', { failed: row.error }]">
@@ -137,7 +137,6 @@ import { computed, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { listTXTTocRules, previewDirectLocalBooks } from '../../api/books'
 import { importFromLocalStore, previewLocalStoreImport } from '../../api/localStore'
-import { importFromWebDAV, previewWebDAVImport } from '../../api/webdav'
 import { useStorageImportWorkflow } from '../../composables/useStorageImportWorkflow'
 import { useAuthenticatedOperationGuard } from '../../composables/useAuthenticatedOperationGuard'
 import { useBookshelfStore } from '../../stores/bookshelf'
@@ -160,9 +159,7 @@ const workflow = useStorageImportWorkflow({
   loadCategories: loadImportOptions,
   preview: async (source, payload, options) => {
     if (source === 'direct') return previewDirectLocalBooks(payload, options)
-    const response = source === 'local-store'
-      ? await previewLocalStoreImport(stripClientKeys(payload), options)
-      : await previewWebDAVImport(stripClientKeys(payload), options)
+    const response = await previewLocalStoreImport(stripClientKeys(payload), options)
     return response.data
   },
   importItem: async (source, item, categoryIds, options) => {
@@ -174,9 +171,7 @@ const workflow = useStorageImportWorkflow({
       return { imported: [{ key: item.key, path: item.path, book }] }
     }
     const backendItem = stripClientKey(item)
-    const response = source === 'local-store'
-      ? await importFromLocalStore([backendItem], categoryIds, options)
-      : await importFromWebDAV([backendItem], categoryIds, options)
+    const response = await importFromLocalStore([backendItem], categoryIds, options)
     return response.data
   },
   onImported: book => bookshelf.upsertBook(book),
@@ -205,7 +200,7 @@ const {
 
 const sourceLabel = computed(() => {
   if (source.value === 'direct') return '本地文件'
-  return source.value === 'webdav' ? 'WebDAV ' : '本地书仓'
+  return '本地书仓'
 })
 
 watch(

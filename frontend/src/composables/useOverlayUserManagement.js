@@ -19,7 +19,6 @@ export function useOverlayUserManagement(options) {
     password: '',
     canEditSources: true,
     canAccessStore: true,
-    canAccessWebdav: true,
   })
   const scheduleTimeout = options.setTimeout || globalThis.setTimeout
   const cancelTimeout = options.clearTimeout || globalThis.clearTimeout
@@ -117,8 +116,7 @@ export function useOverlayUserManagement(options) {
       password: '',
       canEditSources: true,
       canAccessStore: true,
-      canAccessWebdav: true,
-    })
+      })
     createDialogVisible.value = true
   }
 
@@ -136,7 +134,6 @@ export function useOverlayUserManagement(options) {
         password: draft.password,
         canEditSources: draft.canEditSources,
         canAccessStore: draft.canAccessStore,
-        canAccessWebdav: draft.canAccessWebdav,
       })
       if (!operations.canCommit(operation)) return
       options.onSuccess('新增用户成功')
@@ -298,7 +295,7 @@ export function useOverlayUserManagement(options) {
   }
 
   async function updatePermission(row, field, value) {
-    const allowedFields = new Set(['canEditSources', 'canAccessStore', 'canAccessWebdav'])
+    const allowedFields = new Set(['canEditSources', 'canAccessStore'])
     if (!isMutable(row) || !allowedFields.has(field)) return
     const pendingKey = permissionUpdateKey(row, field)
     if (permissionUpdates.value.has(pendingKey)) return

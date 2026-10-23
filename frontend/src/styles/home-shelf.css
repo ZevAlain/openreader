@@ -49,19 +49,6 @@
   white-space: nowrap;
 }
 
-.mobile-menu-trigger {
-  display: inline-grid;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  flex: 0 0 30px;
-  padding: 0;
-  color: inherit;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-}
-
 .title-actions {
   display: flex;
   min-width: 0;
@@ -123,7 +110,7 @@
   justify-content: center;
   flex: 1 0 80px;
   padding: 0 16px;
-  color: #303133;
+  color: var(--app-text-muted);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -140,16 +127,17 @@
 }
 
 .group-chip.active {
-  color: #409eff;
+  color: var(--app-primary-strong);
 }
 
 .group-chip.active::after {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 2px;
-  background: #409eff;
+  right: 10px;
+  bottom: 6px;
+  left: 10px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--app-primary);
   content: "";
 }
 
@@ -187,12 +175,20 @@
   margin-bottom: 18px;
   padding: 24px;
   color: inherit;
-  background: transparent;
-  border: 0;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  box-shadow: var(--app-shadow-sm);
   cursor: pointer;
   outline: 0;
   text-align: left;
   user-select: none;
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.book-row:hover {
+  box-shadow: var(--app-shadow-md);
+  transform: translateY(-2px);
 }
 
 .cover-img {
@@ -251,7 +247,7 @@
 }
 
 .operation-icon:hover {
-  color: #409eff;
+  color: var(--reader-active-text, #0f5451);
 }
 
 .name {
@@ -390,7 +386,7 @@ html.dark-reader .shelf-page .group-chip {
 }
 
 html.dark-reader .shelf-page .group-chip.active {
-  color: #409eff;
+  color: var(--reader-active-text, #0f5451);
 }
 
 html.dark-reader .shelf-page .shelf-search-wrapper .el-input__wrapper {

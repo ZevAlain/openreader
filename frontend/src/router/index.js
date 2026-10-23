@@ -20,12 +20,10 @@ function workspaceOverlayIntentFromLegacy(to, kind) {
       query: { ...query, overlay: 'local-store' },
     }
   }
-  const settingsPanel = ['account', 'backup', 'cache', 'webdav', 'reader', 'replace', 'rss', 'admin'].includes(panel)
+  const settingsPanel = ['account', 'cache', 'reader', 'replace', 'rss', 'admin'].includes(panel)
     ? panel
     : 'account'
   const overlayByPanel = {
-    backup: 'webdav',
-    webdav: 'webdav',
     replace: 'replace-rules',
     rss: 'rss',
     admin: 'user-manage',

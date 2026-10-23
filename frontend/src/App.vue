@@ -124,7 +124,11 @@ watch(
   () => readerStore.themeType,
   (themeType) => {
     if (typeof document === 'undefined') return
-    document.documentElement.classList.toggle('dark-reader', themeType === 'night')
+    const dark = themeType === 'night'
+    // dark-reader drives the app shell palette; dark additionally switches
+    // Element Plus to its official dark variable set.
+    document.documentElement.classList.toggle('dark-reader', dark)
+    document.documentElement.classList.toggle('dark', dark)
   },
   { immediate: true },
 )

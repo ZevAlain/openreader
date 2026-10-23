@@ -1,15 +1,11 @@
 <template>
   <div
     class="app-shell"
-    :class="{ 'mobile-shell': isMobileShell, 'mobile-nav-open': mobileNavigationVisible }"
-    @touchstart="handleTouchStart"
-    @touchmove="handleTouchMove"
-    @touchend="handleTouchEnd"
-    @touchcancel="handleTouchCancel"
+    :class="{ 'mobile-shell': isMobileShell, 'profile-sheet-open': profileSheetVisible }"
   >
     <div v-if="offline" class="app-offline">网络已断开，部分同步能力会在恢复连接后继续。</div>
 
-    <aside class="app-sidebar" :style="mobileNavigationStyle">
+    <aside class="app-sidebar">
       <div class="app-sidebar-scroll">
       <div class="app-brand" @click="goHome">
         <div class="app-brand-mark">阅</div>
@@ -144,6 +140,87 @@
         <slot />
       </main>
     </div>
+
+    <nav v-if="isMobileShell" class="mobile-tabbar" aria-label="主导航">
+      <button
+        v-for="tab in mobileTabs"
+        :key="tab.key"
+        class="mobile-tab"
+        :class="{ active: tab.key === activeMobileTab }"
+        type="button"
+        @click="handleMobileTab(tab)"
+      >
+        <el-icon><component :is="tab.icon" /></el-icon>
+        <span>{{ tab.label }}</span>
+      </button>
+    </nav>
+
+    <Teleport to="body">
+      <div
+        v-if="isMobileShell"
+        class="profile-sheet-backdrop"
+        :class="{ visible: profileSheetVisible }"
+        @click="closeProfileSheet"
+      />
+      <section
+        v-if="isMobileShell"
+        class="profile-sheet"
+        :class="{ visible: profileSheetVisible }"
+        aria-label="我的"
+      >
+        <div class="profile-sheet-header">
+          <span class="profile-sheet-grabber" />
+        </div>
+        <div class="profile-sheet-account">
+          <div class="profile-avatar">{{ profileInitial }}</div>
+          <div class="profile-account-text">
+            <strong>{{ userStore.profile?.username || '未登录' }}</strong>
+            <small>{{ userStore.profile?.role === 'admin' ? '管理员' : '成员' }}</small>
+          </div>
+          <button
+            v-if="isNightTheme"
+            class="profile-theme-toggle"
+            type="button"
+            aria-label="切换日间主题"
+            @click="toggleNightTheme"
+          ><el-icon><Sunny /></el-icon></button>
+          <button
+            v-else
+            class="profile-theme-toggle"
+            type="button"
+            aria-label="切换夜间主题"
+            @click="toggleNightTheme"
+          ><el-icon><Moon /></el-icon></button>
+        </div>
+        <div class="profile-sheet-scroll">
+          <section
+            v-for="section in navSections"
+            :key="section.key"
+            class="profile-group"
+            :data-sidebar-section="section.key"
+          >
+            <p class="profile-group-title">{{ section.title }}</p>
+            <button
+              v-for="item in section.items"
+              :key="item.key"
+              class="profile-group-item"
+              type="button"
+              @click="runNavAction(item); closeProfileSheet()"
+            >
+              <span>{{ item.label }}</span>
+              <el-icon><ArrowRight /></el-icon>
+            </button>
+          </section>
+          <section class="profile-group">
+            <p class="profile-group-title">关于</p>
+            <a class="profile-group-item" href="https://github.com/ZevAlain/openreader" target="_blank" rel="noopener noreferrer">
+              <span>GitHub 仓库</span>
+              <el-icon><ArrowRight /></el-icon>
+            </a>
+          </section>
+        </div>
+      </section>
+    </Teleport>
   </div>
 </template>
 
@@ -151,7 +228,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Moon, Search, Sunny } from '@element-plus/icons-vue'
+import { ArrowRight, Compass, Moon, Notebook, Search, Sunny, User } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/user'
 import { useOverlayStore } from '../stores/overlay'
 import { useBookshelfStore } from '../stores/bookshelf'
@@ -164,11 +241,9 @@ import { useAppRecentReading } from '../composables/useAppRecentReading'
 import { useAppSidebarSearch } from '../composables/useAppSidebarSearch'
 import { useAuthenticatedOperationGuard } from '../composables/useAuthenticatedOperationGuard'
 import { useIndexWorkspaceRefresh } from '../composables/useIndexWorkspaceRefresh'
-import { useWorkspaceBackupActions } from '../composables/useWorkspaceBackupActions'
 import { useSync } from '../composables/useSync'
 import ExploreWorkspacePopover from '../components/workspace/ExploreWorkspacePopover.vue'
 import { clearCache, getCacheStats } from '../api/cache'
-import { triggerBackup, triggerPortableBackup } from '../api/backup'
 import { listSources } from '../api/sources'
 import api from '../api/client'
 import { cacheFirstRequest, networkFirstRequest, removeBrowserCache } from '../utils/browserCache'
@@ -203,16 +278,8 @@ const shelfForegroundReconciler = createShelfForegroundReconciler({
   isVisible: () => typeof document === 'undefined' || document.visibilityState !== 'hidden',
 })
 const {
-  visible: mobileNavigationVisible,
   isMobile: isMobileShell,
-  navigationStyle: mobileNavigationStyle,
   updateViewport: updateViewportFlags,
-  handleTouchStart,
-  handleTouchMove,
-  handleTouchEnd,
-  handleTouchCancel,
-  close: closeMobileNavigation,
-  toggle: toggleMobileNavigation,
 } = useAppMobileNavigation({
   currentViewportWidth,
   getViewportWidth: () => window.innerWidth,
@@ -253,35 +320,35 @@ const {
   now: () => Date.now(),
   navigate: route => router.push(route),
 })
-const {
-  backupLoading,
-  portableBackupLoading,
-  runBackup: runWorkspaceBackup,
-  runPortableBackup: runWorkspacePortableBackup,
-} = useWorkspaceBackupActions({
-  operationGuard: routeBookInfoOperations,
-  triggerBackup,
-  triggerPortableBackup,
-  confirmBackup: () => ElMessageBox.confirm(
-    '确认创建当前账户的书源、书架、分组、RSS、设置、书签、进度和替换规则备份吗？',
-    '保存备份',
-    { type: 'warning' },
-  ),
-  confirmPortable: () => ElMessageBox.confirm(
-    '完整可移植备份会保存当前账户可恢复的本地书原文件，以及正在引用的自定义封面、背景和字体。音频目录、缺失原文件或无效自定义资源会阻止生成，是否继续？',
-    '保存完整可移植备份',
-    { type: 'warning' },
-  ),
-  onSuccess: message => ElMessage.success(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
-})
-
 const canAccessLocalStore = computed(() => userStore.profile?.canAccessStore !== false)
-const canAccessWebDAV = computed(() => {
-  const explicit = userStore.profile?.canAccessWebdav
-  return typeof explicit === 'boolean' ? explicit : canAccessLocalStore.value
-})
 
+const profileSheetVisible = ref(false)
+const mobileTabs = [
+  { key: 'shelf', label: '书架', icon: Notebook, workspace: '' },
+  { key: 'search', label: '搜索', icon: Search, workspace: 'search' },
+  { key: 'explore', label: '发现', icon: Compass, workspace: 'explore' },
+  { key: 'profile', label: '我的', icon: User, workspace: null },
+]
+const activeMobileTab = computed(() => {
+  if (profileSheetVisible.value) return 'profile'
+  if (route.query.workspace === 'search') return 'search'
+  if (route.query.workspace === 'explore') return 'explore'
+  return 'shelf'
+})
+const profileInitial = computed(() => String(userStore.profile?.username || '访').slice(0, 1).toUpperCase())
+
+function handleMobileTab(tab) {
+  if (tab.workspace === null) {
+    profileSheetVisible.value = !profileSheetVisible.value
+    return
+  }
+  profileSheetVisible.value = false
+  router.push({ path: '/', query: tab.workspace ? { workspace: tab.workspace } : {} })
+}
+
+function closeProfileSheet() {
+  profileSheetVisible.value = false
+}
 const navSections = computed(() => [
   {
     key: 'backend',
@@ -320,24 +387,11 @@ const navSections = computed(() => [
     title: userStore.profile?.username ? `用户空间 · ${userStore.profile.username}` : '用户空间',
     headingAction: userStore.profile ? { label: '注销', action: logoutUser } : null,
     items: [
-      { key: 'backupConfig', label: '备份用户配置', action: backupUserConfig },
-      { key: 'syncConfig', label: '同步用户配置', action: syncUserConfig },
       ...(userStore.profile?.role === 'admin'
         ? [{ key: 'userManage', label: '管理用户空间', action: () => overlay.openUserManage() }]
         : []),
     ],
   },
-  ...(canAccessWebDAV.value
-    ? [{
-      key: 'webdav',
-      title: 'WebDAV',
-      items: [
-        { key: 'webdav', label: '文件管理', action: () => overlay.openWebDAV() },
-        { key: 'backup', label: backupLoading.value ? '正在保存备份' : '保存备份', action: runWorkspaceBackup },
-        { key: 'portableBackup', label: portableBackupLoading.value ? '正在保存完整备份' : '保存完整可移植备份', action: runWorkspacePortableBackup },
-      ],
-    }]
-    : []),
   {
     key: 'cache',
     title: cacheSectionTitle.value,
@@ -378,7 +432,7 @@ const {
   onWorkspaceSearch: beginWorkspaceSearch,
   onSearchConfigChange: handleSidebarSearchConfigChange,
   afterNavigate: () => {
-    if (isMobileShell.value) mobileNavigationVisible.value = false
+    if (isMobileShell.value) profileSheetVisible.value = false
   },
   afterSourcesUpdated: () => loadCacheStats(),
 })
@@ -419,19 +473,19 @@ function runNavAction(item) {
   if (exploreChooserVisible.value) {
     closeExploreChooser()
     if (item?.key === 'discover') {
-      if (isMobileShell.value && item.closeMobile) mobileNavigationVisible.value = false
+      if (isMobileShell.value && item.closeMobile) profileSheetVisible.value = false
       return
     }
   }
   if (item.action) {
     item.action()
-    if (isMobileShell.value && item.closeMobile) mobileNavigationVisible.value = false
+    if (isMobileShell.value && item.closeMobile) profileSheetVisible.value = false
     return
   }
   if (item.route) {
     const query = navRouteQuery(item)
     router.push({ name: item.route, query })
-    if (isMobileShell.value && item.closeMobile) mobileNavigationVisible.value = false
+    if (isMobileShell.value && item.closeMobile) profileSheetVisible.value = false
   }
 }
 
@@ -462,7 +516,6 @@ function beginWorkspaceExplore() {
 }
 
 function handleWorkspaceBackgroundClick() {
-  closeMobileNavigation()
   if (exploreChooserVisible.value) closeExploreChooser()
 }
 
@@ -481,7 +534,7 @@ function captureSidebarSection(section, node) {
 
 function focusSidebarSection(sectionKey) {
   if (!['account', 'cache'].includes(sectionKey)) return
-  if (isMobileShell.value) mobileNavigationVisible.value = true
+  if (isMobileShell.value) profileSheetVisible.value = true
   compatFocusedSection.value = sectionKey
   clearTimeout(compatibilityFocusTimer)
   nextTick(() => {
@@ -557,58 +610,6 @@ function isNavActive(item) {
   }
   if (!item.panel) return true
   return String(route.query.panel || 'account') === item.panel
-}
-
-async function backupUserConfig() {
-  const confirmed = await ElMessageBox.confirm(
-    '确认要备份当前账号的阅读配置、书架设置、搜索设置和自定义配置方案吗？',
-    '备份用户配置',
-    { type: 'warning' },
-  ).catch(() => false)
-  if (!confirmed) return
-  const [readerSettings, shelfSettings, searchSettings] = await Promise.all([
-    reader.saveReaderSettings({ force: true }),
-    preferences.savePreference('shelf', { force: true }),
-    preferences.savePreference('search', { force: true }),
-  ])
-  if (!readerSettings || !shelfSettings || !searchSettings) {
-    ElMessage.error('备份用户配置失败')
-    return
-  }
-  ElMessage.success('用户配置已备份')
-}
-
-async function syncUserConfig() {
-  const confirmed = await ElMessageBox.confirm(
-    '确认要恢复当前账号的阅读配置、书架设置、搜索设置和自定义配置方案吗？',
-    '同步用户配置',
-    { type: 'warning' },
-  ).catch(() => false)
-  if (!confirmed) return
-  const [readerSettings] = await Promise.all([
-    reader.loadReaderSettings({ createIfMissing: false }),
-    preferences.loadPreferences({ createIfMissing: false }),
-  ])
-  if (!readerSettings || Object.values(preferences.syncError).some(Boolean)) {
-    ElMessage.error(reader.settingsSyncError || Object.values(preferences.syncError).find(Boolean) || '同步用户配置失败')
-    return
-  }
-  const results = await Promise.allSettled([
-    userStore.loadMe(),
-    loadShelfForShell({ force: true, all: true }),
-    loadCacheStats(),
-  ])
-  const failed = results.find(result => result.status === 'rejected')
-  if (failed) {
-    ElMessage.warning(readError(failed.reason, '用户配置已同步，部分工作台数据刷新失败'))
-    return
-  }
-  const shelfResult = results[1]
-  if (shelfResult.value?.categoryError) {
-    ElMessage.warning(readError(shelfResult.value.categoryError, '用户配置已同步，分组刷新失败'))
-    return
-  }
-  ElMessage.success('用户配置已同步')
 }
 
 function logoutUser() {
@@ -739,9 +740,6 @@ function openRouteWorkspaceOperationOverlay() {
     case 'local-store':
       if (canAccessLocalStore.value) overlay.openLocalStore()
       break
-    case 'webdav':
-      if (canAccessWebDAV.value) overlay.openWebDAV()
-      break
     case 'replace-rules':
       overlay.openReplaceRules()
       break
@@ -759,7 +757,6 @@ function clearRouteWorkspaceOperationOverlayIntent() {
   if (!overlayName || overlayName === 'sources') return
   const visibleByOverlay = {
     'local-store': overlay.localStoreVisible,
-    webdav: overlay.webdavVisible,
     'replace-rules': overlay.replaceRulesVisible,
     rss: overlay.rssVisible,
     'user-manage': overlay.userManageVisible,
@@ -896,7 +893,6 @@ watch(
 watch(
   () => [
     overlay.localStoreVisible,
-    overlay.webdavVisible,
     overlay.replaceRulesVisible,
     overlay.rssVisible,
     overlay.userManageVisible,
@@ -914,7 +910,6 @@ onMounted(() => {
   window.addEventListener('orientationchange', positionExploreChooser)
   window.addEventListener('focus', refreshShelfInForeground)
   document.addEventListener('visibilitychange', handleVisibilityChange)
-  window.addEventListener('openreader:toggle-mobile-nav', toggleMobileNavigation)
   window.addEventListener('openreader:sources-update', handleSourcesUpdated)
   offline.value = !navigator.onLine
   if (userStore.token && !userStore.profile) {
@@ -941,7 +936,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('orientationchange', positionExploreChooser)
   window.removeEventListener('focus', refreshShelfInForeground)
   document.removeEventListener('visibilitychange', handleVisibilityChange)
-  window.removeEventListener('openreader:toggle-mobile-nav', toggleMobileNavigation)
   window.removeEventListener('openreader:sources-update', handleSourcesUpdated)
 })
 
@@ -1000,9 +994,11 @@ function readError(err, fallback) {
   height: 100dvh;
   padding: 0;
   overflow: hidden;
-  color: #24201b;
-  background: #f7f7f7;
-  border-right: 1px solid #eee;
+  color: var(--app-text);
+  background: var(--app-nav-bg);
+  backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
+  border-right: 1px solid var(--glass-panel-border);
   scrollbar-width: none;
 }
 
@@ -1399,21 +1395,7 @@ function readError(err, fallback) {
 }
 
 .app-shell.mobile-shell .app-sidebar {
-  position: fixed;
-  inset: 0 auto 0 0;
-  width: var(--mobile-nav-width, 72vw);
-  max-width: 86vw;
-  min-width: 0;
-  box-sizing: border-box;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-  padding: 0;
-  scrollbar-width: none;
-  box-shadow: 12px 0 28px rgba(36, 32, 27, 0.08);
-  margin-left: calc(-1 * var(--mobile-nav-width, 72vw));
-  transition: margin-left 0.3s;
-  will-change: margin-left;
+  display: none;
 }
 
 .app-shell.mobile-shell .app-sidebar-scroll {
@@ -1425,6 +1407,7 @@ function readError(err, fallback) {
   max-width: 100%;
   min-width: 0;
   padding-left: 0;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
   overflow-x: hidden;
 }
 
@@ -1553,12 +1536,10 @@ function readError(err, fallback) {
   bottom: 30px;
   left: 36px;
   display: flex;
-  width: min(calc(var(--mobile-nav-width, 72vw) - 72px), calc(86vw - 72px));
   min-width: 0;
   align-items: center;
   justify-content: space-between;
   pointer-events: none;
-  transform: translateX(calc(-1 * var(--mobile-nav-drag-offset, 0px)));
 }
 
 .app-shell.mobile-shell .sidebar-bottom-icon {
@@ -1584,12 +1565,194 @@ function readError(err, fallback) {
   border-color: #f4e4c5;
 }
 
-.app-shell.mobile-shell.mobile-nav-open .app-sidebar {
-  margin-left: 0;
+
+/* ---- Mobile floating glass tab bar ---- */
+.mobile-tabbar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 60;
+  display: flex;
+  width: min(420px, calc(100vw - 32px));
+  padding: 8px;
+  border: 1px solid var(--glass-chrome-border);
+  border-radius: 26px;
+  background: var(--glass-chrome-bg);
+  backdrop-filter: blur(var(--glass-blur-chrome)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-chrome)) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  transform: translateX(-50%);
 }
 
-.app-shell.mobile-shell.mobile-nav-open .app-workspace {
-  transform: none;
+.mobile-tab {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 7px 0 5px;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  color: var(--app-text-muted);
+  font-size: 11px;
+  transition: color 160ms ease, background-color 160ms ease;
 }
 
+.mobile-tab .el-icon {
+  font-size: 21px;
+}
+
+.mobile-tab.active {
+  color: var(--app-primary-strong);
+  background: var(--app-primary-soft);
+}
+
+/* ---- "My profile" bottom sheet ---- */
+.profile-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(16, 18, 17, 0.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.profile-sheet-backdrop.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.profile-sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 71;
+  display: grid;
+  width: min(560px, 100vw);
+  max-height: min(78dvh, 640px);
+  grid-template-rows: auto auto 1fr;
+  overflow: hidden;
+  border: 1px solid var(--glass-panel-border);
+  border-bottom: 0;
+  border-radius: 26px 26px 0 0;
+  background: var(--glass-panel-bg);
+  backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  transform: translate(-50%, 100%);
+  transition: transform 260ms ease;
+}
+
+.profile-sheet.visible {
+  transform: translate(-50%, 0);
+}
+
+.profile-sheet-header {
+  display: grid;
+  padding: 8px 0 2px;
+  justify-items: center;
+}
+
+.profile-sheet-grabber {
+  width: 38px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--app-border-strong);
+}
+
+.profile-sheet-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px 14px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.profile-avatar {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--app-primary);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.profile-account-text {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+
+.profile-account-text small {
+  color: var(--app-text-muted);
+}
+
+.profile-theme-toggle {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid var(--app-border);
+  border-radius: 50%;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 17px;
+}
+
+.profile-sheet-scroll {
+  overflow: auto;
+  padding: 6px 14px calc(20px + env(safe-area-inset-bottom));
+}
+
+.profile-group {
+  margin: 10px 0;
+}
+
+.profile-group-title {
+  margin: 0 0 4px 10px;
+  color: var(--app-text-subtle);
+  font-size: 12px;
+}
+
+.profile-group-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--app-border);
+  background: transparent;
+  color: var(--app-text);
+  font-size: 15px;
+  text-align: left;
+  text-decoration: none;
+}
+
+.profile-group-item:first-of-type {
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+}
+
+.profile-group-item:last-of-type {
+  border-bottom: 0;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+
+.profile-group-item .el-icon {
+  color: var(--app-text-subtle);
+  font-size: 14px;
+}
+
+/* The profile sheet teleports to body, so scope its theme to either shell. */
+.profile-sheet,
+.profile-sheet-backdrop {
+  font-family: inherit;
+}
 </style>

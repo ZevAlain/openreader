@@ -81,8 +81,12 @@ defineEmits(['close'])
   padding: calc(58px + env(safe-area-inset-top)) 0 0;
   overflow-x: hidden;
   overflow-y: visible;
-  background-color: color-mix(in srgb, var(--reader-popup-bg) 97%, transparent);
-  backdrop-filter: none;
+  background-color: color-mix(in srgb, var(--reader-popup-bg) 86%, transparent);
+  backdrop-filter: blur(20px) saturate(1.35);
+  -webkit-backdrop-filter: blur(20px) saturate(1.35);
+  border-bottom: 1px solid color-mix(in srgb, var(--reader-popup-text, var(--reader-text)) 14%, transparent);
+  border-radius: 0 0 24px 24px;
+  box-shadow: 0 18px 40px rgba(31, 26, 15, 0.18);
 }
 
 .reader-mobile-workspace-primary .reader-mobile-workspace-body {

@@ -210,9 +210,11 @@ defineEmits(['action', 'page-progress-input', 'page-progress-change', 'cache', '
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: max(5px, env(safe-area-inset-top)) 8px 5px;
-  background: color-mix(in srgb, var(--reader-popup-bg) 96%, transparent);
-  border-bottom: 1px solid rgba(148, 132, 87, 0.28);
-  box-shadow: 0 8px 24px rgba(73, 57, 27, 0.08);
+  background: color-mix(in srgb, var(--reader-popup-bg) 78%, transparent);
+  backdrop-filter: blur(20px) saturate(1.35);
+  -webkit-backdrop-filter: blur(20px) saturate(1.35);
+  border-bottom: 1px solid color-mix(in srgb, var(--reader-popup-text, var(--reader-text)) 14%, transparent);
+  box-shadow: 0 8px 24px rgba(31, 26, 15, 0.1);
 }
 
 .mobile-tool-button {
@@ -259,10 +261,12 @@ defineEmits(['action', 'page-progress-input', 'page-progress-change', 'cache', '
   height: 38px;
   place-items: center;
   color: var(--reader-popup-text, var(--reader-text));
-  background: color-mix(in srgb, var(--reader-popup-bg) 96%, transparent);
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: color-mix(in srgb, var(--reader-popup-bg) 74%, transparent);
+  backdrop-filter: blur(16px) saturate(1.35);
+  -webkit-backdrop-filter: blur(16px) saturate(1.35);
+  border: 1px solid color-mix(in srgb, var(--reader-popup-text, var(--reader-text)) 16%, transparent);
   border-radius: 999px;
-  box-shadow: 0 4px 12px rgba(73, 57, 27, 0.12);
+  box-shadow: 0 6px 16px rgba(31, 26, 15, 0.16);
 }
 
 .reader-mobile-float-tools button.active {
@@ -286,9 +290,12 @@ defineEmits(['action', 'page-progress-input', 'page-progress-change', 'cache', '
   min-height: calc(88px + env(safe-area-inset-bottom));
   box-sizing: border-box;
   padding: 8px 12px max(10px, env(safe-area-inset-bottom));
-  background: color-mix(in srgb, var(--reader-popup-bg) 96%, transparent);
-  border-top: 1px solid rgba(148, 132, 87, 0.35);
-  box-shadow: 0 -8px 24px rgba(73, 57, 27, 0.08);
+  background: color-mix(in srgb, var(--reader-popup-bg) 78%, transparent);
+  backdrop-filter: blur(20px) saturate(1.35);
+  -webkit-backdrop-filter: blur(20px) saturate(1.35);
+  border-top: 1px solid color-mix(in srgb, var(--reader-popup-text, var(--reader-text)) 14%, transparent);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -8px 24px rgba(31, 26, 15, 0.1);
 }
 
 .reader-mobile-bottom.visible.without-page-slider {
@@ -308,7 +315,7 @@ defineEmits(['action', 'page-progress-input', 'page-progress-change', 'cache', '
 .mobile-progress-slider {
   width: 100%;
   min-width: 0;
-  accent-color: #409eff;
+  accent-color: var(--reader-active-text, #0f5451);
 }
 
 .mobile-cache-zone {

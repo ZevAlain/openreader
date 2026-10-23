@@ -4,9 +4,6 @@
   <section v-else class="app-page shelf-page" :class="{ 'mobile-shelf': isMobileShelf }">
     <div class="shelf-title">
       <div class="shelf-title-main">
-        <button v-if="isMobileShelf" class="mobile-menu-trigger" type="button" aria-label="打开侧边栏" @click.stop="toggleMobileNavigation">
-          <el-icon><Menu /></el-icon>
-        </button>
         <strong>书架 ({{ displayedBooks.length }})</strong>
       </div>
       <div class="title-actions">
@@ -102,7 +99,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Close, Edit, Menu, Search } from '@element-plus/icons-vue'
+import { Close, Edit, Search } from '@element-plus/icons-vue'
 import { useBookshelfStore } from '../stores/bookshelf'
 import { useOverlayStore } from '../stores/overlay'
 import { useReaderStore } from '../stores/reader'
@@ -273,10 +270,6 @@ function readerRouteQuery(book) {
 
 function updateViewportFlags() {
   windowWidth.value = currentViewportWidth()
-}
-
-function toggleMobileNavigation() {
-  window.dispatchEvent(new CustomEvent('openreader:toggle-mobile-nav'))
 }
 
 function openExploreWorkspace() {

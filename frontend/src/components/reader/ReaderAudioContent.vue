@@ -382,7 +382,7 @@ function formatAudioTime(value) {
 .reader-audio-progress input,
 .reader-audio-volume input {
   width: 100%;
-  accent-color: #409eff;
+  accent-color: var(--reader-active-text, #0f5451);
 }
 
 .reader-audio-time {
@@ -423,7 +423,7 @@ function formatAudioTime(value) {
 }
 
 .reader-audio-play {
-  color: #409eff !important;
+  color: var(--reader-active-text, #0f5451) !important;
   font-weight: 700;
 }
 

@@ -17,7 +17,7 @@ This repository is a modified fork of [changshengyu/openreader](https://github.c
 >
 > The interface is currently in Chinese only. This guide quotes on-screen labels in Chinese, followed by an English translation.
 
-[Quick start](#quick-start) · [Using OpenReader](#using-openreader) · [Backup and migration](#backup-and-migration) · [Upgrading](#upgrading) · [Configuration](#configuration) · [FAQ](#faq)
+[Quick start](#quick-start) · [Using OpenReader](#using-openreader) · [Sync and backup](#sync-and-backup) · [Upgrading](#upgrading) · [Configuration](#configuration) · [FAQ](#faq)
 
 ## Features
 
@@ -27,7 +27,7 @@ This repository is a modified fork of [changshengyu/openreader](https://github.c
 - **Local books**: upload TXT, EPUB, UMD, and CBZ (comics) files, and preview or adjust chapter detection when importing TXT.
 - **A comfortable reader**: vertical paging, horizontal page turns, or continuous scrolling; adjust the font, size, line height, page width, theme, and background, or upload your own fonts. It also offers Simplified/Traditional Chinese conversion, read-aloud, auto page turning, bookmarks, full-text search, and replacement rules that strip ads and watermarks.
 - **RSS**: subscribe to and read feeds right next to your bookshelf.
-- **Backup and migration**: automatic daily backups, direct restore of Legado and reader-dev backups, and a built-in WebDAV server.
+- **Sync and backup**: bookshelf, progress, bookmarks, and settings live on the server and sync to every device in real time; daily automatic backups; installable to the iOS home screen as a fullscreen PWA.
 - **Multiple users**: family and friends get separate accounts and bookshelves, and administrators manage accounts and permissions.
 - **Easy to run**: a single Docker container that runs on x86 and ARM (NAS boxes, Raspberry Pi, Apple Silicon Macs, and more).
 
@@ -89,7 +89,7 @@ The home-screen icon then opens OpenReader full-screen. Your phone must be able 
 
 ### Getting around
 
-- **Left sidebar**: search and search settings, recently read, book sources (书源设置), bookshelf (书架设置), account (用户空间), WebDAV, and cache management.
+- **Shell**: desktop keeps the left sidebar; phones and tablets get a floating glass tab bar (书架 / 搜索 / 发现 / 我的) with account, sources, library, user management, and cache settings aggregated under 我的.
 - **Top right of the bookshelf**: **编辑** (Edit) to manage books, **刷新** (Refresh) to check for updates, **RSS** for feeds, and **书海** (Explore) to browse sources by category and ranking.
 
 ### While reading
@@ -143,55 +143,26 @@ Click **RSS** at the top right of the bookshelf to add feeds or import a feed JS
 
 ### Users and permissions
 
-- In **用户空间 → 管理用户空间** (Account → Manage users), administrators can add users, reset passwords, delete users in bulk, and decide for each user whether they may edit sources, use the library folder, and use WebDAV.
-- Each user's bookshelf, progress, bookmarks, sources, and WebDAV files are kept separate.
+- In **我的 → 管理用户空间** (Manage users), administrators can add users, reset passwords, delete users in bulk, and decide for each user whether they may edit sources and use the library folder.
+- Each user's bookshelf, progress, bookmarks, and sources are kept separate.
 
-## Backup and migration
+## Sync and backup
 
-### Automatic backups
+### Multi-device sync
 
-Every day at 23:50, OpenReader saves a `backup_<date>_<time>.zip` for each user in that user's WebDAV space. It contains sources, bookshelf, groups, RSS, settings, bookmarks, reading progress, and replacement rules, **but not original local-book files**.
+All user data (bookshelf, progress, bookmarks, sources, groups, RSS, settings, replacement rules) lives in the server database; web clients stay in sync over WebSocket. Sign in on another device and keep reading — no manual backup/restore round-trips.
 
-- The time follows the container's time zone, which is UTC unless you [set the time zone](#set-the-time-zone).
-- Old backups are not deleted automatically. Remove them in **WebDAV → 文件管理** (File manager) when needed.
+### Daily automatic backups
 
-### Manual backups
+Every day at 23:50 OpenReader writes a `backup_<date>_<time>.zip` per user (sources, shelf, groups, RSS, settings, bookmarks, progress, replacement rules — not original local-book files) into the user's private backup directory `data/webdav/users/<username>/` (administrator: `data/webdav/`).
 
-| Method | What it contains | Use it for |
-|---|---|---|
-| **WebDAV → 保存备份** (Save backup) | Your account data (same as the automatic backup), without original local-book files | Routine backups |
-| **WebDAV → 保存完整可移植备份** (Save portable backup) | Account data plus original local-book files and custom covers, backgrounds, and fonts | Moving an account to another OpenReader server |
-| Stop the container and copy `data/`, `cache/`, and `library/` | Everything, for every user | Full-server backups and moves |
+- Times follow the container timezone (UTC by default); see the timezone section.
+- Old backups are never deleted automatically; prune them on the host as needed.
 
-Download backup files from **WebDAV → 文件管理** (File manager). A portable backup can't be created while the account has audio folders, missing original files, or invalid custom assets.
+### Whole-instance backup and moves
 
-### Migrate from Legado or reader-dev
+Stop the container and copy `data/`, `cache/`, and `library/` (plus `docker-compose.yml` and any custom environment variables) to the target machine, then start the same or a newer image. Back up these three volumes before upgrades, too.
 
-1. Export a backup (`backup*.zip`) from the app or server you're leaving. These backups usually don't include original TXT, EPUB, or other local-book files, so keep those separately.
-2. Sign in to OpenReader, open **WebDAV → 文件管理 → 上传文件** (File manager → Upload files), and upload the ZIP as is. There's no need to unzip or rename it.
-3. Click **恢复** (Restore) next to the file and wait for the result.
-4. Re-import your local books with **导入书籍** (Import books).
-5. Check your bookshelf, sources, bookmarks, and progress before retiring the old service.
-
-Notes:
-
-- Data is restored into **the account you're signed in to**, and old account passwords are not carried over. If the destination account already has data, back it up first.
-- Sources are skipped when the current account isn't allowed to edit sources.
-- Don't copy a reader-dev database file into OpenReader; the formats are different.
-
-### Move to another OpenReader server
-
-- **The whole server (all users)**: stop the container and copy `data/`, `cache/`, `library/`, and `docker-compose.yml` (plus any environment changes) to the new machine, then start the same or a newer image. Retire the old machine only after you've confirmed you can sign in and open both local and online books.
-- **One account**: on the old server, choose **保存完整可移植备份** (Save portable backup) and download the `portable_backup_*.zip`. On the new server, sign in to the destination account, upload the file, and click **恢复** (Restore).
-
-### Use other WebDAV clients
-
-OpenReader includes a WebDAV server, and each user gets a separate space:
-
-- Address: `http://<server-ip>:8080/reader3/webdav/` (`/webdav/` also works)
-- Username and password: your OpenReader account
-
-For example, you can point the Legado app's WebDAV backup at it. Backups the app uploads then appear in the file manager, ready to restore. Reading progress can also sync between the app and OpenReader over WebDAV (the book must already be on both shelves, and books are matched by URL or by title and author). This integration is still being refined, so feedback is welcome.
 
 ## Upgrading
 
@@ -406,7 +377,7 @@ No, as long as you keep `data/`, `cache/`, and `library/` (or the three Docker v
 
 | Folder | Contents | When backing up |
 |---|---|---|
-| `data/` | The database, uploaded images and fonts, and each user's WebDAV files and automatic backups | Always keep |
+| `data/` | The database, uploaded images and fonts, and each user's automatic backups | Always keep |
 | `cache/` | Chapter cache, import previews, and similar files that can mostly be rebuilt | Copy it along for a full-server move |
 | `library/` | Original files of imported local books, and the library folder | Always keep |
 

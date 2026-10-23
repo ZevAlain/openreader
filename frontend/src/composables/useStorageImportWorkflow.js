@@ -43,7 +43,7 @@ export function useStorageImportWorkflow(options) {
         return false
       }
       payload = [...files]
-    } else if (source.value === 'local-store' || source.value === 'webdav') {
+    } else if (source.value === 'local-store') {
       payload = Array.isArray(request?.paths) ? request.paths.filter(Boolean) : []
       if (!payload.length) return false
     } else {

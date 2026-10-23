@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import persistedState from 'pinia-plugin-persistedstate'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 
 import App from './App.vue'
@@ -18,3 +19,12 @@ app.use(router)
 app.use(ElementPlus, { locale: zhCn })
 
 app.mount('#app')
+
+// Register the application-shell service worker. Browsers only expose
+// navigator.serviceWorker on secure contexts; plain-http LAN deployments keep
+// working without the shell cache.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  })
+}

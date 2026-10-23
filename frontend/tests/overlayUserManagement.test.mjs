@@ -134,7 +134,6 @@ test('protects selection and validates before creating a user', async () => {
     password: 'secret12',
     canEditSources: true,
     canAccessStore: true,
-    canAccessWebdav: true,
   }])
   assert.equal(fixture.controller.createDialogVisible.value, false)
   assert.equal(fixture.controller.creatingUser.value, false)
@@ -225,7 +224,6 @@ test('submits only the changed permission field and blocks a duplicate field wri
     id: 3,
     canEditSources: true,
     canAccessStore: false,
-    canAccessWebdav: true,
     bookLimit: 10,
     sourceLimit: 20,
   }
@@ -263,7 +261,6 @@ test('reverts only the failed permission field before reloading users', async ()
     id: 3,
     canEditSources: false,
     canAccessStore: false,
-    canAccessWebdav: false,
     bookLimit: 10,
     sourceLimit: 20,
   }

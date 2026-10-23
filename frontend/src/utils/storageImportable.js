@@ -8,6 +8,3 @@ export function isLocalStoreImportable(path) {
   return ['.txt', '.epub', '.umd', '.cbz'].includes(extensionOf(path))
 }
 
-export function isWebDAVImportable(path) {
-  return ['.txt', '.epub', '.umd'].includes(extensionOf(path))
-}

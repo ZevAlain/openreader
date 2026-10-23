@@ -26,3 +26,6 @@ frontend/dist/
 frontend/.vite/
 
 *.log
+
+# ZCode session workspace
+.zcode/
