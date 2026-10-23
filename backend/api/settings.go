@@ -170,7 +170,7 @@ func managedUserSettingAssetStrings(data []byte) map[string]struct{} {
 func normalizeUserSettingKey(key string) string {
 	key = strings.TrimSpace(key)
 	switch key {
-	case "reader", "shelf", "search":
+	case "reader", "shelf", "search", "remoteSourceUrls":
 		return key
 	default:
 		return ""

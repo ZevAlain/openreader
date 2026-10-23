@@ -117,6 +117,7 @@ import {
   importSources,
   previewRemoteSource,
 } from '../../api/sources'
+import api from '../../api/client'
 import { useAuthenticatedOperationGuard } from '../../composables/useAuthenticatedOperationGuard'
 import { useSourceTransfer } from '../../composables/useSourceTransfer'
 import { useUserStore } from '../../stores/user'
@@ -191,7 +192,7 @@ watch(
       return
     }
     if (intent === 'remote') {
-      loadRemoteEntries()
+      await loadRemoteEntries()
       return
     }
     requestClose()
@@ -214,16 +215,35 @@ function userStorageScope() {
   return user.profile?.username || user.profile?.id || 'user'
 }
 
-function loadRemoteEntries() {
-  const scope = userStorageScope()
-  const stored = safeLocalStorageGet(`${scope}@remoteSourceUrls`)
-  const urls = parseRemoteURLs(stored)
-  if (!stored) {
-    // Migrate the remembered URL from the retired prompt flow exactly once.
-    const legacy = safeLocalStorageGet(`${scope}@lastRemoteSourceUrl`).trim()
-    if (legacy) urls.push(legacy)
+// The remote URL list lives in the per-user server settings so every device
+// converges. localStorage is only read once to migrate the retired keys.
+async function loadRemoteEntries() {
+  try {
+    const { data } = await api.get('/settings/remoteSourceUrls')
+    let urls = Array.isArray(data?.value)
+      ? [...new Set(data.value.map(item => String(item || '').trim()).filter(Boolean))]
+      : []
+    if (!urls.length) urls = await migrateLegacyRemoteEntries()
+    remoteEntries.value = urls
+  } catch {
+    remoteEntries.value = []
   }
-  remoteEntries.value = urls
+}
+
+async function migrateLegacyRemoteEntries() {
+  const scope = userStorageScope()
+  const local = parseRemoteURLs(safeLocalStorageGet(`${scope}@remoteSourceUrls`))
+  const legacyPrompt = safeLocalStorageGet(`${scope}@lastRemoteSourceUrl`).trim()
+  if (legacyPrompt && !local.includes(legacyPrompt)) local.push(legacyPrompt)
+  if (!local.length) return []
+  try {
+    await api.put('/settings/remoteSourceUrls', { value: local, force: true })
+    safeLocalStorageRemove(`${scope}@remoteSourceUrls`)
+    safeLocalStorageRemove(`${scope}@lastRemoteSourceUrl`)
+  } catch {
+    // Keep the local copy when the server is unreachable; retry on next open.
+  }
+  return local
 }
 
 function parseRemoteURLs(raw) {
@@ -238,14 +258,19 @@ function parseRemoteURLs(raw) {
   return []
 }
 
-function saveRemoteEntries(urls) {
-  safeLocalStorageSet(`${userStorageScope()}@remoteSourceUrls`, JSON.stringify(urls))
+async function saveRemoteEntries(urls) {
+  await api.put('/settings/remoteSourceUrls', { value: urls, force: true })
 }
 
-function rememberRemoteEntry(url) {
+async function rememberRemoteEntry(url) {
   if (!url || remoteEntries.value.includes(url)) return
   remoteEntries.value = [url, ...remoteEntries.value]
-  saveRemoteEntries(remoteEntries.value)
+  try {
+    await saveRemoteEntries(remoteEntries.value)
+  } catch (error) {
+    remoteEntries.value = remoteEntries.value.filter(item => item !== url)
+    ElMessage.error(readError(error, '保存远程书源列表失败'))
+  }
 }
 
 async function addRemoteEntry() {
@@ -284,8 +309,13 @@ async function removeRemoteEntry(url) {
   } catch {
     return
   }
-  remoteEntries.value = remoteEntries.value.filter(item => item !== url)
-  saveRemoteEntries(remoteEntries.value)
+  const next = remoteEntries.value.filter(item => item !== url)
+  try {
+    await saveRemoteEntries(next)
+    remoteEntries.value = next
+  } catch (error) {
+    ElMessage.error(readError(error, '保存远程书源列表失败'))
+  }
 }
 
 async function confirmImport() {
@@ -330,9 +360,9 @@ function safeLocalStorageGet(key) {
   }
 }
 
-function safeLocalStorageSet(key, value) {
+function safeLocalStorageRemove(key) {
   try {
-    localStorage.setItem(key, value)
+    localStorage.removeItem(key)
   } catch {
     // A blocked storage backend must not block the import flow.
   }

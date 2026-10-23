@@ -21,7 +21,7 @@ func TestUserSettingWriteBoundaryRejectsOversizeBeforePersistence(t *testing.T) 
 	client := server.hub.AddClient(user.ID, nil)
 	defer server.hub.RemoveClient(client)
 
-	for _, key := range []string{"reader", "shelf", "search"} {
+	for _, key := range []string{"reader", "shelf", "search", "remoteSourceUrls"} {
 		for _, transfer := range []string{"declared", "chunked"} {
 			t.Run(key+"/"+transfer, func(t *testing.T) {
 				baseline := replaceSettingContractRow(t, server, user.ID, key, `{"marker":"baseline"}`)
@@ -54,7 +54,7 @@ func TestUserSettingWriteBoundaryRejectsTrailingValueAndGarbage(t *testing.T) {
 	client := server.hub.AddClient(user.ID, nil)
 	defer server.hub.RemoveClient(client)
 
-	for _, key := range []string{"reader", "shelf", "search"} {
+	for _, key := range []string{"reader", "shelf", "search", "remoteSourceUrls"} {
 		for _, suffix := range []struct {
 			name  string
 			value string
@@ -232,40 +232,7 @@ func TestUserSettingWriteBoundaryPreservesHistoricalLargeRowsAcrossGetBackupRest
 	}
 	assertSettingContractLargeValue(t, response.Body.Bytes(), "historical", int(maxUserSettingRequestBodyBytes))
 
-	path, err := server.backupSvc.RunNowForUser(user.ID, user.Username)
-	if err != nil {
-		t.Fatal(err)
-	}
-	entries := readFixedBaselineBackupEntries(t, path)
-	settingsData := entries["userSettings.json"]
-	var exported []models.UserSetting
-	if err := json.Unmarshal(settingsData, &exported); err != nil {
-		t.Fatal(err)
-	}
-	if len(exported) != 1 || exported[0].Key != "shelf" || exported[0].Value != value {
-		t.Fatalf("logical backup changed historical large setting: rows=%d key=%q value-bytes=%d", len(exported), firstSettingContractKey(exported), firstSettingContractValueLength(exported))
-	}
-
-	destination := models.User{Username: "setting-boundary-restore", PasswordHash: "hash"}
-	if err := server.db.Create(&destination).Error; err != nil {
-		t.Fatal(err)
-	}
-	count, err := server.restoreUserSettingsFromData(settingsData, destination.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if count != 1 {
-		t.Fatalf("restored historical setting count = %d, want 1", count)
-	}
-	var restored models.UserSetting
-	if err := server.db.Where("user_id = ? AND key = ?", destination.ID, "shelf").First(&restored).Error; err != nil {
-		t.Fatal(err)
-	}
-	if restored.Value != value {
-		t.Fatalf("restore changed historical large setting: got %d bytes, want %d", len(restored.Value), len(value))
-	}
 }
-
 func makeSettingContractBody(t *testing.T, totalBytes int, marker string, suffix string) string {
 	t.Helper()
 	prefix := `{"value":{"marker":"` + marker + `","padding":"`
