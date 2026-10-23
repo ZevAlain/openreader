@@ -94,12 +94,6 @@ func requireSessionEntriesRejected(t *testing.T, router *gin.Engine, httpServer 
 	if me.Code != http.StatusUnauthorized {
 		t.Errorf("%s: GET /api/me status=%d, want 401: %s", label, me.Code, me.Body.String())
 	}
-	for _, prefix := range []string{"/webdav/", "/reader3/webdav/"} {
-		response := webDAVProtocolRequest(t, router, "PROPFIND", prefix, "Bearer "+token, "", map[string]string{"Depth": "0"})
-		if response.Code != http.StatusUnauthorized {
-			t.Errorf("%s: PROPFIND %s with Bearer status=%d, want 401", label, prefix, response.Code)
-		}
-	}
 	connection, response, err := dialSyncWebSocket(httpServer.URL, token, "")
 	if connection != nil {
 		_ = connection.Close()
@@ -117,12 +111,6 @@ func requireSessionEntriesAccepted(t *testing.T, router *gin.Engine, httpServer 
 	}
 	if me.Code != http.StatusOK || json.Unmarshal(me.Body.Bytes(), &user) != nil || user.ID != userID {
 		t.Errorf("%s: GET /api/me status=%d user=%d, want 200 for user %d: %s", label, me.Code, user.ID, userID, me.Body.String())
-	}
-	for _, prefix := range []string{"/webdav/", "/reader3/webdav/"} {
-		response := webDAVProtocolRequest(t, router, "PROPFIND", prefix, "Bearer "+token, "", map[string]string{"Depth": "0"})
-		if response.Code != http.StatusMultiStatus {
-			t.Errorf("%s: PROPFIND %s with Bearer status=%d, want 207: %s", label, prefix, response.Code, response.Body.String())
-		}
 	}
 	connection, response, err := dialSyncWebSocket(httpServer.URL, token, "")
 	if connection != nil {

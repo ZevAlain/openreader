@@ -32,14 +32,6 @@ type Config struct {
 	MaxParsedTextBytes          int64
 	MaxParsedChapters           int
 	MaxUMDChapters              int
-	MaxBackupRestoreBytes       int64
-	MaxBackupArchiveEntries     int
-	MaxBackupArchiveBytes       int64
-	MaxBackupArchiveTotal       int64
-	MaxPortableBackupBytes      int64
-	MaxPortableArchiveEntries   int
-	MaxPortableArchiveBytes     int64
-	MaxPortableArchiveTotal     int64
 	MaxChapterImages            int
 	MaxChapterImageBytes        int64
 	MaxChapterImageTotalBytes   int64
@@ -87,14 +79,6 @@ func Load() Config {
 		MaxParsedTextBytes:          envInt64("OPENREADER_MAX_PARSED_TEXT_BYTES", 256*1024*1024),
 		MaxParsedChapters:           maxParsedChapters,
 		MaxUMDChapters:              maxUMDChapters,
-		MaxBackupRestoreBytes:       envInt64("OPENREADER_MAX_BACKUP_RESTORE_BYTES", 128*1024*1024),
-		MaxBackupArchiveEntries:     envPositiveInt("OPENREADER_MAX_BACKUP_ARCHIVE_ENTRIES", 5_000),
-		MaxBackupArchiveBytes:       envInt64("OPENREADER_MAX_BACKUP_ARCHIVE_ENTRY_BYTES", 16*1024*1024),
-		MaxBackupArchiveTotal:       envInt64("OPENREADER_MAX_BACKUP_ARCHIVE_EXPANDED_BYTES", 128*1024*1024),
-		MaxPortableBackupBytes:      envInt64("OPENREADER_MAX_PORTABLE_BACKUP_BYTES", 512*1024*1024),
-		MaxPortableArchiveEntries:   envPositiveInt("OPENREADER_MAX_PORTABLE_ARCHIVE_ENTRIES", 10_000),
-		MaxPortableArchiveBytes:     envInt64("OPENREADER_MAX_PORTABLE_ARCHIVE_ENTRY_BYTES", 256*1024*1024),
-		MaxPortableArchiveTotal:     envInt64("OPENREADER_MAX_PORTABLE_ARCHIVE_EXPANDED_BYTES", 512*1024*1024),
 		MaxChapterImages:            envPositiveInt("OPENREADER_MAX_CHAPTER_IMAGES", 64),
 		MaxChapterImageBytes:        envInt64("OPENREADER_MAX_CHAPTER_IMAGE_BYTES", 8*1024*1024),
 		MaxChapterImageTotalBytes:   envInt64("OPENREADER_MAX_CHAPTER_IMAGE_TOTAL_BYTES", 32*1024*1024),

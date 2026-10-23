@@ -427,14 +427,6 @@ func TestReaderDevUMDImportsAcrossAllLocalEntrypoints(t *testing.T) {
 				return filepath.Join(server.cfg.LocalStoreDir, "reader-dev.umd")
 			},
 		},
-		{
-			name:            "WebDAV",
-			previewEndpoint: "/api/webdav/import-preview",
-			importEndpoint:  "/api/webdav/import",
-			filePath: func(server *Server) string {
-				return filepath.Join(server.cfg.DataDir, "webdav", "reader-dev.umd")
-			},
-		},
 	} {
 		t.Run(entrypoint.name+" stages source bytes before confirm", func(t *testing.T) {
 			router, server := setupTestServer(t)

@@ -7,13 +7,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"openreader/backend/engine"
 	"openreader/backend/models"
 	readersync "openreader/backend/sync"
 )
@@ -21,15 +18,13 @@ import (
 const progressBoundaryRequestBytes = 16 << 10
 
 type progressBoundaryFixture struct {
-	router     http.Handler
-	server     *Server
-	auth       string
-	user       models.User
-	book       models.Book
-	chapter    models.Chapter
-	client     *readersync.Client
-	mirrorDir  string
-	mirrorPath string
+	router  http.Handler
+	server  *Server
+	auth    string
+	user    models.User
+	book    models.Book
+	chapter models.Chapter
+	client  *readersync.Client
 }
 
 func newProgressBoundaryFixture(t *testing.T) progressBoundaryFixture {
@@ -38,22 +33,16 @@ func newProgressBoundaryFixture(t *testing.T) progressBoundaryFixture {
 	auth := authHeader(t, router)
 	user := lifecycleUser(t, server, "testuser")
 	book, chapters := progressContractBook(t, server, user, "请求边界进度", "第一章")
-	mirrorDir := filepath.Join(server.webdavDir(), "bookProgress")
-	if err := os.MkdirAll(mirrorDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
 	client := server.hub.AddClient(user.ID, nil)
 	t.Cleanup(func() { server.hub.RemoveClient(client) })
 	return progressBoundaryFixture{
-		router:     router,
-		server:     server,
-		auth:       auth,
-		user:       user,
-		book:       book,
-		chapter:    chapters[0],
-		client:     client,
-		mirrorDir:  mirrorDir,
-		mirrorPath: filepath.Join(mirrorDir, engine.SafeBookFolderName(book.Title, book.Author)+".json"),
+		router:  router,
+		server:  server,
+		auth:    auth,
+		user:    user,
+		book:    book,
+		chapter: chapters[0],
+		client:  client,
 	}
 }
 
@@ -116,9 +105,6 @@ func assertProgressBoundaryRejectedWithoutSideEffects(
 	}
 	if count != 0 {
 		t.Fatalf("rejected progress request created %d durable rows", count)
-	}
-	if _, err := os.Stat(fixture.mirrorPath); !os.IsNotExist(err) {
-		t.Fatalf("rejected progress request changed mirror %q: %v", fixture.mirrorPath, err)
 	}
 	if got := len(fixture.client.Send); got != 0 {
 		t.Fatalf("rejected progress request emitted %d Hub events", got)
@@ -343,10 +329,6 @@ func TestProgressBoundaryInvalidTimestampCannotBypassExistingCAS(t *testing.T) {
 		t.Fatalf("seed progress: got %d %s", initialResponse.Code, initialResponse.Body.String())
 	}
 	<-fixture.client.Send
-	before, err := os.ReadFile(fixture.mirrorPath)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	invalid := progressBoundaryPayload(
 		fixture.book.ID,
@@ -362,13 +344,6 @@ func TestProgressBoundaryInvalidTimestampCannotBypassExistingCAS(t *testing.T) {
 	}
 	if stored.Offset != 7 {
 		t.Fatalf("invalid timestamps overwrote committed progress: %+v", stored)
-	}
-	after, err := os.ReadFile(fixture.mirrorPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(before, after) {
-		t.Fatal("invalid timestamps changed the WebDAV mirror")
 	}
 	if got := len(fixture.client.Send); got != 0 {
 		t.Fatalf("invalid timestamps emitted %d Hub events", got)

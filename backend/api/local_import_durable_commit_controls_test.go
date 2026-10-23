@@ -146,7 +146,7 @@ func TestLocalImportDurableCommitPlaceholderMergesUnownedColumns(t *testing.T) {
 }
 
 func TestLocalImportDurableCommitLaterItemFailureKeepsEarlierSuccess(t *testing.T) {
-	for _, source := range []string{"local-store", "webdav"} {
+	for _, source := range []string{"local-store"} {
 		for _, staged := range []bool{false, true} {
 			for _, canceled := range []bool{false, true} {
 				t.Run(fmt.Sprintf("%s/token=%v/cancel=%v", source, staged, canceled), func(t *testing.T) {
@@ -164,9 +164,6 @@ func TestLocalImportDurableCommitLaterItemFailureKeepsEarlierSuccess(t *testing.
 							}
 						} else {
 							root := server.cfg.LocalStoreDir
-							if source == "webdav" {
-								root = server.webdavDir()
-							}
 							if err := os.MkdirAll(root, 0o755); err != nil {
 								t.Fatal(err)
 							}

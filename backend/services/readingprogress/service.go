@@ -1,35 +1,19 @@
 package readingprogress
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-	"sync"
 	"time"
 
 	"gorm.io/gorm"
 
-	"openreader/backend/engine"
 	"openreader/backend/models"
 )
 
 var (
-	ErrBookNotFound          = errors.New("book not found")
-	ErrInvalidProgress       = errors.New("invalid progress")
-	ErrChapterNotFound       = errors.New("chapter not found")
-	ErrChapterIdentity       = errors.New("chapter identity mismatch")
-	ErrProgressMirrorOutside = errors.New("progress mirror outside WebDAV root")
-)
-
-type MirrorStatus string
-
-const (
-	MirrorSkipped MirrorStatus = "skipped"
-	MirrorWritten MirrorStatus = "written"
-	MirrorFailed  MirrorStatus = "failed"
+	ErrBookNotFound    = errors.New("book not found")
+	ErrInvalidProgress = errors.New("invalid progress")
+	ErrChapterNotFound = errors.New("chapter not found")
+	ErrChapterIdentity = errors.New("chapter identity mismatch")
 )
 
 type Input struct {
@@ -46,21 +30,17 @@ type Input struct {
 }
 
 type Result struct {
-	Progress     models.ReadingProgress
-	Book         models.Book
-	Conflict     bool
-	MirrorStatus MirrorStatus
+	Progress models.ReadingProgress
+	Book     models.Book
+	Conflict bool
 }
 
 type Service struct {
-	db       *gorm.DB
-	dataDir  string
-	uploadMu sync.Mutex
-	uploads  map[uint]*uploadGate
+	db *gorm.DB
 }
 
-func New(database *gorm.DB, dataDir string) *Service {
-	return &Service{db: database, dataDir: dataDir}
+func New(database *gorm.DB) *Service {
+	return &Service{db: database}
 }
 
 func (s *Service) Get(userID, bookID uint) (models.ReadingProgress, bool, error) {
@@ -122,17 +102,7 @@ func (s *Service) Save(input Input) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	result := Result{Progress: progress, Book: book, Conflict: conflict, MirrorStatus: MirrorSkipped}
-	if conflict {
-		return result, nil
-	}
-	configured, err := s.mirrorProgress(book, progress)
-	if err != nil {
-		result.MirrorStatus = MirrorFailed
-	} else if configured {
-		result.MirrorStatus = MirrorWritten
-	}
-	return result, nil
+	return Result{Progress: progress, Book: book, Conflict: conflict}, nil
 }
 
 func (s *Service) saveCAS(candidate models.ReadingProgress, baseUpdatedAt, clientUpdatedAt string) (models.ReadingProgress, bool, error) {
@@ -219,136 +189,4 @@ func ClampPercent(percent float64) float64 {
 		return 1
 	}
 	return percent
-}
-
-type mirrorPayload struct {
-	Name            string `json:"name"`
-	Author          string `json:"author"`
-	BookURL         string `json:"bookUrl"`
-	DurChapterIndex int    `json:"durChapterIndex"`
-	DurChapterPos   int    `json:"durChapterPos"`
-	DurChapterTime  int64  `json:"durChapterTime"`
-	DurChapterTitle string `json:"durChapterTitle"`
-}
-
-func (s *Service) mirrorProgress(book models.Book, progress models.ReadingProgress) (bool, error) {
-	directory, configured, err := s.progressMirrorDirectory(book.UserID)
-	if err != nil || !configured {
-		return false, err
-	}
-	base := engine.SafeBookFolderName(book.Title, book.Author)
-	if strings.TrimSpace(book.Title) == "" && strings.TrimSpace(book.Author) == "" {
-		base = fmt.Sprintf("book-%d", book.ID)
-	}
-	target := filepath.Join(directory, base+".json")
-	if !pathInside(directory, target) {
-		return true, ErrProgressMirrorOutside
-	}
-
-	temporary, err := os.CreateTemp(directory, ".openreader-progress-")
-	if err != nil {
-		return true, err
-	}
-	temporaryPath := temporary.Name()
-	defer os.Remove(temporaryPath)
-	payload := mirrorPayload{
-		Name:            book.Title,
-		Author:          book.Author,
-		BookURL:         book.URL,
-		DurChapterIndex: progress.ChapterIndex,
-		DurChapterPos:   progress.Offset,
-		DurChapterTime:  progress.UpdatedAt.UnixMilli(),
-		DurChapterTitle: progress.ChapterTitle,
-	}
-	encoder := json.NewEncoder(temporary)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(payload); err != nil {
-		_ = temporary.Close()
-		return true, err
-	}
-	if err := temporary.Sync(); err != nil {
-		_ = temporary.Close()
-		return true, err
-	}
-	if err := temporary.Chmod(0o644); err != nil {
-		_ = temporary.Close()
-		return true, err
-	}
-	if err := temporary.Close(); err != nil {
-		return true, err
-	}
-	if err := os.Rename(temporaryPath, target); err != nil {
-		return true, err
-	}
-	return true, nil
-}
-
-func (s *Service) progressMirrorDirectory(userID uint) (string, bool, error) {
-	var user models.User
-	if err := s.db.Select("id", "username", "role", "can_access_store", "can_access_webdav").First(&user, userID).Error; err != nil {
-		return "", false, err
-	}
-	if !webDAVAllowed(user) {
-		return "", false, nil
-	}
-	root := filepath.Join(s.dataDir, "webdav")
-	if user.Role != "admin" {
-		root = filepath.Join(root, "users", engine.SafeFilename(user.Username))
-	}
-	rootResolved, err := filepath.EvalSymlinks(root)
-	if errors.Is(err, os.ErrNotExist) {
-		return "", false, nil
-	}
-	if err != nil {
-		return "", false, err
-	}
-	rootInfo, err := os.Stat(rootResolved)
-	if err != nil || !rootInfo.IsDir() {
-		if err == nil {
-			err = ErrProgressMirrorOutside
-		}
-		return "", false, err
-	}
-
-	for _, relative := range []string{"bookProgress", filepath.Join("legado", "bookProgress")} {
-		candidate := filepath.Join(root, relative)
-		info, err := os.Lstat(candidate)
-		if errors.Is(err, os.ErrNotExist) {
-			continue
-		}
-		if err != nil {
-			return "", false, err
-		}
-		if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
-			return "", false, ErrProgressMirrorOutside
-		}
-		resolved, err := filepath.EvalSymlinks(candidate)
-		if err != nil {
-			return "", false, err
-		}
-		if !pathInside(rootResolved, resolved) {
-			return "", false, ErrProgressMirrorOutside
-		}
-		return resolved, true, nil
-	}
-	return "", false, nil
-}
-
-func webDAVAllowed(user models.User) bool {
-	if user.CanAccessWebDAV == nil {
-		return user.CanAccessStore
-	}
-	return *user.CanAccessWebDAV
-}
-
-func pathInside(root, target string) bool {
-	rootAbs, err := filepath.Abs(root)
-	if err != nil {
-		return false
-	}
-	targetAbs, err := filepath.Abs(target)
-	if err != nil {
-		return false
-	}
-	return targetAbs == rootAbs || strings.HasPrefix(targetAbs, rootAbs+string(os.PathSeparator))
 }

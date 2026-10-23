@@ -73,7 +73,7 @@ func RegisterRoutes(router *gin.Engine, cfg config.Config, database *gorm.DB, hu
 		chapterImages:    chapterimage.New(cfg, database),
 		coverImages:      coverimage.New(cfg, database),
 		epubReader:       epubreader.New(cfg, database),
-		progressSvc:      readingprogress.New(database, cfg.DataDir),
+		progressSvc:      readingprogress.New(database),
 		rss:              rssservice.New(database),
 		sourceFailures:   sourcefailure.New(database),
 		sourceCandidates: sourcecandidates.New(database),
@@ -82,7 +82,6 @@ func RegisterRoutes(router *gin.Engine, cfg config.Config, database *gorm.DB, hu
 		assetStore:       assetservice.NewStore(cfg.DataDir),
 		assetLocks:       make(map[uint]*userAssetGate),
 	}
-	server.cleanupPortableAssetRestoreJournals()
 	_, _, _ = server.ensureDefaultBookSourceNamespace()
 
 	api := router.Group("/api")
@@ -213,18 +212,6 @@ func RegisterRoutes(router *gin.Engine, cfg config.Config, database *gorm.DB, hu
 	protected.PUT("/rss/articles/:id", server.updateRSSArticleState)
 	protected.GET("/explore/sources", server.listExploreSources)
 	protected.GET("/explore/:sourceId", server.exploreBooks)
-
-	server.registerWebDAVRoutes(router, "/webdav")
-	server.registerWebDAVRoutes(router, "/reader3/webdav")
-
-	protected.POST("/backup/trigger", server.triggerBackup)
-	protected.POST("/backup/portable/trigger", server.triggerPortableBackup)
-	protected.GET("/backup/list", server.listBackups)
-	protected.GET("/backup/download/:name", server.downloadBackup)
-	protected.POST("/backup/restore-legado", server.importLegadoBackup)
-	protected.POST("/backup/restore-webdav", server.restoreWebDAVBackup)
-	protected.POST("/webdav/import-preview", server.previewWebDAVImport)
-	protected.POST("/webdav/import", server.importFromWebDAV)
 
 	router.GET("/ws/sync", server.syncSocket)
 

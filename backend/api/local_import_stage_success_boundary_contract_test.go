@@ -13,7 +13,7 @@ import (
 )
 
 func TestLocalImportStageLaterCancelKeepsEarlierDurableBookAndEvent(t *testing.T) {
-	for _, source := range []string{"local-store", "webdav"} {
+	for _, source := range []string{"local-store"} {
 		t.Run(source, func(t *testing.T) {
 			router, server := setupTestServer(t)
 			auth := authHeader(t, router)

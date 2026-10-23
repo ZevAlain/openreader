@@ -400,32 +400,6 @@ func TestBookWriteBoundaryEnforcesUTF8FieldBudgetsAndPreservesHistoricalRows(t *
 		}
 		response = performBookWriteRequest(router, auth, http.MethodPut, path, fmt.Sprintf(`{"title":%q}`, strings.Repeat("x", 241)), false)
 		assertBookWriteFlatError(t, response, http.StatusBadRequest, "book title is too long")
-
-		backupPath, err := server.backupSvc.RunNowForUser(owner.ID, owner.Username)
-		if err != nil {
-			t.Fatal(err)
-		}
-		entries := readFixedBaselineBackupEntries(t, backupPath)
-		if !bytes.Contains(entries["bookshelf.json"], []byte(historical.Title)) {
-			t.Fatal("historical oversized book title was truncated in logical backup")
-		}
-		archive, err := os.ReadFile(backupPath)
-		if err != nil {
-			t.Fatal(err)
-		}
-		destinationRouter, destination := setupTestServer(t)
-		_ = registerLifecycleToken(t, destinationRouter, "bookwritehistoricalrestore")
-		destinationOwner := lifecycleUser(t, destination, "bookwritehistoricalrestore")
-		if _, err := destination.restoreLegadoBackupData(archive, destinationOwner.ID); err != nil {
-			t.Fatal(err)
-		}
-		var restored models.Book
-		if err := destination.db.Where("user_id = ? AND url = ?", destinationOwner.ID, historical.URL).First(&restored).Error; err != nil {
-			t.Fatal(err)
-		}
-		if restored.Title != historical.Title || restored.Author != historical.Author || restored.CoverURL != historical.CoverURL || restored.URL != historical.URL {
-			t.Fatalf("historical oversized book changed across logical restore: %+v", restored)
-		}
 	})
 }
 

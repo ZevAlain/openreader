@@ -70,10 +70,6 @@ func validateNewPassword(password string) string {
 	return ""
 }
 
-func boolValue(value bool) *bool {
-	return &value
-}
-
 func decodeAuthRequest(c *gin.Context, request *authRequest) error {
 	if err := decodeBoundedSingleJSON(c, request, maxAuthRequestBodyBytes); err != nil {
 		if errors.Is(err, errJSONRequestTooLarge) {
@@ -140,14 +136,13 @@ func (s *Server) register(c *gin.Context) {
 			role = "admin"
 		}
 		user = models.User{
-			Username:        username,
-			PasswordHash:    string(hash),
-			Role:            role,
-			CanEditSources:  true,
-			CanAccessStore:  true,
-			CanAccessWebDAV: boolValue(true),
-			AuthVersion:     1,
-			LastActiveAt:    time.Now().UTC(),
+			Username:       username,
+			PasswordHash:   string(hash),
+			Role:           role,
+			CanEditSources: true,
+			CanAccessStore: true,
+			AuthVersion:    1,
+			LastActiveAt:   time.Now().UTC(),
 		}
 		return tx.Create(&user).Error
 	})

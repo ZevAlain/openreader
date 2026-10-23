@@ -252,7 +252,7 @@ async function openSidebar(page, viewport) {
   const sidebar = page.locator('.app-sidebar')
   const margin = await sidebar.evaluate(element => Number.parseFloat(getComputedStyle(element).marginLeft))
   if (Math.abs(margin) < 0.5) return
-  const trigger = page.locator('.mobile-menu-trigger')
+  const trigger = page.locator('.mobile-tabbar .mobile-tab:last-child')
   if (await trigger.count()) {
     await trigger.click()
   } else {

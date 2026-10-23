@@ -439,22 +439,7 @@ async function browserProgressWrite(page, token, payload, delay = 120) {
   }, { tokenValue: token, progress: payload, wait: delay })
 }
 
-async function assertWebDAVMirror(progressDir, book, progress) {
-  const files = (await readdir(progressDir)).filter(name => name.endsWith('.json'))
-  const mirrors = []
-  for (const name of files) {
-    const parsed = JSON.parse(await readFile(join(progressDir, name), 'utf8'))
-    if (parsed.bookUrl === book.url) mirrors.push({ name, parsed })
-  }
-  assert(mirrors.length === 1, `expected one WebDAV progress mirror for ${book.title}, got ${mirrors.length}`)
-  const mirror = mirrors[0].parsed
-  assert(mirror.durChapterIndex === progress.chapterIndex, `${book.title}: mirrored chapter index diverged`)
-  assert(mirror.durChapterPos === progress.offset, `${book.title}: mirrored offset ${mirror.durChapterPos} != ${progress.offset}`)
-  assert(mirror.durChapterTitle === progress.chapterTitle, `${book.title}: mirrored title is not canonical`)
-  assert(Number.isFinite(mirror.durChapterTime) && mirror.durChapterTime > 0, `${book.title}: mirrored timestamp is invalid`)
-}
-
-async function runViewport(browser, app, token, progressDir, viewport) {
+async function runViewport(browser, app, token, viewport) {
   const suffix = `${viewport.width}${viewport.height}`
   const book = await importTXT(app.root, token, `进度并发合同 ${suffix}`)
   assert(book?.id, `${suffix}: import did not return a book`)
@@ -559,7 +544,6 @@ async function runViewport(browser, app, token, progressDir, viewport) {
     ])
     assert(localA?.offset === winner.offset && localB?.offset === winner.offset, `${suffix}: active readers did not converge to the winner`)
     assert(durable.offset === winner.offset && durable.updatedAt === winner.updatedAt, `${suffix}: durable progress diverged from the CAS winner`)
-    await assertWebDAVMirror(progressDir, book, durable)
 
     await readerA.context.close()
     await readerB.context.close()
@@ -581,101 +565,11 @@ async function runViewport(browser, app, token, progressDir, viewport) {
     }
     const errors = [...readerA.errors, ...readerB.errors]
     assert(errors.length === 0, errors.join('\n'))
-    console.log(`${viewport.width}x${viewport.height}: client ID recovery + two-client CAS + WebSocket convergence + cold restore + WebDAV mirror ok`)
+    console.log(`${viewport.width}x${viewport.height}: client ID recovery + two-client CAS + WebSocket convergence + cold restore ok`)
   } finally {
     await readerA.context.close().catch(() => {})
     await readerB.context.close().catch(() => {})
   }
-}
-
-async function runIngressViewport(browser, app, token, viewport) {
-  const label = `ingress-${viewport.width}x${viewport.height}`
-  await api(app.root, '/settings/reader', { token, method: 'PUT', body: { value: {
-    mode: 'scroll', autoTheme: false, theme: 'parchment', fontSize: 18,
-  } } })
-  const book = await importTXT(app.root, token, `WebDAV 接收 ${label}`, 2)
-  const chapters = await api(app.root, `/books/${book.id}/chapters`, { token })
-  assert(chapters.length === 2, `${label}: expected two imported chapters`)
-  const reader = await newReaderContext(browser, app.root, token, viewport, book.id, label)
-  const writes = []
-  reader.page.on('request', request => {
-    if (request.method() === 'PUT' && new URL(request.url()).pathname === '/api/progress') writes.push(request.postData())
-  })
-  const path = `/reader3/webdav/bookProgress/${label}.json`
-  async function upload(index, offset) {
-    const body = JSON.stringify({ bookUrl: book.url, name: book.title, author: book.author,
-      durChapterIndex: index, durChapterPos: offset, durChapterTime: Date.now(),
-      durChapterTitle: '外部非权威标题', externalMetadata: 'keep these exact bytes',
-    })
-    const response = await fetch(`${app.root}${path}`, { method: 'PUT', headers: {
-      Authorization: `Basic ${Buffer.from('progressbrowseradmin:progress-browser-contract').toString('base64')}`,
-    }, body })
-    assert(response.status === 201 && !response.headers.has('x-openreader-progress-sync') && await response.text() === '', `${label}: DAV upload/sync failed ${response.status}`)
-    const raw = await fetch(`${app.root}${path.replace('/reader3/webdav', '/webdav')}`, { headers: { Authorization: `Bearer ${token}` } })
-    assert(await raw.text() === body, `${label}: ingress rewrote raw payload`)
-    const progress = await api(app.root, `/progress/${book.id}`, { token })
-    assert(progress.chapterIndex === index && progress.offset === offset && progress.chapterId === chapters[index].id && progress.chapterTitle === chapters[index].title, `${label}: canonical progress missing`)
-    const shelf = await api(app.root, '/books', { token })
-    const shelfProgress = shelf.find(row => row.id === book.id)?.progress
-    assert(shelfProgress?.offset === offset && shelfProgress?.chapterId === chapters[index].id, `${label}: shelf projection diverged`)
-    await waitForEvent(reader.page, book.id, offset)
-    await reader.page.waitForFunction(({ index, offset }) => {
-      const url = new URL(location.href)
-      const percentMatches = offset > 0 ? !url.searchParams.has('percent') : Number(url.searchParams.get('percent')) === 0
-      return Number(url.searchParams.get('chapter')) === index && Number(url.searchParams.get('offset')) === offset && percentMatches
-    }, { index, offset }, { timeout: 10_000 })
-    return progress
-  }
-  async function assertExactParagraph(page, index, offset) {
-    await page.waitForFunction(({ index, offset }) => {
-      const body = document.querySelector(`.chapter-content[data-index="${index}"]`)
-      const nodes = [...(body?.querySelectorAll('h3[data-pos], [data-reader-block][data-pos]') || [])]
-      const target = nodes.filter(node => Number(node.dataset.pos) <= offset).at(-1)
-      if (!target) return false
-      const viewport = document.querySelector('.reader-content')
-      const documentScroll = document.querySelector('.reader-shell.document-scroll')
-      const viewportTop = documentScroll ? 0 : viewport.getBoundingClientRect().top
-      return Math.abs(target.getBoundingClientRect().top - viewportTop - 80) < 3
-    }, { index, offset }, { timeout: 10_000 })
-  }
-  try {
-    const received = await upload(1, 2400)
-    await assertExactParagraph(reader.page, 1, 2400)
-    await waitForLocalProgress(reader.page, book.id, 2400)
-    await reader.page.waitForTimeout(900)
-    assert(writes.length === 0, `${label}: online external update echoed a progress PUT`)
-    const cold = await newReaderContext(browser, app.root, token, viewport, book.id, `${label}/cold`)
-    try {
-      await assertExactParagraph(cold.page, 1, 2400)
-      await waitForLocalProgress(cold.page, book.id, 2400)
-      const durable = await api(app.root, `/progress/${book.id}`, { token })
-      assert(durable.updatedAt === received.updatedAt, `${label}: cold restore rewrote progress`)
-      assert(cold.errors.length === 0, cold.errors.join('\n'))
-    } finally { await cold.context.close() }
-    await upload(0, 0)
-    try {
-      await reader.page.waitForFunction(() => {
-        const chapter = document.querySelector('.chapter-content[data-index="0"]')
-        if (!chapter) return false
-        const viewportTop = document.querySelector('.reader-shell.document-scroll')
-          ? 0 : document.querySelector('.reader-content').getBoundingClientRect().top
-        return Math.abs(chapter.getBoundingClientRect().top - viewportTop) < 2
-      }, null, { timeout: 3_000 })
-    } catch (error) {
-      const detail = `\n${label} reset geometry: ${JSON.stringify(await reader.page.evaluate(() => ({
-        documentScroll: Boolean(document.querySelector('.reader-shell.document-scroll')),
-        documentTop: document.scrollingElement?.scrollTop,
-        contentTop: document.querySelector('.reader-content')?.scrollTop,
-        chapterTop: document.querySelector('.chapter-content[data-index="0"]')?.getBoundingClientRect().top,
-        viewportTop: document.querySelector('.reader-content')?.getBoundingClientRect().top,
-        url: location.href,
-      })))}`
-      throw new Error(`${error.message}${detail}`, { cause: error })
-    }
-    assert(writes.length === 0, `${label}: explicit reset echoed a PUT`)
-    assert(reader.errors.length === 0, reader.errors.join('\n'))
-    console.log(`${label}: raw Basic upload + canonical shelf + WebSocket online exact paragraph + cold exact paragraph + chapter-zero reset + no echo ok`)
-  } finally { await reader.context.close() }
 }
 
 const app = await startOpenReader()
@@ -688,17 +582,10 @@ try {
   })
   const token = registered?.token
   assert(token, 'registration did not return a token')
-  const progressDir = join(app.dataDir, 'webdav', 'bookProgress')
-  await mkdir(progressDir, { recursive: true })
   await runRequestBoundary(app.root, token)
-  if (!process.env.PROGRESS_SMOKE_INGRESS_ONLY) {
-    await runViewport(browser, app, token, progressDir, { width: 1440, height: 900 })
-    await runViewport(browser, app, token, progressDir, { width: 390, height: 844 })
-    await runViewport(browser, app, token, progressDir, { width: 360, height: 800 })
-  }
-  await runIngressViewport(browser, app, token, { width: 1440, height: 900 })
-  await runIngressViewport(browser, app, token, { width: 390, height: 844 })
-  await runIngressViewport(browser, app, token, { width: 360, height: 800 })
+  await runViewport(browser, app, token, { width: 1440, height: 900 })
+  await runViewport(browser, app, token, { width: 390, height: 844 })
+  await runViewport(browser, app, token, { width: 360, height: 800 })
 } catch (error) {
   error.message = `${error.message}\nOpenReader output:\n${app.output()}`
   throw error

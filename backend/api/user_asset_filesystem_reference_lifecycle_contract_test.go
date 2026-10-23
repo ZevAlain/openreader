@@ -232,47 +232,6 @@ func TestBookCoverWriteAndAssetDeleteCannotBothCommit(t *testing.T) {
 		t.Fatalf("delete-first result is inconsistent: book=%d %s delete=%d %s stored=%q fileErr=%v", bookResponse.Code, bookResponse.Body.String(), deleteResponse.Code, deleteResponse.Body.String(), stored.CustomCoverURL, statErr)
 	}
 }
-
-func TestPortableAssetPromotionRejectsCallerRootSymlink(t *testing.T) {
-	_, server := setupTestServer(t)
-	user := models.User{Username: "asset-portable-root", PasswordHash: "hash"}
-	if err := server.db.Create(&user).Error; err != nil {
-		t.Fatal(err)
-	}
-	uploadsRoot := filepath.Join(server.cfg.DataDir, "uploads")
-	usersRoot := filepath.Join(uploadsRoot, "users")
-	if err := os.MkdirAll(usersRoot, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	outside := filepath.Join(server.cfg.DataDir, "outside-portable-user")
-	if err := os.MkdirAll(filepath.Join(outside, "backgrounds"), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	callerRoot := filepath.Join(usersRoot, strconv.FormatUint(uint64(user.ID), 10))
-	if err := os.Symlink(outside, callerRoot); err != nil {
-		t.Fatal(err)
-	}
-	data := readerAppearancePNG(t, 1, 1)
-	stage := filepath.Join(t.TempDir(), "stage.png")
-	if err := os.WriteFile(stage, data, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	finalURL := fmt.Sprintf("/uploads/users/%d/backgrounds/final.png", user.ID)
-	finalPath := filepath.Join(callerRoot, "backgrounds", "final.png")
-	assets := []portableStagedAsset{{
-		manifest: portableBackupManifestAsset{Kind: "backgrounds", Extension: ".png", Size: int64(len(data))},
-		path:     stage, finalURL: finalURL, finalPath: finalPath,
-	}}
-
-	promoted, err := server.promotePortableAssets(assets, user.ID)
-	if err == nil || len(promoted) != 0 {
-		t.Fatalf("portable promote through caller-root symlink succeeded: promoted=%v err=%v", promoted, err)
-	}
-	if _, err := os.Stat(filepath.Join(outside, "backgrounds", "final.png")); !os.IsNotExist(err) {
-		t.Fatalf("portable promote wrote outside root: %v", err)
-	}
-}
-
 func performUserAssetLifecycleUpload(t *testing.T, router http.Handler, auth string, ctx context.Context) *httptest.ResponseRecorder {
 	t.Helper()
 	body, contentType := makeAssetBoundaryMultipart(t, [][2]string{{"type", "cover"}}, []assetBoundaryFilePart{{

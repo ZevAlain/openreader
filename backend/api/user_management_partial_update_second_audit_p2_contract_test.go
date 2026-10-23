@@ -22,13 +22,12 @@ func TestAdminPartialUserUpdateDoesNotOverwriteConcurrentLoginOrPasswordWrite(t 
 		t.Fatal(err)
 	}
 	target := models.User{
-		Username:        "partialupdateuser",
-		PasswordHash:    string(oldHash),
-		Role:            "user",
-		CanEditSources:  true,
-		CanAccessStore:  true,
-		CanAccessWebDAV: boolValue(true),
-		LastActiveAt:    time.Date(2020, time.January, 2, 3, 4, 5, 0, time.UTC),
+		Username:       "partialupdateuser",
+		PasswordHash:   string(oldHash),
+		Role:           "user",
+		CanEditSources: true,
+		CanAccessStore: true,
+		LastActiveAt:   time.Date(2020, time.January, 2, 3, 4, 5, 0, time.UTC),
 	}
 	if err := server.db.Create(&target).Error; err != nil {
 		t.Fatalf("create target user: %v", err)
@@ -79,19 +78,18 @@ func TestAdminPartialUserUpdateDoesNotOverwriteConcurrentLoginOrPasswordWrite(t 
 	}
 }
 
-func TestAdminPartialUserUpdateValidatesPatchAndProjectsLegacyWebDAV(t *testing.T) {
+func TestAdminPartialUserUpdateValidatesPatch(t *testing.T) {
 	router, server := setupTestServer(t)
 	adminAuth := authHeader(t, router)
 
 	target := models.User{
-		Username:        "legacypatchuser",
-		PasswordHash:    "hash",
-		Role:            "user",
-		BookLimit:       7,
-		SourceLimit:     9,
-		CanEditSources:  true,
-		CanAccessStore:  true,
-		CanAccessWebDAV: nil,
+		Username:       "legacypatchuser",
+		PasswordHash:   "hash",
+		Role:           "user",
+		BookLimit:      7,
+		SourceLimit:    9,
+		CanEditSources: true,
+		CanAccessStore: true,
 	}
 	if err := server.db.Create(&target).Error; err != nil {
 		t.Fatalf("create legacy target: %v", err)
@@ -117,9 +115,6 @@ func TestAdminPartialUserUpdateValidatesPatchAndProjectsLegacyWebDAV(t *testing.
 	if err := json.Unmarshal(writer.Body.Bytes(), &response); err != nil {
 		t.Fatalf("decode partial update response: %v", err)
 	}
-	if value, exists := response["canAccessWebdav"]; !exists || value != false {
-		t.Fatalf("effective legacy WebDAV projection missing: %+v", response)
-	}
 
 	var stored models.User
 	if err := server.db.First(&stored, target.ID).Error; err != nil {
@@ -127,8 +122,5 @@ func TestAdminPartialUserUpdateValidatesPatchAndProjectsLegacyWebDAV(t *testing.
 	}
 	if stored.CanAccessStore || stored.BookLimit != 0 || stored.SourceLimit != 9 || !stored.CanEditSources {
 		t.Fatalf("partial update changed the wrong fields: %+v", stored)
-	}
-	if stored.CanAccessWebDAV != nil {
-		t.Fatalf("effective response projection persisted the nullable migration field: %+v", stored.CanAccessWebDAV)
 	}
 }

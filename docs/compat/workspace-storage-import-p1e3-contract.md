@@ -1,5 +1,8 @@
 # P1-E3 工作台文件管理与格式入口兼容合同
 
+> 注:2026-10-23 起 WebDAV 协议、手动备份/恢复与进度 WebDAV 镜像(ingress/mirror)已整体移除;本文中涉及 WebDAV/备份的段落为移除前的历史验证记录,现行行为见 `webdav-removal-notice.md`。
+
+
 状态：**已实施并通过前后端及三视口浏览器回归。**
 基准：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。  
 上游证据：`web/src/components/LocalStore.vue`、`web/src/components/WebDAV.vue`、`web/src/views/Index.vue`、`BookController.kt:2263-2531`。  

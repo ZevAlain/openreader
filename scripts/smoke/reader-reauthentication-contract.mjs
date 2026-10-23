@@ -229,7 +229,7 @@ async function assertExplicitLogout(browser, viewport) {
       .waitFor({ state: 'visible', timeout: 10_000 })
     await assertShellTitle(session.page, `${viewport.width}: home before explicit logout`)
     if (viewport.width <= 750) {
-      await session.page.locator('.mobile-menu-trigger').click()
+      await session.page.locator('.mobile-tabbar .mobile-tab:last-child').click()
       await session.page.waitForFunction(() => document.querySelector('.app-shell')?.classList.contains('mobile-nav-open'))
     }
     const accountSection = session.page.locator('[data-sidebar-section="account"]')

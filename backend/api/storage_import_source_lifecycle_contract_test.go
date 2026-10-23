@@ -19,15 +19,12 @@ import (
 )
 
 func TestStorageImportDirectoryPlanRejectsReplacementAfterAdmission(t *testing.T) {
-	for _, source := range []string{"local", "webdav"} {
+	for _, source := range []string{"local"} {
 		for _, level := range []string{"boundary", "users", "user", "parent", "target"} {
 			for _, kind := range []string{"directory", "symlink"} {
 				t.Run(source+"/"+level+"/"+kind, func(t *testing.T) {
 					_, server := setupTestServer(t)
 					boundary := server.cfg.LocalStoreDir
-					if source == "webdav" {
-						boundary = server.webdavDir()
-					}
 					root := filepath.Join(boundary, "users", "alice")
 					relative := "parent/target"
 					target := filepath.Join(root, relative)
@@ -90,9 +87,6 @@ func TestStorageImportDirectoryPlanRejectsReplacementAfterAdmission(t *testing.T
 }
 
 func storageImportTestRoot(server *Server, source string) string {
-	if source == "webdav" {
-		return server.webdavDir()
-	}
 	return server.cfg.LocalStoreDir
 }
 
@@ -134,7 +128,7 @@ func assertStorageImportNoAcceptedState(t *testing.T, server *Server, events <-c
 }
 
 func TestStorageImportSourceCanceledBeforeHandoffCreatesNoAcceptedState(t *testing.T) {
-	for _, source := range []string{"local-store", "webdav"} {
+	for _, source := range []string{"local-store"} {
 		for _, action := range []string{"import-preview", "import"} {
 			for _, phase := range []string{"source-admission", "directory-scan", "deep-directory-scan", "file-read", "source-read", "source-handoff"} {
 				t.Run(source+"/"+action+"/"+phase, func(t *testing.T) {
@@ -160,9 +154,6 @@ func TestStorageImportSourceCanceledBeforeHandoffCreatesNoAcceptedState(t *testi
 					}
 					if stage == "file-read" {
 						stage = "local-file-read"
-						if source == "webdav" {
-							stage = "webdav-file-read"
-						}
 					}
 					storageImportSourceReadTestHook = func(current, _, path string) {
 						if phase == "deep-directory-scan" && path != "selected/deep/deeper" {
@@ -210,7 +201,7 @@ func TestStorageImportSourceCanceledBeforeHandoffCreatesNoAcceptedState(t *testi
 }
 
 func TestStorageImportPlanNeverReadsSameNameReplacement(t *testing.T) {
-	for _, source := range []string{"local-store", "webdav"} {
+	for _, source := range []string{"local-store"} {
 		for _, action := range []string{"import-preview", "import"} {
 			t.Run(source+"/"+action, func(t *testing.T) {
 				router, server := setupTestServer(t)
@@ -232,9 +223,6 @@ func TestStorageImportPlanNeverReadsSameNameReplacement(t *testing.T) {
 				t.Cleanup(func() { server.hub.RemoveClient(client) })
 				fired := false
 				stage := "local-file-read"
-				if source == "webdav" {
-					stage = "webdav-file-read"
-				}
 				storageImportSourceReadTestHook = func(current, _, _ string) {
 					if fired || current != stage {
 						return
@@ -297,7 +285,7 @@ func storageImportTreeContainsBytes(t *testing.T, root string, wanted []byte) bo
 }
 
 func TestStorageImportDirectoryKeepsHiddenAndSafeNeighborsAndMissingSkip(t *testing.T) {
-	for _, source := range []string{"local", "webdav"} {
+	for _, source := range []string{"local"} {
 		t.Run(source, func(t *testing.T) {
 			_, server := setupTestServer(t)
 			root := storageImportTestRoot(server, source)
@@ -343,7 +331,7 @@ func TestStorageImportDirectoryKeepsHiddenAndSafeNeighborsAndMissingSkip(t *test
 }
 
 func TestStorageImportLateSymlinkAndFIFORejectWithoutLeakingWorker(t *testing.T) {
-	for _, source := range []string{"local-store", "webdav"} {
+	for _, source := range []string{"local-store"} {
 		for _, action := range []string{"import-preview", "import"} {
 			for _, kind := range []string{"same-inode-symlink", "fifo"} {
 				t.Run(source+"/"+action+"/"+kind, func(t *testing.T) {
@@ -360,9 +348,6 @@ func TestStorageImportLateSymlinkAndFIFORejectWithoutLeakingWorker(t *testing.T)
 					client := server.hub.AddClient(1, nil)
 					t.Cleanup(func() { server.hub.RemoveClient(client) })
 					phase := "local-file-read"
-					if source == "webdav" {
-						phase = "webdav-file-read"
-					}
 					var fixtureErr error
 					fired := false
 					storageImportSourceReadTestHook = func(stage, _, _ string) {
@@ -417,7 +402,7 @@ func TestStorageImportLateSymlinkAndFIFORejectWithoutLeakingWorker(t *testing.T)
 }
 
 func TestStorageImportDeepDirectoryReplacementCannotBecomeStableSkip(t *testing.T) {
-	for _, source := range []string{"local-store", "webdav"} {
+	for _, source := range []string{"local-store"} {
 		for _, action := range []string{"import-preview", "import"} {
 			for _, kind := range []string{"directory", "symlink"} {
 				t.Run(source+"/"+action+"/"+kind, func(t *testing.T) {
@@ -480,7 +465,7 @@ func TestStorageImportDeepDirectoryReplacementCannotBecomeStableSkip(t *testing.
 }
 
 func TestStorageImportOpenedFileRenameKeepsOriginalBytes(t *testing.T) {
-	for _, source := range []string{"local-store", "webdav"} {
+	for _, source := range []string{"local-store"} {
 		for _, action := range []string{"import-preview", "import"} {
 			t.Run(source+"/"+action, func(t *testing.T) {
 				router, server := setupTestServer(t)
@@ -532,7 +517,7 @@ func TestStorageImportOpenedFileRenameKeepsOriginalBytes(t *testing.T) {
 }
 
 func TestStorageImportLaterSourceCancelPreservesEarlierCommittedBookAndEvent(t *testing.T) {
-	for _, source := range []string{"local-store", "webdav"} {
+	for _, source := range []string{"local-store"} {
 		t.Run(source, func(t *testing.T) {
 			router, server := setupTestServer(t)
 			auth := authHeader(t, router)
@@ -550,9 +535,6 @@ func TestStorageImportLaterSourceCancelPreservesEarlierCommittedBookAndEvent(t *
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			phase := "local-file-read"
-			if source == "webdav" {
-				phase = "webdav-file-read"
-			}
 			fired := false
 			storageImportSourceReadTestHook = func(stage, _, relative string) {
 				if stage == phase && relative == "second.txt" {
@@ -596,4 +578,25 @@ func TestStorageImportLaterSourceCancelPreservesEarlierCommittedBookAndEvent(t *
 			}
 		})
 	}
+}
+
+func countFilesBelow(t *testing.T, root string) int {
+	t.Helper()
+	count := 0
+	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if path != root && !entry.IsDir() {
+			count++
+		}
+		return nil
+	})
+	if os.IsNotExist(err) {
+		return 0
+	}
+	if err != nil {
+		t.Fatalf("walk %s: %v", root, err)
+	}
+	return count
 }

@@ -150,7 +150,7 @@ async function assertNoHorizontalOverflow(page, name) {
 
 async function openMobileNavigation(page, viewport) {
   if (viewport.width > 750) return
-  await page.locator('.mobile-menu-trigger').click()
+  await page.locator('.mobile-tabbar .mobile-tab:last-child').click()
   await page.waitForFunction(() => {
     const sidebar = document.querySelector('.app-sidebar')
     return sidebar && Math.abs(Number.parseFloat(getComputedStyle(sidebar).marginLeft)) < 0.5

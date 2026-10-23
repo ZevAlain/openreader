@@ -1,5 +1,8 @@
 # REST 长尾动作固定基准覆盖合同（P2）
 
+> 注:2026-10-23 起 WebDAV 协议、手动备份/恢复与进度 WebDAV 镜像(ingress/mirror)已整体移除;本文中涉及 WebDAV/备份的段落为移除前的历史验证记录,现行行为见 `webdav-removal-notice.md`。
+
+
 固定上游：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`  
 当前审查基线：`OpenReader@d2f7bfe`  
 审查日期：2026-08-11

@@ -132,8 +132,6 @@ async function installApiMocks(page) {
       }))
     }
     if (path === '/local-store') return route.fulfill(json({ path: '', items: [] }))
-    if (path === '/backup/list') return route.fulfill(json([]))
-    if (path === '/webdav/list') return route.fulfill(json({ path: '', items: [] }))
     if (path === '/replace-rules' || path === '/admin/users') return route.fulfill(json([]))
     return route.fulfill(json({}))
   })

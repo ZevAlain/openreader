@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -385,50 +384,6 @@ func TestBookCategoryWriteBoundaryValidatesFinalEffectiveOwnerSet(t *testing.T) 
 				t.Fatalf("foreign effective set broadcast events: %v", events)
 			}
 		})
-	}
-}
-
-func TestBookGroupWriteBoundaryPreservesHistoricalOversizedRowsAcrossBackupRestore(t *testing.T) {
-	router, server := setupTestServer(t)
-	_ = authHeader(t, router)
-	var owner models.User
-	if err := server.db.Where("username = ?", "testuser").First(&owner).Error; err != nil {
-		t.Fatal(err)
-	}
-	historical := models.Category{
-		UserID: owner.ID, Name: strings.Repeat("历史", 50), Color: strings.Repeat("c", 30), Show: true, SortOrder: 10,
-	}
-	if err := server.db.Create(&historical).Error; err != nil {
-		t.Fatal(err)
-	}
-	path, err := server.backupSvc.RunNowForUser(owner.ID, owner.Username)
-	if err != nil {
-		t.Fatal(err)
-	}
-	entries := readFixedBaselineBackupEntries(t, path)
-	var exported []models.Category
-	if err := json.Unmarshal(entries["categories.json"], &exported); err != nil {
-		t.Fatal(err)
-	}
-	if len(exported) != 1 || exported[0].Name != historical.Name || exported[0].Color != historical.Color || !exported[0].Show {
-		t.Fatalf("historical oversized category was truncated in backup: %+v", exported)
-	}
-	archive, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	destinationRouter, destination := setupTestServer(t)
-	_ = authHeader(t, destinationRouter)
-	var destinationUser models.User
-	if err := destination.db.Where("username = ?", "testuser").First(&destinationUser).Error; err != nil {
-		t.Fatal(err)
-	}
-	if _, err := destination.restoreLegadoBackupData(archive, destinationUser.ID); err != nil {
-		t.Fatal(err)
-	}
-	restored := findCategoryByName(t, destination, destinationUser.ID, historical.Name)
-	if restored.Color != historical.Color || !restored.Show {
-		t.Fatalf("historical oversized category was changed by restore: %+v", restored)
 	}
 }
 

@@ -107,3 +107,23 @@ func TestAdminUserContractProtectsAdministratorRowsAndCreatesOnlyOrdinaryUsers(t
 		t.Fatalf("update ordinary user: %d %s", ordinaryUpdate.Code, ordinaryUpdate.Body.String())
 	}
 }
+func registerStorageTestUser(t *testing.T, router *gin.Engine, username string) string {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/register", strings.NewReader(`{"username":"`+username+`","password":"secret123"}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("register %s: expected 200, got %d: %s", username, w.Code, w.Body.String())
+	}
+	var response struct {
+		Token string `json:"token"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("register %s: decode response: %v", username, err)
+	}
+	if response.Token == "" {
+		t.Fatalf("register %s: missing token", username)
+	}
+	return "Bearer " + response.Token
+}

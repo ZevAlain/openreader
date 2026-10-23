@@ -135,32 +135,6 @@ func TestLocalStorePreviewStagesSnapshotForConfirmImport(t *testing.T) {
 	}
 }
 
-func TestWebDAVPreviewStagesSnapshotForConfirmImport(t *testing.T) {
-	router, server := setupTestServer(t)
-	auth := authHeader(t, router)
-	path := filepath.Join(server.cfg.DataDir, "webdav", "snapshot.txt")
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatalf("create WebDAV root: %v", err)
-	}
-	if err := os.WriteFile(path, []byte("第一章 开始\n正文\n第二章 继续\n正文"), 0o644); err != nil {
-		t.Fatalf("write WebDAV fixture: %v", err)
-	}
-
-	preview := previewStorageBook(t, router, auth, "/api/webdav/import-preview", "snapshot.txt")
-	expectedChapters := preview.Items[0].Book.ChapterCount
-	if expectedChapters < 1 {
-		t.Fatalf("staged preview must have a readable catalogue: %+v", preview.Items[0].Book)
-	}
-	if err := os.Remove(path); err != nil {
-		t.Fatalf("remove original WebDAV file after preview: %v", err)
-	}
-
-	book := importStagedStorageBook(t, router, auth, "/api/webdav/import", "snapshot.txt", preview.Items[0].ImportToken, "WebDAV 快照导入")
-	if book.ChapterCount != expectedChapters {
-		t.Fatalf("confirm must import the preview snapshot (%d chapters), got %+v", expectedChapters, book)
-	}
-}
-
 func TestStorageGB18030NoTocStageImportRemainsReadable(t *testing.T) {
 	text := "无目录 GB18030 存储导入正文。\n删除挂载源后仍可从归档恢复。"
 	encoded, err := simplifiedchinese.GB18030.NewEncoder().Bytes([]byte(text))
@@ -179,14 +153,6 @@ func TestStorageGB18030NoTocStageImportRemainsReadable(t *testing.T) {
 			importEndpoint:  "/api/local-store/import",
 			filePath: func(server *Server) string {
 				return filepath.Join(server.cfg.LocalStoreDir, "gb18030-no-toc.txt")
-			},
-		},
-		{
-			name:            "WebDAV",
-			previewEndpoint: "/api/webdav/import-preview",
-			importEndpoint:  "/api/webdav/import",
-			filePath: func(server *Server) string {
-				return filepath.Join(server.cfg.DataDir, "webdav", "gb18030-no-toc.txt")
 			},
 		},
 	}
@@ -245,14 +211,6 @@ func TestStoragePreviewStageReparsesAfterMountedSourceIsRemoved(t *testing.T) {
 			importEndpoint:  "/api/local-store/import",
 			filePath: func(server *Server) string {
 				return filepath.Join(server.cfg.LocalStoreDir, "retry-rule.txt")
-			},
-		},
-		{
-			name:            "WebDAV",
-			previewEndpoint: "/api/webdav/import-preview",
-			importEndpoint:  "/api/webdav/import",
-			filePath: func(server *Server) string {
-				return filepath.Join(server.cfg.DataDir, "webdav", "retry-rule.txt")
 			},
 		},
 	}

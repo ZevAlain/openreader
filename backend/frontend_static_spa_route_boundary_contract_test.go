@@ -39,13 +39,6 @@ func newFrontendBoundaryRouter(t *testing.T, publicDir string) *gin.Engine {
 	router.GET("/uploads/*resourcePath", func(c *gin.Context) {
 		c.Status(http.StatusUnauthorized)
 	})
-	router.GET("/webdav/*path", func(c *gin.Context) {
-		c.Status(http.StatusUnauthorized)
-	})
-	router.OPTIONS("/webdav/*path", func(c *gin.Context) {
-		c.Header("DAV", "1,2")
-		c.Status(http.StatusOK)
-	})
 	serveFrontend(router, publicDir)
 	return router
 }
@@ -381,7 +374,6 @@ func TestFrontendBoundaryReturnsMethodNotAllowedForRegisteredServerRoutes(t *tes
 		"/api/private",
 		"/ws/sync",
 		"/assets/app.js",
-		"/webdav/example.txt",
 	} {
 		t.Run(target, func(t *testing.T) {
 			response := performFrontendBoundaryRequest(router, http.MethodPatch, target)
@@ -392,10 +384,6 @@ func TestFrontendBoundaryReturnsMethodNotAllowedForRegisteredServerRoutes(t *tes
 		})
 	}
 
-	options := performFrontendBoundaryRequest(router, http.MethodOptions, "/webdav/example.txt")
-	if options.Code != http.StatusOK || options.Header().Get("DAV") != "1,2" {
-		t.Fatalf("WebDAV OPTIONS = %d DAV=%q", options.Code, options.Header().Get("DAV"))
-	}
 }
 
 func TestRouteErrorsDoNotDependOnFrontendBuildPresence(t *testing.T) {
@@ -416,18 +404,10 @@ func TestFrontendMethodHandlingPreservesCORSOptions(t *testing.T) {
 	router.GET("/api/health", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})
-	router.OPTIONS("/webdav/*path", func(c *gin.Context) {
-		c.Header("DAV", "1,2")
-		c.Status(http.StatusOK)
-	})
 	serveFrontend(router, writeFrontendBoundaryFixture(t))
 
 	ordinary := performFrontendBoundaryRequest(router, http.MethodOptions, "/api/health")
 	if ordinary.Code != http.StatusNoContent {
 		t.Fatalf("ordinary OPTIONS = %d, want 204", ordinary.Code)
-	}
-	dav := performFrontendBoundaryRequest(router, http.MethodOptions, "/webdav/example.txt")
-	if dav.Code != http.StatusOK || dav.Header().Get("DAV") != "1,2" {
-		t.Fatalf("WebDAV OPTIONS = %d DAV=%q", dav.Code, dav.Header().Get("DAV"))
 	}
 }

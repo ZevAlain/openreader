@@ -1,5 +1,8 @@
 # P2 用户管理上游复审合同
 
+> 注:2026-10-23 起 WebDAV 协议、手动备份/恢复与进度 WebDAV 镜像(ingress/mirror)已整体移除;本文中涉及 WebDAV/备份的段落为移除前的历史验证记录,现行行为见 `webdav-removal-notice.md`。
+
+
 状态：2026-07-28 重新取证并完成本轮修复。账户规则、独立 WebDAV/书仓权限、安全删除和
 user/default 书源所有权已经实施；书源所有权的最终合同见
 [`book-source-ownership-p2-contract.md`](book-source-ownership-p2-contract.md)。本次复审

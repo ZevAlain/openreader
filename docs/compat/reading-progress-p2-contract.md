@@ -1,5 +1,8 @@
 # P2 阅读进度 API、并发与 WebDAV 合同
 
+> 注:2026-10-23 起 WebDAV 协议、手动备份/恢复与进度 WebDAV 镜像(ingress/mirror)已整体移除;本文中涉及 WebDAV/备份的段落为移除前的历史验证记录,现行行为见 `webdav-removal-notice.md`。
+
+
 状态：2026-07-18 已完成固定上游审查、失败测试、应用实现、全量回归、历史卷与
 本地 Docker 发布门禁，并以 `9f19d21` 发布。本文件只覆盖已加入书架书籍的阅读进度；
 临时远程阅读不得创建 `ReadingProgress`、书架行或 WebDAV 文件。

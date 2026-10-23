@@ -164,7 +164,7 @@ async function assertNoHorizontalOverflow(page, name) {
 async function openMobileNavigation(page, viewport) {
   if (viewport.width > 750) return
   if (await page.locator('.app-shell').evaluate(node => node.classList.contains('mobile-nav-open'))) return
-  const trigger = page.locator('.mobile-menu-trigger')
+  const trigger = page.locator('.mobile-tabbar .mobile-tab:last-child')
   if (await trigger.count()) {
     await trigger.click()
   } else {

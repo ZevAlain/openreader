@@ -153,7 +153,7 @@ func TestAuthenticatedSessionLogoutRevokesOnlyCurrentLogin(t *testing.T) {
 	}
 }
 
-func TestDeletedUserTokenFailsBeforeRESTAndWebDAVSideEffects(t *testing.T) {
+func TestDeletedUserTokenFailsBeforeRESTSideEffects(t *testing.T) {
 	router, server := setupTestServer(t)
 	admin := registerSessionContractUser(t, router, "sessionadmin", "password8")
 	target := registerSessionContractUser(t, router, "sessiondeleted", "password8")
@@ -182,10 +182,6 @@ func TestDeletedUserTokenFailsBeforeRESTAndWebDAVSideEffects(t *testing.T) {
 	)
 	if setting.Code != http.StatusUnauthorized {
 		t.Errorf("deleted-user setting write status=%d, want 401: %s", setting.Code, setting.Body.String())
-	}
-	webdav := sessionContractJSONRequest(router, http.MethodGet, "/webdav/", "", target.Token)
-	if webdav.Code != http.StatusUnauthorized {
-		t.Errorf("deleted-user WebDAV Bearer status=%d, want 401: %s", webdav.Code, webdav.Body.String())
 	}
 
 	var orphanSettings int64
@@ -287,7 +283,7 @@ func TestPasswordResetRevokesExistingSessions(t *testing.T) {
 	}
 }
 
-func TestExpiredSessionFailsAcrossRESTWebDAVAndWebSocket(t *testing.T) {
+func TestExpiredSessionFailsAcrossRESTAndWebSocket(t *testing.T) {
 	router, server := setupTestServer(t)
 	issued := registerSessionContractUser(t, router, "sessionexpired", "password8")
 	expiredAt := time.Now().UTC().Add(-time.Hour)
@@ -307,10 +303,6 @@ func TestExpiredSessionFailsAcrossRESTWebDAVAndWebSocket(t *testing.T) {
 	rest := sessionContractJSONRequest(router, http.MethodGet, "/api/me", "", issued.Token)
 	if rest.Code != http.StatusUnauthorized {
 		t.Errorf("expired REST session status=%d, want 401: %s", rest.Code, rest.Body.String())
-	}
-	webdav := sessionContractJSONRequest(router, http.MethodGet, "/webdav/", "", issued.Token)
-	if webdav.Code != http.StatusUnauthorized {
-		t.Errorf("expired WebDAV session status=%d, want 401: %s", webdav.Code, webdav.Body.String())
 	}
 
 	httpServer := httptest.NewServer(router)

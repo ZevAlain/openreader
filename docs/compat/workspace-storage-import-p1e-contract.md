@@ -1,5 +1,8 @@
 # P1-E 工作台书仓、WebDAV 与本地导入兼容合同
 
+> 注:2026-10-23 起 WebDAV 协议、手动备份/恢复与进度 WebDAV 镜像(ingress/mirror)已整体移除;本文中涉及 WebDAV/备份的段落为移除前的历史验证记录,现行行为见 `webdav-removal-notice.md`。
+
+
 状态：**P1-E1、P1-E2、P1-E3 已实现并完成前端/浏览器回归；P1-E4 审查完成，其中 E4-TXT-2（空目录预览/确认）已实现并完成三视口浏览器回归，其余真实格式/旧卷门禁待继续。**
 基准：`changshengyu/reader-dev@fa22f271849d45f93349ae1636223e27b16a4691`。  
 上游证据：`web/src/views/Index.vue`、`web/src/components/LocalStore.vue`、`web/src/components/WebDAV.vue`、`BookController.kt`、`LocalBook.kt`、`TextFile.kt`。  

@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	mathrand "math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
 	"openreader/backend/config"
@@ -22,20 +22,19 @@ import (
 
 type contextBackupGenerator interface {
 	RunNowForUserContext(context.Context, uint, string) (string, error)
-	RunPortableV2ForUserContext(context.Context, uint, string, string) (PortableResult, error)
 }
 
 func requireContextBackupGenerator(t *testing.T, service *Service) contextBackupGenerator {
 	t.Helper()
 	generator, ok := any(service).(contextBackupGenerator)
 	if !ok {
-		t.Fatal("backup service must expose context-aware logical and portable generation entry points")
+		t.Fatal("backup service must expose context-aware logical generation entry points")
 	}
 	return generator
 }
 
 func TestBackupGenerationRejectsCanceledContextBeforeWork(t *testing.T) {
-	database := portableBackupTestDB(t)
+	database := backupTestDB(t)
 	root := t.TempDir()
 	service := New(database, filepath.Join(root, "webdav"), config.Config{LibraryDir: filepath.Join(root, "library")})
 	generator := requireContextBackupGenerator(t, service)
@@ -51,10 +50,6 @@ func TestBackupGenerationRejectsCanceledContextBeforeWork(t *testing.T) {
 	if _, err := generator.RunNowForUserContext(ctx, 1, "canceled-logical"); !errors.Is(err, context.Canceled) {
 		t.Fatalf("logical pre-cancel error = %v, want context.Canceled", err)
 	}
-	portableDir := filepath.Join(root, "webdav", "users", "canceled-portable")
-	if _, err := generator.RunPortableV2ForUserContext(ctx, 1, "canceled-portable", portableDir); !errors.Is(err, context.Canceled) {
-		t.Fatalf("portable pre-cancel error = %v, want context.Canceled", err)
-	}
 	if got := queries.Load(); got != 0 {
 		t.Fatalf("pre-canceled backup generation executed %d database queries, want 0", got)
 	}
@@ -62,7 +57,7 @@ func TestBackupGenerationRejectsCanceledContextBeforeWork(t *testing.T) {
 }
 
 func TestCanceledBackupGenerationWaiterDoesNotStartAfterLockRelease(t *testing.T) {
-	database := portableBackupTestDB(t)
+	database := backupTestDB(t)
 	root := t.TempDir()
 	service := New(database, filepath.Join(root, "webdav"), config.Config{LibraryDir: filepath.Join(root, "library")})
 	generator := requireContextBackupGenerator(t, service)
@@ -119,7 +114,7 @@ func TestCanceledBackupGenerationWaiterDoesNotStartAfterLockRelease(t *testing.T
 }
 
 func TestLogicalBackupGenerationCancelsInFlightAndCleansTemporaryFile(t *testing.T) {
-	database := portableBackupTestDB(t)
+	database := backupTestDB(t)
 	root := t.TempDir()
 	service := New(database, filepath.Join(root, "webdav"))
 	started := make(chan struct{})
@@ -158,72 +153,8 @@ func TestLogicalBackupGenerationCancelsInFlightAndCleansTemporaryFile(t *testing
 	assertNoBackupGenerationArtifacts(t, root)
 }
 
-func TestPortableBackupGenerationCancelsDuringArchiveCopyAndCleansTemporaryFile(t *testing.T) {
-	database := portableBackupTestDB(t)
-	root := t.TempDir()
-	libraryDir := filepath.Join(root, "library")
-	backupDir := filepath.Join(root, "webdav", "users", "portable-copy")
-	service := New(database, filepath.Join(root, "webdav"), config.Config{LibraryDir: libraryDir})
-	user := models.User{Username: "portable-copy", PasswordHash: "hash"}
-	if err := database.Create(&user).Error; err != nil {
-		t.Fatal(err)
-	}
-	archivePath := filepath.Join(libraryDir, "data", user.Username, "large-book", "large.txt")
-	writePseudoRandomArchive(t, archivePath, 8*1024*1024)
-	book := models.Book{
-		UserID:       user.ID,
-		SourceID:     0,
-		Title:        "large local book",
-		URL:          "local://cancel-copy",
-		LibraryPath:  filepath.Join("data", user.Username, "large-book"),
-		OriginalFile: filepath.Join("data", user.Username, "large-book", "large.txt"),
-	}
-	if err := database.Create(&book).Error; err != nil {
-		t.Fatal(err)
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan error, 1)
-	go func() {
-		_, err := service.RunPortableV2ForUserContext(ctx, user.ID, user.Username, backupDir)
-		done <- err
-	}()
-	ticker := time.NewTicker(time.Millisecond)
-	defer ticker.Stop()
-	timeout := time.NewTimer(3 * time.Second)
-	defer timeout.Stop()
-	waiting := true
-	for waiting {
-		select {
-		case err := <-done:
-			cancel()
-			t.Fatalf("portable backup completed before cancellation boundary: %v", err)
-		case <-ticker.C:
-			temporary, err := filepath.Glob(filepath.Join(backupDir, ".portable-backup-*.tmp"))
-			if err != nil {
-				cancel()
-				t.Fatal(err)
-			}
-			waiting = len(temporary) == 0
-		case <-timeout.C:
-			cancel()
-			t.Fatal("portable backup did not create its private temporary file")
-		}
-	}
-	cancel()
-	select {
-	case err := <-done:
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("portable copy cancellation error = %v, want context.Canceled", err)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("portable archive copy did not stop after cancellation")
-	}
-	assertNoBackupGenerationArtifacts(t, root)
-}
-
 func TestBackupGenerationKeepsPackageWhenCanceledAfterDurableRename(t *testing.T) {
-	database := portableBackupTestDB(t)
+	database := backupTestDB(t)
 	root := t.TempDir()
 	service := New(database, filepath.Join(root, "webdav"))
 	writer := &blockingBackupLogWriter{started: make(chan struct{}), release: make(chan struct{})}
@@ -265,7 +196,7 @@ func TestBackupGenerationKeepsPackageWhenCanceledAfterDurableRename(t *testing.T
 }
 
 func TestBackupGenerationSuccessLogDoesNotExposeHostPath(t *testing.T) {
-	database := portableBackupTestDB(t)
+	database := backupTestDB(t)
 	root := t.TempDir()
 	service := New(database, filepath.Join(root, "private-mounted-webdav"))
 	var output bytes.Buffer
@@ -295,8 +226,7 @@ func assertNoBackupGenerationArtifacts(t *testing.T, root string) {
 			return nil
 		}
 		name := entry.Name()
-		if strings.HasPrefix(name, "backup_") || strings.HasPrefix(name, "portable_backup_") ||
-			strings.HasPrefix(name, ".backup-") || strings.HasPrefix(name, ".portable-backup-") {
+		if strings.HasPrefix(name, "backup_") || strings.HasPrefix(name, ".backup-") {
 			t.Fatalf("canceled generation left artifact %s", path)
 		}
 		return nil
@@ -320,34 +250,31 @@ func (w *blockingBackupLogWriter) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
-func writePseudoRandomArchive(t *testing.T, path string, size int64) {
+func backupTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	file, err := os.Create(path)
+	database, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "backup.db")), &gorm.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	random := mathrand.New(mathrand.NewSource(1))
-	buffer := make([]byte, 64*1024)
-	remaining := size
-	for remaining > 0 {
-		chunk := int64(len(buffer))
-		if remaining < chunk {
-			chunk = remaining
-		}
-		if _, err := random.Read(buffer[:chunk]); err != nil {
-			_ = file.Close()
-			t.Fatal(err)
-		}
-		if _, err := file.Write(buffer[:chunk]); err != nil {
-			_ = file.Close()
-			t.Fatal(err)
-		}
-		remaining -= chunk
-	}
-	if err := file.Close(); err != nil {
+	if err := database.AutoMigrate(
+		&models.User{},
+		&models.UserSession{},
+		&models.BookSource{},
+		&models.UserBookSource{},
+		&models.BookSourceNamespace{},
+		&models.SourceFailure{},
+		&models.RSSSource{},
+		&models.UserSetting{},
+		&models.Category{},
+		&models.Book{},
+		&models.Chapter{},
+		&models.Bookmark{},
+		&models.ReadingProgress{},
+		&models.ReplaceRule{},
+		&models.BookCategory{},
+		&models.BookGroupPreference{},
+	); err != nil {
 		t.Fatal(err)
 	}
+	return database
 }

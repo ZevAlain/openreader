@@ -82,7 +82,7 @@ async function installApiMocks(page) {
 
 async function openSidebar(page, viewport) {
   if (viewport.width > 900) return
-  await page.locator('.mobile-menu-trigger').click()
+  await page.locator('.mobile-tabbar .mobile-tab:last-child').click()
   await page.waitForFunction(() => {
     const sidebar = document.querySelector('.app-sidebar')
     return sidebar && Math.abs(Number.parseFloat(getComputedStyle(sidebar).marginLeft)) < 0.5
@@ -124,7 +124,7 @@ async function runViewport(browser, viewport) {
 
   const sections = await sidebarSnapshot(page)
   assert(
-    JSON.stringify(sections.map(section => section.key)) === JSON.stringify(['backend', 'sources', 'bookshelf', 'account', 'webdav', 'cache']),
+    JSON.stringify(sections.map(section => section.key)) === JSON.stringify(['backend', 'sources', 'bookshelf', 'account', 'cache']),
     `${viewport.width}: unexpected sidebar sections ${JSON.stringify(sections.map(section => section.key))}`,
   )
   assert(

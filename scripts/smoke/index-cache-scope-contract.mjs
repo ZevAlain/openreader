@@ -160,7 +160,7 @@ async function readPageCache(page, key) {
 
 async function openSidebar(page, viewport) {
   if (viewport.width > 900) return
-  await page.locator('.mobile-menu-trigger').click()
+  await page.locator('.mobile-tabbar .mobile-tab:last-child').click()
   await page.waitForFunction(() => {
     const node = document.querySelector('.app-sidebar')
     return node && Math.abs(Number.parseFloat(getComputedStyle(node).marginLeft)) < 0.5

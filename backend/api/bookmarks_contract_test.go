@@ -1,10 +1,8 @@
 package api
 
 import (
-	"archive/zip"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -292,99 +290,5 @@ func TestBookmarksKeepInsertionOrderAndImmutableReaderContextOnEdit(t *testing.T
 	}
 	if len(bookmarks) != 2 || bookmarks[0].ID != first.ID || bookmarks[1].ID != second.ID {
 		t.Fatalf("bookmark manager must retain stable creation order, got %+v", bookmarks)
-	}
-}
-
-func TestBookmarkBackupAndRestoreKeepCreationOrderAndSameLocationRows(t *testing.T) {
-	router, server := setupTestServer(t)
-	_ = authHeader(t, router)
-	sourceUser := bookmarkContractUser(t, server)
-	sourceBook, sourceChapter := bookmarkContractBook(t, server, sourceUser.ID, "书签备份顺序书")
-	createdAt := time.Date(2026, time.July, 11, 8, 0, 0, 0, time.UTC)
-	first := models.Bookmark{
-		UserID: sourceUser.ID, BookID: sourceBook.ID, ChapterID: sourceChapter.ID,
-		ChapterIndex: 0, Offset: 18, Title: "同一位置", Excerpt: "第一条独立上下文",
-		CreatedAt: createdAt, UpdatedAt: createdAt,
-	}
-	second := models.Bookmark{
-		UserID: sourceUser.ID, BookID: sourceBook.ID, ChapterID: sourceChapter.ID,
-		ChapterIndex: 0, Offset: 18, Title: "同一位置", Excerpt: "第二条独立上下文",
-		CreatedAt: createdAt.Add(time.Minute), UpdatedAt: createdAt.Add(time.Minute),
-	}
-	if err := server.db.Create(&first).Error; err != nil {
-		t.Fatal(err)
-	}
-	if err := server.db.Create(&second).Error; err != nil {
-		t.Fatal(err)
-	}
-	if err := server.db.Model(&second).Where("id = ?", second.ID).Update("updated_at", createdAt.Add(24*time.Hour)).Error; err != nil {
-		t.Fatal(err)
-	}
-
-	backupPath, err := server.backupSvc.RunNow()
-	if err != nil {
-		t.Fatal(err)
-	}
-	archive, err := zip.OpenReader(backupPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer archive.Close()
-	var bookmarkFile *zip.File
-	for _, file := range archive.File {
-		if file.Name == "bookmarks.json" {
-			bookmarkFile = file
-			break
-		}
-	}
-	if bookmarkFile == nil {
-		t.Fatal("bookmarks.json not found in backup")
-	}
-	stream, err := bookmarkFile.Open()
-	if err != nil {
-		t.Fatal(err)
-	}
-	data, err := io.ReadAll(stream)
-	_ = stream.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
-	var exported []models.Bookmark
-	if err := json.Unmarshal(data, &exported); err != nil {
-		t.Fatal(err)
-	}
-	if len(exported) != 2 || exported[0].ID != first.ID || exported[1].ID != second.ID {
-		t.Fatalf("backup must retain creation order despite later edits, got %+v", exported)
-	}
-
-	targetUser := models.User{Username: "bookmark-restore-user", PasswordHash: "not-used"}
-	if err := server.db.Create(&targetUser).Error; err != nil {
-		t.Fatal(err)
-	}
-	targetBook := models.Book{UserID: targetUser.ID, Title: sourceBook.Title, URL: sourceBook.URL}
-	if err := server.db.Create(&targetBook).Error; err != nil {
-		t.Fatal(err)
-	}
-	targetChapter := models.Chapter{BookID: targetBook.ID, Index: 0, Title: "恢复后的第一章"}
-	if err := server.db.Create(&targetChapter).Error; err != nil {
-		t.Fatal(err)
-	}
-
-	if restored, err := server.restoreBookmarksFromZip(bookmarkFile, targetUser.ID); err != nil || restored != 2 {
-		t.Fatalf("restore independent same-location bookmarks: restored=%d err=%v", restored, err)
-	}
-	// The same export is idempotent, but must not merge its two independent rows.
-	if restored, err := server.restoreBookmarksFromZip(bookmarkFile, targetUser.ID); err != nil || restored != 2 {
-		t.Fatalf("repeat restore should remain idempotent: restored=%d err=%v", restored, err)
-	}
-	var restored []models.Bookmark
-	if err := server.db.Where("user_id = ? AND book_id = ?", targetUser.ID, targetBook.ID).Order("id asc").Find(&restored).Error; err != nil {
-		t.Fatal(err)
-	}
-	if len(restored) != 2 || restored[0].Excerpt != first.Excerpt || restored[1].Excerpt != second.Excerpt {
-		t.Fatalf("restore must retain both same-location rows in export order, got %+v", restored)
-	}
-	if restored[0].ChapterID != targetChapter.ID || restored[1].ChapterID != targetChapter.ID {
-		t.Fatalf("restore must rebind the current book chapter IDs, got %+v", restored)
 	}
 }

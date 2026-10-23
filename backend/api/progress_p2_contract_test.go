@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,7 +14,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"openreader/backend/engine"
 	"openreader/backend/models"
 )
 
@@ -310,162 +307,5 @@ func TestProgressEndpointsAreUserScoped(t *testing.T) {
 	}
 	if foreignCount != 0 {
 		t.Fatalf("foreign caller created %d progress rows", foreignCount)
-	}
-}
-
-func TestProgressSaveMirrorsExistingWebDAVDirectory(t *testing.T) {
-	tests := []struct {
-		name       string
-		regular    bool
-		legacyPath bool
-	}{
-		{name: "administrator top-level directory"},
-		{name: "regular user legacy directory", regular: true, legacyPath: true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			router, server := setupTestServer(t)
-			auth := authHeader(t, router)
-			user := lifecycleUser(t, server, "testuser")
-			root := server.webdavDir()
-			if tt.regular {
-				auth = registerLifecycleToken(t, router, "progressmember")
-				user = lifecycleUser(t, server, "progressmember")
-				root = filepath.Join(root, "users", engine.SafeFilename(user.Username))
-			}
-			progressDir := filepath.Join(root, "bookProgress")
-			if tt.legacyPath {
-				progressDir = filepath.Join(root, "legado", "bookProgress")
-			}
-			if err := os.MkdirAll(progressDir, 0o755); err != nil {
-				t.Fatal(err)
-			}
-			book, chapters := progressContractBook(t, server, user, "进度镜像", "镜像章节")
-
-			response := putProgressContract(t, router, auth, fmt.Sprintf(
-				`{"bookId":%d,"chapterId":%d,"chapterIndex":0,"offset":321,"chapterTitle":"镜像章节"}`,
-				book.ID, chapters[0].ID,
-			))
-			if response.Code != http.StatusOK {
-				t.Fatalf("save mirrored progress: expected 200, got %d: %s", response.Code, response.Body.String())
-			}
-
-			mirrorPath := filepath.Join(progressDir, engine.SafeBookFolderName(book.Title, book.Author)+".json")
-			data, err := os.ReadFile(mirrorPath)
-			if err != nil {
-				t.Fatalf("read progress mirror: %v", err)
-			}
-			var mirror struct {
-				Name            string `json:"name"`
-				Author          string `json:"author"`
-				BookURL         string `json:"bookUrl"`
-				DurChapterIndex int    `json:"durChapterIndex"`
-				DurChapterPos   int    `json:"durChapterPos"`
-				DurChapterTitle string `json:"durChapterTitle"`
-			}
-			if err := json.Unmarshal(data, &mirror); err != nil {
-				t.Fatalf("decode progress mirror: %v", err)
-			}
-			if mirror.Name != book.Title || mirror.Author != book.Author || mirror.BookURL != book.URL ||
-				mirror.DurChapterIndex != 0 || mirror.DurChapterPos != 321 || mirror.DurChapterTitle != chapters[0].Title {
-				t.Fatalf("unexpected progress mirror: %+v", mirror)
-			}
-		})
-	}
-}
-
-func TestProgressSaveDoesNotCreateOrCrossWebDAVRoots(t *testing.T) {
-	router, server := setupTestServer(t)
-	_ = authHeader(t, router)
-	auth := registerLifecycleToken(t, router, "disabledprogress")
-	user := lifecycleUser(t, server, "disabledprogress")
-	if err := server.db.Model(&models.User{}).Where("id = ?", user.ID).Update("can_access_webdav", false).Error; err != nil {
-		t.Fatal(err)
-	}
-	privateRoot := filepath.Join(server.webdavDir(), "users", engine.SafeFilename(user.Username))
-	progressDir := filepath.Join(privateRoot, "bookProgress")
-	if err := os.MkdirAll(progressDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	book, chapters := progressContractBook(t, server, user, "禁止镜像", "第一章")
-	response := putProgressContract(t, router, auth, fmt.Sprintf(
-		`{"bookId":%d,"chapterId":%d,"chapterIndex":0,"offset":9}`,
-		book.ID, chapters[0].ID,
-	))
-	if response.Code != http.StatusOK {
-		t.Fatalf("progress must save even without WebDAV permission: %d %s", response.Code, response.Body.String())
-	}
-	entries, err := os.ReadDir(progressDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(entries) != 0 {
-		t.Fatalf("disabled user wrote WebDAV progress files: %+v", entries)
-	}
-
-	var saved models.ReadingProgress
-	if err := server.db.Where("user_id = ? AND book_id = ?", user.ID, book.ID).First(&saved).Error; err != nil {
-		t.Fatalf("database progress must remain authoritative: %v", err)
-	}
-}
-
-func TestProgressSaveDoesNotCreateMissingWebDAVFeatureDirectory(t *testing.T) {
-	router, server := setupTestServer(t)
-	auth := authHeader(t, router)
-	user := lifecycleUser(t, server, "testuser")
-	book, chapters := progressContractBook(t, server, user, "无镜像目录", "第一章")
-	response := putProgressContract(t, router, auth, fmt.Sprintf(
-		`{"bookId":%d,"chapterId":%d,"chapterIndex":0,"offset":12}`,
-		book.ID, chapters[0].ID,
-	))
-	if response.Code != http.StatusOK {
-		t.Fatalf("save without WebDAV feature directory: %d %s", response.Code, response.Body.String())
-	}
-	for _, path := range []string{
-		filepath.Join(server.webdavDir(), "bookProgress"),
-		filepath.Join(server.webdavDir(), "legado", "bookProgress"),
-	} {
-		if _, err := os.Stat(path); !os.IsNotExist(err) {
-			t.Fatalf("progress save created missing WebDAV feature directory %q: %v", path, err)
-		}
-	}
-}
-
-func TestProgressMirrorRejectsSymlinkWithoutRollingBackDatabase(t *testing.T) {
-	router, server := setupTestServer(t)
-	auth := authHeader(t, router)
-	user := lifecycleUser(t, server, "testuser")
-	outside := t.TempDir()
-	if err := os.MkdirAll(server.webdavDir(), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Symlink(outside, filepath.Join(server.webdavDir(), "bookProgress")); err != nil {
-		t.Fatal(err)
-	}
-	book, chapters := progressContractBook(t, server, user, "符号链接镜像", "第一章")
-	response := putProgressContract(t, router, auth, fmt.Sprintf(
-		`{"bookId":%d,"chapterId":%d,"chapterIndex":0,"offset":64}`,
-		book.ID, chapters[0].ID,
-	))
-	if response.Code != http.StatusOK {
-		t.Fatalf("symlink mirror failure must not roll back progress: %d %s", response.Code, response.Body.String())
-	}
-	if response.Header().Get("X-OpenReader-Progress-WebDAV") != "failed" {
-		t.Fatalf("symlink mirror must expose a path-free failure marker, got %q", response.Header().Get("X-OpenReader-Progress-WebDAV"))
-	}
-	entries, err := os.ReadDir(outside)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(entries) != 0 {
-		t.Fatalf("progress mirror followed symlink outside its root: %+v", entries)
-	}
-	var saved models.ReadingProgress
-	if err := server.db.Where("user_id = ? AND book_id = ?", user.ID, book.ID).First(&saved).Error; err != nil {
-		t.Fatalf("database progress was rolled back after mirror failure: %v", err)
-	}
-	if saved.Offset != 64 {
-		t.Fatalf("database progress changed after mirror failure: %+v", saved)
 	}
 }

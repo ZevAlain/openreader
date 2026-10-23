@@ -1,13 +1,10 @@
 package api
 
 import (
-	"archive/zip"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -162,186 +159,6 @@ func TestBookGroupsMixedReorderIsCompleteAtomicAndAppendsNewCategories(t *testin
 	}
 }
 
-func TestBookGroupBackupRoundTripAndReaderDevMaskRestore(t *testing.T) {
-	sourceRouter, sourceServer := setupTestServer(t)
-	sourceAuth := authHeader(t, sourceRouter)
-	var sourceUser models.User
-	if err := sourceServer.db.Where("username = ?", "testuser").First(&sourceUser).Error; err != nil {
-		t.Fatal(err)
-	}
-	categoryA := models.Category{UserID: sourceUser.ID, Name: "备份甲", Show: true, SortOrder: 10}
-	categoryB := models.Category{UserID: sourceUser.ID, Name: "备份乙", Show: false, SortOrder: 20}
-	if err := sourceServer.db.Create(&categoryA).Error; err != nil {
-		t.Fatal(err)
-	}
-	if err := sourceServer.db.Create(&categoryB).Error; err != nil {
-		t.Fatal(err)
-	}
-	book := models.Book{UserID: sourceUser.ID, Title: "分组备份书", URL: "https://backup.example/book", Type: 0}
-	if err := sourceServer.db.Create(&book).Error; err != nil {
-		t.Fatal(err)
-	}
-	for _, categoryID := range []uint{categoryA.ID, categoryB.ID} {
-		if err := sourceServer.db.Create(&models.BookCategory{UserID: sourceUser.ID, BookID: book.ID, CategoryID: categoryID}).Error; err != nil {
-			t.Fatal(err)
-		}
-	}
-	if response := bookGroupContractRequest(t, sourceRouter, sourceAuth, http.MethodPut, "/api/book-groups/audio", `{"name":"有声书","show":false}`); response.Code != http.StatusOK {
-		t.Fatalf("prepare built-in backup state: %d %s", response.Code, response.Body.String())
-	}
-	current := getBookGroupContractRows(t, sourceRouter, sourceAuth)
-	keys := make([]string, 0, len(current))
-	for _, row := range current {
-		keys = append(keys, row.Key)
-	}
-	keys = append(keys[4:], keys[:4]...)
-	if response := bookGroupContractRequest(t, sourceRouter, sourceAuth, http.MethodPut, "/api/book-groups/reorder", `{"keys":["`+strings.Join(keys, `","`)+`"]}`); response.Code != http.StatusOK {
-		t.Fatalf("prepare backup order: %d %s", response.Code, response.Body.String())
-	}
-
-	backupPath, err := sourceServer.backupSvc.RunNowForUser(sourceUser.ID, sourceUser.Username)
-	if err != nil {
-		t.Fatal(err)
-	}
-	entries := readBookGroupBackupEntries(t, backupPath)
-	bookGroupJSON, ok := entries["bookGroup.json"]
-	if !ok {
-		t.Fatalf("backup missing bookGroup.json; entries=%v", bookGroupBackupEntryKeys(entries))
-	}
-	var exportedGroups []struct {
-		GroupID    int    `json:"groupId"`
-		GroupName  string `json:"groupName"`
-		Order      int    `json:"order"`
-		Show       bool   `json:"show"`
-		CategoryID *uint  `json:"categoryId"`
-		Key        string `json:"key"`
-	}
-	if err := json.Unmarshal(bookGroupJSON, &exportedGroups); err != nil {
-		t.Fatal(err)
-	}
-	if len(exportedGroups) != 6 {
-		t.Fatalf("unexpected exported groups: %+v", exportedGroups)
-	}
-	maskByName := map[string]int{}
-	for _, row := range exportedGroups {
-		if row.GroupID > 0 {
-			if row.GroupID&(row.GroupID-1) != 0 || row.CategoryID == nil || row.Key == "" {
-				t.Fatalf("custom backup group is not a portable power-of-two mapping: %+v", row)
-			}
-			maskByName[row.GroupName] = row.GroupID
-		}
-	}
-	var exportedBooks []struct {
-		Title         string   `json:"title"`
-		Group         int      `json:"group"`
-		CategoryNames []string `json:"categoryNames"`
-	}
-	if err := json.Unmarshal(entries["bookshelf.json"], &exportedBooks); err != nil {
-		t.Fatal(err)
-	}
-	if len(exportedBooks) != 1 || exportedBooks[0].Group != maskByName["备份甲"]|maskByName["备份乙"] || len(exportedBooks[0].CategoryNames) != 2 {
-		t.Fatalf("bookshelf/group mapping does not match bookGroup.json: books=%+v masks=%+v", exportedBooks, maskByName)
-	}
-
-	archive, err := os.ReadFile(backupPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	destinationRouter, destinationServer := setupTestServer(t)
-	destinationAuth := authHeader(t, destinationRouter)
-	var destinationUser models.User
-	if err := destinationServer.db.Where("username = ?", "testuser").First(&destinationUser).Error; err != nil {
-		t.Fatal(err)
-	}
-	result, err := destinationServer.restoreLegadoBackupData(archive, destinationUser.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if restoreResultCount(result, "bookGroups") != 6 {
-		t.Fatalf("bookGroups restore count=%#v result=%+v", result["bookGroups"], result)
-	}
-	restoredGroups := getBookGroupContractRows(t, destinationRouter, destinationAuth)
-	if restoredGroups[0].Name != "备份甲" || restoredGroups[1].Name != "备份乙" {
-		t.Fatalf("unified order was not restored: %+v", restoredGroups)
-	}
-	audio := findBookGroupContractRow(t, restoredGroups, "builtin:audio")
-	if audio.Name != "有声书" || audio.Show {
-		t.Fatalf("built-in state was not restored: %+v", audio)
-	}
-	assertRestoredBookCategoryNames(t, destinationServer, destinationUser.ID, "分组备份书", []string{"备份甲", "备份乙"})
-
-	readerDevArchive := makeBackupRestoreZIP(t, map[string]string{
-		"bookGroup.json": `[
-			{"groupId":-1,"groupName":"全部藏书","order":3,"show":false},
-			{"groupId":-2,"groupName":"本地","order":4,"show":true},
-			{"groupId":-3,"groupName":"音频","order":5,"show":true},
-			{"groupId":-4,"groupName":"未分组","order":6,"show":true},
-			{"groupId":1,"groupName":"上游甲","order":1,"show":true},
-			{"groupId":2,"groupName":"上游乙","order":2,"show":false}
-		]`,
-		"bookshelf.json": `[{"name":"上游分组书","bookUrl":"https://reader-dev.example/book","group":3}]`,
-	})
-	readerDevRouter, readerDevServer := setupTestServer(t)
-	readerDevAuth := authHeader(t, readerDevRouter)
-	var readerDevUser models.User
-	if err := readerDevServer.db.Where("username = ?", "testuser").First(&readerDevUser).Error; err != nil {
-		t.Fatal(err)
-	}
-	if _, err := readerDevServer.restoreLegadoBackupData(readerDevArchive, readerDevUser.ID); err != nil {
-		t.Fatal(err)
-	}
-	readerDevGroups := getBookGroupContractRows(t, readerDevRouter, readerDevAuth)
-	assertBookGroupContractKeys(t, readerDevGroups, []string{
-		"category:" + strconv.FormatUint(uint64(findCategoryByName(t, readerDevServer, readerDevUser.ID, "上游甲").ID), 10),
-		"category:" + strconv.FormatUint(uint64(findCategoryByName(t, readerDevServer, readerDevUser.ID, "上游乙").ID), 10),
-		"builtin:all", "builtin:local", "builtin:audio", "builtin:ungrouped",
-	})
-	if findBookGroupContractRow(t, readerDevGroups, "builtin:all").Name != "全部藏书" || findBookGroupContractRow(t, readerDevGroups, "builtin:all").Show {
-		t.Fatalf("reader-dev built-in state was not restored: %+v", readerDevGroups)
-	}
-	hiddenReaderDevCategory := findCategoryByName(t, readerDevServer, readerDevUser.ID, "上游乙")
-	if hiddenReaderDevCategory.Show {
-		t.Fatalf("reader-dev hidden custom group was restored as visible: %+v", hiddenReaderDevCategory)
-	}
-	hiddenReaderDevGroup := findBookGroupContractRow(
-		t,
-		readerDevGroups,
-		"category:"+strconv.FormatUint(uint64(hiddenReaderDevCategory.ID), 10),
-	)
-	if hiddenReaderDevGroup.Show {
-		t.Fatalf("reader-dev hidden custom projection was restored as visible: %+v", hiddenReaderDevGroup)
-	}
-	assertRestoredBookCategoryNames(t, readerDevServer, readerDevUser.ID, "上游分组书", []string{"上游甲", "上游乙"})
-}
-
-func TestCategoriesOnlyRestorePreservesExplicitHiddenAndDefaultsMissingShowToVisible(t *testing.T) {
-	archive := makeBackupRestoreZIP(t, map[string]string{
-		"categories.json": `[
-			{"name":"旧隐藏分组","show":false,"sortOrder":10},
-			{"name":"旧默认分组","sortOrder":20}
-		]`,
-	})
-	router, server := setupTestServer(t)
-	_ = authHeader(t, router)
-	var user models.User
-	if err := server.db.Where("username = ?", "testuser").First(&user).Error; err != nil {
-		t.Fatal(err)
-	}
-	result, err := server.restoreLegadoBackupData(archive, user.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if restoreResultCount(result, "categories") != 2 {
-		t.Fatalf("categories-only restore count=%#v result=%+v", result["categories"], result)
-	}
-	if hidden := findCategoryByName(t, server, user.ID, "旧隐藏分组"); hidden.Show {
-		t.Fatalf("explicit categories.json show=false was lost: %+v", hidden)
-	}
-	if visible := findCategoryByName(t, server, user.ID, "旧默认分组"); !visible.Show {
-		t.Fatalf("missing categories.json show should default visible: %+v", visible)
-	}
-}
-
 func TestBookGroupPreferencesAreDeletedWithUserData(t *testing.T) {
 	router, server := setupTestServer(t)
 	_ = authHeader(t, router)
@@ -363,12 +180,6 @@ func TestBookGroupPreferencesAreDeletedWithUserData(t *testing.T) {
 	}
 	if after != 0 {
 		t.Fatalf("deleted user left %d book group preference rows", after)
-	}
-}
-
-func TestPortableBackupRecognizesBookGroupLogicalEntry(t *testing.T) {
-	if !portableLogicalEntryName("bookgroup.json") {
-		t.Fatal("portable backup allowlist rejected bookGroup.json after name normalization")
 	}
 }
 
@@ -439,64 +250,4 @@ func findBookGroupContractRow(t *testing.T, rows []bookGroupContractRow, key str
 	}
 	t.Fatalf("book group %s not found in %+v", key, rows)
 	return bookGroupContractRow{}
-}
-
-func readBookGroupBackupEntries(t *testing.T, path string) map[string][]byte {
-	t.Helper()
-	reader, err := zip.OpenReader(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer reader.Close()
-	entries := make(map[string][]byte, len(reader.File))
-	for _, file := range reader.File {
-		rc, err := file.Open()
-		if err != nil {
-			t.Fatal(err)
-		}
-		data, err := io.ReadAll(rc)
-		_ = rc.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-		entries[file.Name] = data
-	}
-	return entries
-}
-
-func bookGroupBackupEntryKeys(values map[string][]byte) []string {
-	keys := make([]string, 0, len(values))
-	for key := range values {
-		keys = append(keys, key)
-	}
-	return keys
-}
-
-func assertRestoredBookCategoryNames(t *testing.T, server *Server, userID uint, title string, expected []string) {
-	t.Helper()
-	var book models.Book
-	if err := server.db.Where("user_id = ? AND title = ?", userID, title).First(&book).Error; err != nil {
-		t.Fatal(err)
-	}
-	var names []string
-	if err := server.db.Model(&models.Category{}).
-		Select("categories.name").
-		Joins("JOIN book_categories ON book_categories.category_id = categories.id").
-		Where("book_categories.user_id = ? AND book_categories.book_id = ?", userID, book.ID).
-		Order("categories.sort_order asc, categories.id asc").
-		Pluck("categories.name", &names).Error; err != nil {
-		t.Fatal(err)
-	}
-	if strings.Join(names, "|") != strings.Join(expected, "|") {
-		t.Fatalf("restored categories for %s=%v, want %v", title, names, expected)
-	}
-}
-
-func findCategoryByName(t *testing.T, server *Server, userID uint, name string) models.Category {
-	t.Helper()
-	var category models.Category
-	if err := server.db.Where("user_id = ? AND name = ?", userID, name).First(&category).Error; err != nil {
-		t.Fatal(err)
-	}
-	return category
 }

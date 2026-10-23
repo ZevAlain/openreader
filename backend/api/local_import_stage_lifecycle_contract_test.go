@@ -32,8 +32,6 @@ func stageLifecycleRoutes() []stageLifecycleRoute {
 		{"txt-alias-confirm", "/api/imports/txt", true, false},
 		{"local-preview", "/api/local-store/import-preview", false, true},
 		{"local-confirm", "/api/local-store/import", false, false},
-		{"webdav-preview", "/api/webdav/import-preview", false, true},
-		{"webdav-confirm", "/api/webdav/import", false, false},
 	}
 }
 
@@ -49,9 +47,6 @@ func stageLifecycleRequest(t *testing.T, server *Server, route stageLifecycleRou
 	body := `{"items":[{"path":"original.txt","importToken":"` + token + `"}]}`
 	if token == "" {
 		root := server.cfg.LocalStoreDir
-		if strings.HasPrefix(route.name, "webdav") {
-			root = server.webdavDir()
-		}
 		if err := os.MkdirAll(root, 0o755); err != nil {
 			t.Fatal(err)
 		}

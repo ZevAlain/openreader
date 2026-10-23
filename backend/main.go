@@ -155,25 +155,15 @@ func cors(cfg config.Config) gin.HandlerFunc {
 		if origin != "*" {
 			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		}
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Depth, Destination, Overwrite, Timeout, Lock-Token, If")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS, PROPFIND, MKCOL, MOVE, COPY, LOCK, UNLOCK")
-		c.Writer.Header().Set("Access-Control-Expose-Headers", "DAV, Allow, MS-Author-Via, Lock-Token, Content-Length")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 
 		if c.Request.Method == http.MethodOptions {
-			if isWebDAVProtocolPath(c.Request.URL.Path) {
-				c.Next()
-				return
-			}
 			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
 		c.Next()
 	}
-}
-
-func isWebDAVProtocolPath(path string) bool {
-	return path == "/webdav" || strings.HasPrefix(path, "/webdav/") ||
-		path == "/reader3/webdav" || strings.HasPrefix(path, "/reader3/webdav/")
 }
 
 func serveFrontend(router *gin.Engine, publicDir string) {
@@ -256,7 +246,7 @@ func frontendPublicFilename(requestPath string) (string, bool) {
 	}
 	rootSegment, _, _ := strings.Cut(name, "/")
 	switch rootSegment {
-	case "api", "ws", "webdav", "reader3", "uploads", "assets":
+	case "api", "ws", "uploads", "assets":
 		return "", false
 	}
 	return name, true

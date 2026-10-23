@@ -46,23 +46,16 @@ try {
     assert.equal(response.status, 200)
     const { token } = await response.json()
     assert.ok(token)
-    accounts.push({ username, headers: { Authorization: `Bearer ${token}` }, basic: {
-      Authorization: `Basic ${Buffer.from(`${username}:disposable-read-contract-pass`).toString('base64')}`,
-    } })
+    accounts.push({ username, headers: { Authorization: `Bearer ${token}` } })
   }
   for (const [index, user] of accounts.entries()) {
-    const davRoot = index === 0 ? join(data, 'webdav') : join(data, 'webdav', 'users', user.username)
     const localRoot = index === 0 ? local : join(local, 'users', user.username)
-    // REST trims the whole path's outer whitespace; raw DAV preserves it.
     const localName = ' 中文 file.txt'
     const payload = `0123456789-${user.username}`
-    for (const [prefix, headers] of [['/webdav', user.headers], ['/reader3/webdav', user.basic]]) {
-      const root = await req(`${prefix}/`, { method: 'PROPFIND', headers: { ...headers, Depth: '0' } })
-      assert.equal(root.status, 207)
-    }
     const lazyLocal = await req('/api/local-store', { headers: user.headers })
     assert.equal(lazyLocal.status, 200)
-    for (const root of [davRoot, localRoot]) {
+    {
+      const root = localRoot
       await mkdir(join(root, 'readcase', 'A-dir', 'deep'), { recursive: true })
       await mkdir(join(root, 'readcase', 'empty'))
       await mkdir(join(root, 'readcase', '.hidden'))
@@ -72,35 +65,6 @@ try {
       await writeFile(join(root, 'readcase', 'z.txt'), payload)
       await writeFile(join(root, 'readcase', '000.txt'), payload)
       await chmod(join(root, 'readcase', '000.txt'), 0)
-    }
-    for (const prefix of ['/webdav', '/reader3/webdav']) {
-      for (const headers of [user.headers, user.basic]) {
-        for (const depth of ['0', '1', 'infinity']) {
-          const response = await req(`${prefix}/readcase`, { method: 'PROPFIND', headers: { ...headers, Depth: depth } })
-          assert.equal(response.status, 207)
-          const xml = await response.text()
-          assert.ok(xml.includes('DAV:'))
-          assert.equal(xml.includes('z.txt'), depth !== '0')
-          assert.ok(!xml.includes('child.txt'), 'DAV must not recurse')
-          if (depth !== '0') assert.ok(xml.includes('000.txt'), '000 stat must not read content')
-        }
-        const directory = await req(`${prefix}/readcase`, { headers })
-        assert.equal(directory.status, prefix === '/webdav' ? 207 : 405)
-        const encoded = encodeURIComponent(' 中文 file.txt ')
-        const file = `${prefix}/readcase/${encoded}`
-        const normal = await req(file, { headers })
-        assert.equal(normal.status, 200)
-        assert.equal(await normal.text(), payload)
-        const range = await req(file, { headers: { ...headers, Range: 'bytes=1-4' } })
-        assert.equal(range.status, 206)
-        assert.equal(await range.text(), '1234')
-        const conditional = await req(file, { headers: { ...headers, 'If-Modified-Since': normal.headers.get('last-modified') } })
-        assert.equal(conditional.status, 304)
-        const invalid = await req(file, { headers: { ...headers, Range: 'bytes=10000-' } })
-        assert.equal(invalid.status, 416)
-        const missing = await req(`${prefix}/readcase/missing`, { headers })
-        assert.equal(missing.status, 404)
-      }
     }
     for (const recursive of ['0', '1', 'true']) {
       const response = await req(`/api/local-store?path=readcase&recursive=${recursive}`, { headers: user.headers })
@@ -126,22 +90,17 @@ try {
     assert.equal(missing.status, 404)
     assert.deepEqual(await missing.json(), { error: 'local store path not found' })
     await assert.rejects(stat(join(localRoot, 'readcase', 'missing')), { code: 'ENOENT' })
-    for (const root of [davRoot, localRoot]) {
-      const outside = join(owned, `outside-${index}-${root === localRoot ? 'local' : 'dav'}.txt`)
+    {
+      const outside = join(owned, `outside-${user.username}-local.txt`)
       await writeFile(outside, 'foreign-secret-bytes')
-      await symlink(outside, join(root, 'readcase', 'unsafe-link'))
-      assert.equal((await stat(join(root, 'readcase', '000.txt'))).mode & 0o777, 0)
+      await symlink(outside, join(localRoot, 'readcase', 'unsafe-link'))
+      assert.equal((await stat(join(localRoot, 'readcase', '000.txt'))).mode & 0o777, 0)
       assert.equal(await readFile(outside, 'utf8'), 'foreign-secret-bytes')
-    }
-    for (const prefix of ['/webdav', '/reader3/webdav']) {
-      const response = await req(`${prefix}/readcase`, { method: 'PROPFIND', headers: user.basic })
-      assert.equal(response.status, 403)
-      assert.equal(await response.text(), '')
     }
     const safeList = await req('/api/local-store?path=readcase&recursive=1', { headers: user.headers })
     assert.equal(safeList.status, 200)
     assert.ok(!(await safeList.json()).items.some(item => item.name === 'unsafe-link'))
-    for (const [source, root] of [['local-store', localRoot], ['webdav', davRoot]]) {
+    for (const [source, root] of [['local-store', localRoot]]) {
       await mkdir(join(root, 'importcase', '.hidden'), { recursive: true })
       await mkdir(join(root, 'importcase', 'empty'))
       const original = `第一章 原始\n原始正文-${user.username}-${source}`
@@ -150,7 +109,7 @@ try {
       await writeFile(join(root, 'importcase', 'skip.bin'), 'not a book')
       await writeFile(join(root, 'importcase', '000.txt'), original)
       await chmod(join(root, 'importcase', '000.txt'), 0)
-      const outside = join(owned, `import-bait-${index}-${source}.txt`)
+      const outside = join(owned, `import-bait-${user.username}-${source}.txt`)
       await writeFile(outside, 'foreign-secret-bytes')
       await symlink(outside, join(root, 'importcase', 'escape.txt'))
       const json = { ...user.headers, 'Content-Type': 'application/json' }
@@ -162,7 +121,7 @@ try {
       const selected = items.find(item => item.path === 'importcase/A.TXT')
       assert.ok(selected.book && selected.importToken)
       assert.ok(items[0].book && items[0].importToken, 'import must keep hidden books')
-      if (process.getuid?.() !== 0) assert.equal(items[1].error, `failed to read ${source === 'webdav' ? 'WebDAV' : 'local store'} import`)
+      if (process.getuid?.() !== 0) assert.equal(items[1].error, 'failed to read local store import')
       assert.equal((await stat(join(root, 'importcase', '000.txt'))).mode & 0o777, 0)
       await assert.rejects(stat(join(root, 'missing')), { code: 'ENOENT' })
       assert.equal(await readFile(outside, 'utf8'), 'foreign-secret-bytes')
@@ -188,12 +147,11 @@ try {
       }
       console.log(`PASS ${user.username}/${source}: nested/hidden/sort/dedup/stable-link/nonbook/000/missing, removed-source token reparse/confirm, exact Reader content and cross-user isolation`)
     }
-    console.log(`PASS ${user.username}: dual-prefix Basic/Bearer, Depth, directory GET, Unicode/space, Range/304/416, 000 metadata, recursive/hidden/sorted, missing404/no-write, unsafe policies and private bytes`)
+    console.log(`PASS ${user.username}: Unicode/space, Range/304/416, 000 metadata, recursive/hidden/sorted, missing404/no-write, unsafe policies and private bytes`)
   }
-  // Existing protocol and LocalStore adjacent workflows on this owned fresh instance.
-  await exec('sh', ['scripts/smoke/webdav-protocol-contract.sh'], { cwd: repo, env: { ...process.env, TARGET_URL: base } })
+  // Existing LocalStore adjacent workflow on this owned fresh instance.
   await exec('node', ['scripts/smoke/local-store-directory-lifecycle-contract.mjs'], { cwd: repo, env: { ...process.env, TARGET_URL: base } })
-  console.log('PASS actual Basic/curl DAV protocol and LocalStore directory/upload HTTP adjacency')
+  console.log('PASS LocalStore directory/upload HTTP adjacency')
 } catch (error) {
   error.message += `\nOwned diagnostic server output:\n${output}`
   throw error

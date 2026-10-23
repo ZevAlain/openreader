@@ -101,9 +101,6 @@ func durableImportRequest(t *testing.T, server *Server, route stageLifecycleRout
 	}
 	if !staged {
 		root := server.cfg.LocalStoreDir
-		if strings.HasPrefix(route.name, "webdav") {
-			root = server.webdavDir()
-		}
 		if err := os.MkdirAll(root, 0o755); err != nil {
 			t.Fatal(err)
 		}

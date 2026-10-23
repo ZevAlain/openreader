@@ -50,7 +50,7 @@ func TestAutoMigrateAddsAuthenticatedSessionStateWithoutRewritingHistoricalUser(
 		t.Fatal(err)
 	}
 	if user.PasswordHash != "historical-hash" || user.Role != "user" || user.BookLimit != 12 || user.SourceLimit != 34 ||
-		!user.CanEditSources || user.CanAccessStore || user.CanAccessWebDAV != nil || user.AuthVersion != 1 ||
+		!user.CanEditSources || user.CanAccessStore || user.AuthVersion != 1 ||
 		!user.LastActiveAt.Equal(lastActive) || !user.CreatedAt.Equal(created) || !user.UpdatedAt.Equal(created) {
 		t.Fatalf("historical user changed during session migration: %+v", user)
 	}

@@ -57,22 +57,20 @@ func TestUserManagementMatchesReaderDevNewAccountContractWithoutBreakingLegacyLo
 	created := adminContractRequest(router, http.MethodPost, "/api/admin/users", `{
 		"username":"managed5",
 		"password":"password8",
-		"canAccessStore":false,
-		"canAccessWebdav":true
+		"canAccessStore":false
 	}`, adminAuth)
 	if created.Code != http.StatusCreated {
 		t.Fatalf("create managed user: %d %s", created.Code, created.Body.String())
 	}
 	var managed struct {
-		ID              uint  `json:"id"`
-		CanAccessStore  bool  `json:"canAccessStore"`
-		CanAccessWebdav *bool `json:"canAccessWebdav"`
+		ID             uint `json:"id"`
+		CanAccessStore bool `json:"canAccessStore"`
 	}
 	if err := json.Unmarshal(created.Body.Bytes(), &managed); err != nil {
 		t.Fatalf("decode managed user: %v", err)
 	}
-	if managed.ID == 0 || managed.CanAccessStore || managed.CanAccessWebdav == nil || !*managed.CanAccessWebdav {
-		t.Fatalf("independent storage permissions were not persisted: %+v", managed)
+	if managed.ID == 0 || managed.CanAccessStore {
+		t.Fatalf("managed storage permission was not persisted: %+v", managed)
 	}
 
 	shortReset := adminContractRequest(router, http.MethodPut, "/api/admin/users/"+strconv.FormatUint(uint64(managed.ID), 10)+"/password", `{"password":"short77"}`, adminAuth)

@@ -61,7 +61,7 @@ func (rl *RateLimiter) Middleware() gin.HandlerFunc {
 			strings.HasPrefix(path, "/assets/") ||
 			strings.HasPrefix(path, "/uploads/") ||
 			strings.HasPrefix(path, "/ws/") ||
-			(!strings.HasPrefix(path, "/api/") && !strings.HasPrefix(path, "/webdav/")) {
+			!strings.HasPrefix(path, "/api/") {
 			c.Next()
 			return
 		}

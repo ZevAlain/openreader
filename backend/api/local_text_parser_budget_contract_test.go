@@ -67,7 +67,6 @@ func TestStorageTXTPreviewsShareParserBudgetAndRetainScopedStages(t *testing.T) 
 		endpoint string
 	}{
 		{name: "LocalStore", root: server.cfg.LocalStoreDir, endpoint: "/api/local-store/import-preview"},
-		{name: "WebDAV", root: filepath.Join(server.cfg.DataDir, "webdav"), endpoint: "/api/webdav/import-preview"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if err := os.MkdirAll(test.root, 0o755); err != nil {

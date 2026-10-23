@@ -63,7 +63,6 @@ async function assertStaleAcrossEntrypoints(token) {
     body: { value: { fontSize: 99 } },
     expected: 401,
   })
-  await request('/webdav/', { token, expected: 401 })
   await request(`/ws/sync?token=${encodeURIComponent(token)}`, { expected: 401 })
 }
 
@@ -80,7 +79,6 @@ async function main() {
   await request('/api/auth/logout', { method: 'POST', token: member.token, expected: 401 })
   await request('/api/me', { token: member.token, expected: 401 })
   await request('/api/me', { token: secondLogin.token, expected: 200 })
-  await request('/webdav/', { token: member.token, expected: 401 })
 
   await request(`/api/admin/users/${member.user.id}/password`, {
     method: 'PUT',
@@ -101,7 +99,7 @@ async function main() {
   })
   await assertStaleAcrossEntrypoints(deleted.token)
 
-  console.log('authenticated-session-lifecycle-real-api: ok dual-login=true logout=204/401 password-reset=401 delete=401 rest=true webdav=true websocket=true')
+  console.log('authenticated-session-lifecycle-real-api: ok dual-login=true logout=204/401 password-reset=401 delete=401 rest=true websocket=true')
 }
 
 main().catch((error) => {

@@ -47,19 +47,18 @@ func (s *Server) listUsers(c *gin.Context) {
 	}
 
 	type userSummary struct {
-		ID              uint      `json:"id"`
-		Username        string    `json:"username"`
-		Role            string    `json:"role"`
-		BookLimit       int       `json:"bookLimit"`
-		SourceLimit     int       `json:"sourceLimit"`
-		CanEditSources  bool      `json:"canEditSources"`
-		CanAccessStore  bool      `json:"canAccessStore"`
-		CanAccessWebDAV bool      `json:"canAccessWebdav"`
-		BookCount       int64     `json:"bookCount"`
-		SourceCount     int64     `json:"sourceCount"`
-		LastLoginAt     time.Time `json:"lastLoginAt"`
-		LastActiveAt    time.Time `json:"lastActiveAt"`
-		CreatedAt       time.Time `json:"createdAt"`
+		ID             uint      `json:"id"`
+		Username       string    `json:"username"`
+		Role           string    `json:"role"`
+		BookLimit      int       `json:"bookLimit"`
+		SourceLimit    int       `json:"sourceLimit"`
+		CanEditSources bool      `json:"canEditSources"`
+		CanAccessStore bool      `json:"canAccessStore"`
+		BookCount      int64     `json:"bookCount"`
+		SourceCount    int64     `json:"sourceCount"`
+		LastLoginAt    time.Time `json:"lastLoginAt"`
+		LastActiveAt   time.Time `json:"lastActiveAt"`
+		CreatedAt      time.Time `json:"createdAt"`
 	}
 
 	userIDs := make([]uint, 0, len(users))
@@ -77,19 +76,18 @@ func (s *Server) listUsers(c *gin.Context) {
 		var bookCount int64
 		_ = s.db.Model(&models.Book{}).Where("user_id = ?", u.ID).Count(&bookCount).Error
 		results = append(results, userSummary{
-			ID:              u.ID,
-			Username:        u.Username,
-			Role:            u.Role,
-			BookLimit:       u.BookLimit,
-			SourceLimit:     u.SourceLimit,
-			CanEditSources:  u.CanEditSources,
-			CanAccessStore:  u.CanAccessStore,
-			CanAccessWebDAV: effectiveWebDAVAccess(u),
-			BookCount:       bookCount,
-			SourceCount:     sourceCounts[u.ID],
-			LastLoginAt:     u.LastActiveAt,
-			LastActiveAt:    u.LastActiveAt,
-			CreatedAt:       u.CreatedAt,
+			ID:             u.ID,
+			Username:       u.Username,
+			Role:           u.Role,
+			BookLimit:      u.BookLimit,
+			SourceLimit:    u.SourceLimit,
+			CanEditSources: u.CanEditSources,
+			CanAccessStore: u.CanAccessStore,
+			BookCount:      bookCount,
+			SourceCount:    sourceCounts[u.ID],
+			LastLoginAt:    u.LastActiveAt,
+			LastActiveAt:   u.LastActiveAt,
+			CreatedAt:      u.CreatedAt,
 		})
 	}
 	c.JSON(http.StatusOK, results)
@@ -212,14 +210,13 @@ func uniqueAdminUserIDs(userIDs []uint) []uint {
 }
 
 type createAdminUserRequest struct {
-	Username        string `json:"username"`
-	Password        string `json:"password"`
-	Role            string `json:"role"`
-	BookLimit       int    `json:"bookLimit"`
-	SourceLimit     int    `json:"sourceLimit"`
-	CanEditSources  *bool  `json:"canEditSources"`
-	CanAccessStore  *bool  `json:"canAccessStore"`
-	CanAccessWebDAV *bool  `json:"canAccessWebdav"`
+	Username       string `json:"username"`
+	Password       string `json:"password"`
+	Role           string `json:"role"`
+	BookLimit      int    `json:"bookLimit"`
+	SourceLimit    int    `json:"sourceLimit"`
+	CanEditSources *bool  `json:"canEditSources"`
+	CanAccessStore *bool  `json:"canAccessStore"`
 }
 
 func (s *Server) createUser(c *gin.Context) {
@@ -259,25 +256,21 @@ func (s *Server) createUser(c *gin.Context) {
 	}
 
 	user := models.User{
-		Username:        username,
-		PasswordHash:    string(hash),
-		Role:            "user",
-		BookLimit:       req.BookLimit,
-		SourceLimit:     req.SourceLimit,
-		CanEditSources:  true,
-		CanAccessStore:  true,
-		CanAccessWebDAV: boolValue(true),
-		AuthVersion:     1,
-		LastActiveAt:    time.Now(),
+		Username:       username,
+		PasswordHash:   string(hash),
+		Role:           "user",
+		BookLimit:      req.BookLimit,
+		SourceLimit:    req.SourceLimit,
+		CanEditSources: true,
+		CanAccessStore: true,
+		AuthVersion:    1,
+		LastActiveAt:   time.Now(),
 	}
 	if req.CanEditSources != nil {
 		user.CanEditSources = *req.CanEditSources
 	}
 	if req.CanAccessStore != nil {
 		user.CanAccessStore = *req.CanAccessStore
-	}
-	if req.CanAccessWebDAV != nil {
-		user.CanAccessWebDAV = boolValue(*req.CanAccessWebDAV)
 	}
 
 	if err := s.db.Transaction(func(tx *gorm.DB) error {
@@ -290,9 +283,6 @@ func (s *Server) createUser(c *gin.Context) {
 		}
 		if req.CanAccessStore != nil {
 			updates["can_access_store"] = *req.CanAccessStore
-		}
-		if req.CanAccessWebDAV != nil {
-			updates["can_access_webdav"] = *req.CanAccessWebDAV
 		}
 		if len(updates) == 0 {
 			return nil
@@ -307,11 +297,10 @@ func (s *Server) createUser(c *gin.Context) {
 }
 
 type updateUserRequest struct {
-	BookLimit       *int  `json:"bookLimit"`
-	SourceLimit     *int  `json:"sourceLimit"`
-	CanEditSources  *bool `json:"canEditSources"`
-	CanAccessStore  *bool `json:"canAccessStore"`
-	CanAccessWebDAV *bool `json:"canAccessWebdav"`
+	BookLimit      *int  `json:"bookLimit"`
+	SourceLimit    *int  `json:"sourceLimit"`
+	CanEditSources *bool `json:"canEditSources"`
+	CanAccessStore *bool `json:"canAccessStore"`
 }
 
 func (s *Server) updateUser(c *gin.Context) {
@@ -360,9 +349,6 @@ func (s *Server) updateUser(c *gin.Context) {
 	if req.CanAccessStore != nil {
 		updates["can_access_store"] = *req.CanAccessStore
 	}
-	if req.CanAccessWebDAV != nil {
-		updates["can_access_webdav"] = *req.CanAccessWebDAV
-	}
 	if len(updates) == 0 {
 		badRequest(c, "no user fields selected")
 		return
@@ -377,9 +363,7 @@ func (s *Server) updateUser(c *gin.Context) {
 		return
 	}
 	s.broadcastUsersUpdate("update", []uint{user.ID})
-	response := user
-	response.CanAccessWebDAV = boolValue(effectiveWebDAVAccess(user))
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, user)
 }
 
 type resetUserPasswordRequest struct {

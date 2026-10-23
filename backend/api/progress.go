@@ -94,9 +94,6 @@ func (s *Server) updateProgress(c *gin.Context) {
 		c.JSON(http.StatusOK, result.Progress)
 		return
 	}
-	if result.MirrorStatus == readingprogress.MirrorFailed {
-		c.Header("X-OpenReader-Progress-WebDAV", "failed")
-	}
 
 	_ = s.hub.Broadcast(userID, nil, gin.H{
 		"type":    "progress_update",

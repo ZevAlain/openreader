@@ -69,23 +69,4 @@ func TestImportAndStorageUploadsRejectOversizedInputBeforeWriting(t *testing.T) 
 		t.Fatalf("oversized local-store upload must preserve the previous destination, data=%q err=%v", data, err)
 	}
 
-	webdavPath := filepath.Join(server.cfg.DataDir, "webdav", "oversized.txt")
-	if err := os.MkdirAll(filepath.Dir(webdavPath), 0o755); err != nil {
-		t.Fatalf("create WebDAV root: %v", err)
-	}
-	if err := os.WriteFile(webdavPath, []byte("previous WebDAV file"), 0o644); err != nil {
-		t.Fatalf("write existing WebDAV file: %v", err)
-	}
-	webdav := httptest.NewRequest(http.MethodPut, "/webdav/oversized.txt", bytes.NewReader(overLimit))
-	webdav.ContentLength = -1 // Exercise the bounded streaming path, not only the Content-Length fast path.
-	webdav.Header.Set("Authorization", auth)
-	webdav.Header.Set("Content-Type", "application/octet-stream")
-	webdavWriter := httptest.NewRecorder()
-	router.ServeHTTP(webdavWriter, webdav)
-	if webdavWriter.Code != http.StatusRequestEntityTooLarge {
-		t.Fatalf("WebDAV upload: expected 413, got %d: %s", webdavWriter.Code, webdavWriter.Body.String())
-	}
-	if data, err := os.ReadFile(webdavPath); err != nil || string(data) != "previous WebDAV file" {
-		t.Fatalf("oversized WebDAV upload must preserve the previous destination, data=%q err=%v", data, err)
-	}
 }

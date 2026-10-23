@@ -110,23 +110,3 @@ func TestShelfLastCheckTimeIsIndependentFromReadingOrderAndOnlyAdvancesForNewCha
 		t.Fatalf("last-reading shelf order was not preserved: %+v", item)
 	}
 }
-
-func TestReaderDevRestorePreservesShelfLastCheckTime(t *testing.T) {
-	_, server := setupTestServer(t)
-	want := time.Date(2024, time.December, 3, 2, 1, 0, 0, time.UTC).UnixMilli()
-	data := []byte(fmt.Sprintf(`[{"name":"恢复更新时间","bookUrl":"local://last-check","lastChapter":"终章","chapterCount":3,"lastCheckTime":%d}]`, want))
-	books, _, err := server.restoreBookshelfFromData(data, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if books != 1 {
-		t.Fatalf("restored books = %d, want 1", books)
-	}
-	var restored models.Book
-	if err := server.db.Where("user_id = ? AND title = ?", 1, "恢复更新时间").First(&restored).Error; err != nil {
-		t.Fatal(err)
-	}
-	if restored.LastCheckTime != want {
-		t.Fatalf("restored lastCheckTime = %d, want %d", restored.LastCheckTime, want)
-	}
-}
