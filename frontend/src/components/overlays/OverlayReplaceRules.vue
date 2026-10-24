@@ -56,8 +56,8 @@
           <template #default="{ row }">
             <el-switch
               :model-value="normalizeReplaceRule(row).enabled"
-              active-color="#13ce66"
-              inactive-color="#ff4949"
+             
+             
               @change="value => toggleReplaceRule(row, value)"
             />
           </template>

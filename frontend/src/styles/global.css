@@ -81,22 +81,22 @@ a {
 }
 
 .app-shell-search .el-input__wrapper {
-  background: #fffdf8;
+  background: var(--app-surface);
   border-radius: var(--app-radius-sm);
-  box-shadow: inset 0 0 0 1px #e4d9c8;
+  box-shadow: inset 0 0 0 1px var(--app-border);
 }
 
 .app-shell-search .el-input__inner {
-  color: #24201b;
+  color: var(--app-text);
 }
 
 .app-shell-search .el-input__inner::placeholder {
-  color: #a09282;
+  color: var(--app-text-subtle);
 }
 
 .mobile-shell .app-page {
   width: 100%;
-  padding: calc(18px + env(safe-area-inset-top)) 14px calc(82px + env(safe-area-inset-bottom));
+  padding: calc(18px + env(safe-area-inset-top)) 14px calc(92px + env(safe-area-inset-bottom));
 }
 
 .mobile-shell .app-page-title {
@@ -105,7 +105,7 @@ a {
 
 @media (max-width: 750px) {
   .app-page {
-    padding: calc(18px + env(safe-area-inset-top)) 14px calc(82px + env(safe-area-inset-bottom));
+    padding: calc(18px + env(safe-area-inset-top)) 14px calc(92px + env(safe-area-inset-bottom));
   }
 
   .app-page-title {
@@ -159,6 +159,13 @@ body {
 .el-overlay {
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
+}
+
+/* The dark theme primary is a light teal; white ink on it fails contrast. */
+html.dark-reader .el-button--primary {
+  --el-button-text-color: var(--app-on-primary);
+  --el-button-hover-text-color: var(--app-on-primary);
+  --el-button-active-text-color: var(--app-on-primary);
 }
 
 /* Inputs below 16px make iOS Safari zoom the whole viewport on focus. */

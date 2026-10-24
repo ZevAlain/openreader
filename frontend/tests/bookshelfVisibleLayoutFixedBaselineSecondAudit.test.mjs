@@ -76,11 +76,9 @@ test('Home locks the desktop and mobile fixed-baseline geometry', () => {
   assert.doesNotMatch(shelfCss, /@media \(max-width:\s*520px\)/)
 })
 
-test('Home restores the fixed-upstream night shelf surface', () => {
+test('the shelf surface follows the theme tokens in both modes', () => {
   assert.match(home, /<style src="\.\.\/styles\/home-shelf\.css"><\/style>/)
-  assert.match(shelfCss, /html\.dark-reader \.shelf-page[\s\S]*background:\s*#222;/)
-  assert.match(shelfCss, /html\.dark-reader \.shelf-title[\s\S]*color:\s*#bbb;/)
-  assert.match(shelfCss, /html\.dark-reader \.shelf-page \.name[\s\S]*color:\s*#bbb;/)
-  assert.match(shelfCss, /html\.dark-reader \.shelf-page \.sub[\s\S]*color:\s*#6b6b6b;/)
-  assert.match(shelfCss, /html\.dark-reader \.shelf-page \.dur-chapter[\s\S]*color:\s*#969ba3;/)
+  assert.match(shelfCss, /\.shelf-page\s*\{[\s\S]*?background:\s*var\(--app-bg\)/, 'the page background rides the token palette')
+  assert.match(shelfCss, /\.shelf-page\s*\{[\s\S]*?color:\s*var\(--app-text\)/, 'the page text rides the token palette')
+  assert.doesNotMatch(shelfCss, /html\.dark-reader \.shelf-page/, 'manual night-surface patches are retired; html.dark-reader flips the tokens')
 })

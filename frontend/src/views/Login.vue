@@ -44,8 +44,7 @@ async function handleSuccess(result = {}) {
 }
 
 .auth-card {
-  width: 400px;
-  max-width: 100%;
+  width: min(400px, 100%);
   padding: 42px 36px;
   border: 1px solid var(--glass-panel-border);
   border-radius: var(--app-radius-xl);

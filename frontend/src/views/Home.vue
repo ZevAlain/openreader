@@ -145,7 +145,7 @@ const isMobileShelf = computed(() => shouldUseMiniInterface(reader.pageMode, win
 const isNormalPage = computed(() => !['kindle', 'simple', 'Kindle'].includes(reader.pageType))
 const shelfLoading = computed(() => bookshelf.loading || refreshLoading.value)
 const shelfLoadingText = computed(() => refreshLoading.value ? '正在刷新书籍信息' : '正在获取书籍信息')
-const shelfLoadingBackground = computed(() => reader.themeType === 'night' ? '#222' : '#fff')
+const shelfLoadingBackground = 'var(--app-bg)'
 
 onMounted(async () => {
   updateViewportFlags()

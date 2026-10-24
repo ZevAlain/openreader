@@ -46,8 +46,8 @@
           <el-switch
             :model-value="canUpdateValue"
             :loading="updateSwitchLoading"
-            active-color="#13ce66"
-            inactive-color="#ff4949"
+           
+           
             @change="value => emit('can-update-change', value)"
           />
         </span>
@@ -163,7 +163,7 @@ function emitAdd() {
 .book-cover-bg {
   background-position: center;
   background-size: cover;
-  filter: blur(50px);
+  filter: blur(32px);
 }
 
 .book-cover-bg-image {
@@ -286,10 +286,6 @@ function emitAdd() {
 
 .book-intro p {
   margin: 1em 0;
-}
-
-:global(html.dark-reader) .book-name {
-  color: #eee !important;
 }
 
 @media (max-width: 750px) {

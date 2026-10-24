@@ -18,6 +18,7 @@
   --app-primary: #2f6f6d;
   --app-primary-strong: #255957;
   --app-primary-soft: #ddeee9;
+  --app-on-primary: #ffffff;
   --app-accent: #9c5b34;
   --app-warning: #b07a1c;
   --app-danger: #c4453a;
@@ -75,7 +76,6 @@
   --el-border-color-lighter: var(--app-border);
   --el-border-color-extra-light: var(--app-bg-soft);
   --el-fill-color-blank: transparent;
-  --el-fill-color-light: var(--app-surface-muted);
   --el-fill-color: var(--app-surface-muted);
   --el-bg-color: var(--app-surface);
   --el-bg-color-page: var(--app-bg);
@@ -103,6 +103,7 @@ html.dark-reader {
   --app-primary: #7fbdb2;
   --app-primary-strong: #a3d2c9;
   --app-primary-soft: #22403c;
+  --app-on-primary: #14201f;
   --app-accent: #d1a171;
   --app-warning: #d39d3d;
   --app-danger: #e07a70;
@@ -124,9 +125,92 @@ html.dark-reader {
 
   --el-mask-color: rgba(0, 0, 0, 0.5);
   --el-mask-color-extra-light: rgba(0, 0, 0, 0.32);
+  /* Re-assert the whole EP bridge: the official dark css-vars file targets
+     html.dark with equal specificity, so the dark block must own every
+     --el-* value again or EP falls back to its blue defaults. */
+  --el-color-primary: var(--app-primary);
+  --el-color-primary-dark-2: var(--app-primary-strong);
+  --el-color-success: var(--app-success);
+  --el-color-warning: var(--app-warning);
+  --el-color-danger: var(--app-danger);
+  --el-color-error: var(--app-danger);
+  --el-color-info: var(--app-text-muted);
+  --el-text-color-primary: var(--app-text);
+  --el-text-color-regular: var(--app-text);
+  --el-text-color-secondary: var(--app-text-muted);
+  --el-text-color-placeholder: var(--app-text-subtle);
+  --el-border-color: var(--app-border);
+  --el-border-color-light: var(--app-border);
+  --el-border-color-lighter: var(--app-border);
+  --el-border-color-extra-light: var(--app-bg-soft);
+  --el-fill-color: var(--app-surface-muted);
+  --el-fill-color-light: var(--app-surface-muted);
+  --el-fill-color-blank: transparent;
+  --el-bg-color: var(--app-surface);
+  --el-bg-color-page: var(--app-bg);
+  --el-bg-color-overlay: var(--glass-panel-bg);
   --el-color-primary-light-3: #6aa79c;
+  --el-color-primary-light-4: #5c9a8d;
   --el-color-primary-light-5: #4d8a7f;
+  --el-color-primary-light-6: #437a70;
   --el-color-primary-light-7: #3a6b63;
   --el-color-primary-light-8: #2f5750;
   --el-color-primary-light-9: var(--app-primary-soft);
+
+  /* Deep EP tiers derive from the app palette so tags, alerts, fills, and
+     card surfaces follow the theme instead of EP's static dark values. */
+  --el-color-success-light-3: color-mix(in srgb, var(--app-success) 70%, var(--app-bg));
+  --el-color-success-light-5: color-mix(in srgb, var(--app-success) 50%, var(--app-bg));
+  --el-color-success-light-7: color-mix(in srgb, var(--app-success) 30%, var(--app-bg));
+  --el-color-success-light-8: color-mix(in srgb, var(--app-success) 20%, var(--app-bg));
+  --el-color-success-light-9: color-mix(in srgb, var(--app-success) 10%, var(--app-bg));
+  --el-color-success-dark-2: color-mix(in srgb, var(--app-success) 80%, #000);
+  --el-color-warning-light-3: color-mix(in srgb, var(--app-warning) 70%, var(--app-bg));
+  --el-color-warning-light-5: color-mix(in srgb, var(--app-warning) 50%, var(--app-bg));
+  --el-color-warning-light-7: color-mix(in srgb, var(--app-warning) 30%, var(--app-bg));
+  --el-color-warning-light-8: color-mix(in srgb, var(--app-warning) 20%, var(--app-bg));
+  --el-color-warning-light-9: color-mix(in srgb, var(--app-warning) 10%, var(--app-bg));
+  --el-color-warning-dark-2: color-mix(in srgb, var(--app-warning) 80%, #000);
+  --el-color-danger-light-3: color-mix(in srgb, var(--app-danger) 70%, var(--app-bg));
+  --el-color-danger-light-5: color-mix(in srgb, var(--app-danger) 50%, var(--app-bg));
+  --el-color-danger-light-7: color-mix(in srgb, var(--app-danger) 30%, var(--app-bg));
+  --el-color-danger-light-8: color-mix(in srgb, var(--app-danger) 20%, var(--app-bg));
+  --el-color-danger-light-9: color-mix(in srgb, var(--app-danger) 10%, var(--app-bg));
+  --el-color-danger-dark-2: color-mix(in srgb, var(--app-danger) 80%, #000);
+  --el-color-error-light-3: color-mix(in srgb, var(--app-danger) 70%, var(--app-bg));
+  --el-color-error-light-5: color-mix(in srgb, var(--app-danger) 50%, var(--app-bg));
+  --el-color-error-light-7: color-mix(in srgb, var(--app-danger) 30%, var(--app-bg));
+  --el-color-error-light-8: color-mix(in srgb, var(--app-danger) 20%, var(--app-bg));
+  --el-color-error-light-9: color-mix(in srgb, var(--app-danger) 10%, var(--app-bg));
+  --el-color-error-dark-2: color-mix(in srgb, var(--app-danger) 80%, #000);
+  --el-color-info-light-3: color-mix(in srgb, var(--app-text-muted) 70%, var(--app-bg));
+  --el-color-info-light-5: color-mix(in srgb, var(--app-text-muted) 50%, var(--app-bg));
+  --el-color-info-light-7: color-mix(in srgb, var(--app-text-muted) 30%, var(--app-bg));
+  --el-color-info-light-8: color-mix(in srgb, var(--app-text-muted) 20%, var(--app-bg));
+  --el-color-info-light-9: color-mix(in srgb, var(--app-text-muted) 10%, var(--app-bg));
+  --el-color-info-dark-2: color-mix(in srgb, var(--app-text-muted) 80%, #000);
+  --el-border-color-dark: var(--app-border-strong);
+  --el-border-color-darker: color-mix(in srgb, var(--app-border-strong) 70%, var(--app-bg));
+  --el-fill-color-light: color-mix(in srgb, var(--app-surface) 72%, var(--app-bg));
+  --el-fill-color-lighter: color-mix(in srgb, var(--app-surface) 86%, var(--app-bg));
+  --el-fill-color-extra-light: color-mix(in srgb, var(--app-surface) 93%, var(--app-bg));
+  --el-fill-color-dark: color-mix(in srgb, var(--app-surface-muted) 82%, var(--app-bg));
+  --el-fill-color-darker: color-mix(in srgb, var(--app-surface-muted) 66%, var(--app-bg));
+  --el-text-color-disabled: var(--app-text-subtle);
+  --el-card-bg-color: var(--app-surface);
+  --el-button-disabled-text-color: var(--app-text-subtle);
+  --el-box-shadow: var(--glass-shadow);
+  --el-box-shadow-light: var(--app-shadow-sm);
+  --el-box-shadow-lighter: var(--app-shadow-sm);
+  --el-box-shadow-dark: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --el-empty-fill-color-0: color-mix(in srgb, var(--app-text-muted) 90%, var(--app-bg));
+  --el-empty-fill-color-1: color-mix(in srgb, var(--app-text-muted) 80%, var(--app-bg));
+  --el-empty-fill-color-2: color-mix(in srgb, var(--app-text-muted) 70%, var(--app-bg));
+  --el-empty-fill-color-3: color-mix(in srgb, var(--app-text-muted) 60%, var(--app-bg));
+  --el-empty-fill-color-4: color-mix(in srgb, var(--app-text-muted) 50%, var(--app-bg));
+  --el-empty-fill-color-5: color-mix(in srgb, var(--app-text-muted) 40%, var(--app-bg));
+  --el-empty-fill-color-6: color-mix(in srgb, var(--app-text-muted) 30%, var(--app-bg));
+  --el-empty-fill-color-7: color-mix(in srgb, var(--app-text-muted) 20%, var(--app-bg));
+  --el-empty-fill-color-8: color-mix(in srgb, var(--app-text-muted) 10%, var(--app-bg));
+  --el-empty-fill-color-9: color-mix(in srgb, var(--app-text-muted) 0%, var(--app-bg));
 }

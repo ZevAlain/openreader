@@ -965,8 +965,7 @@ function readError(err, fallback) {
   box-sizing: border-box;
   overflow-x: hidden;
   background:
-    linear-gradient(180deg, rgba(255, 253, 248, 0.86), rgba(245, 241, 232, 0.92)),
-    var(--app-bg);
+    linear-gradient(180deg, var(--app-surface), var(--app-bg));
 }
 
 .app-offline {
@@ -1016,56 +1015,6 @@ function readError(err, fallback) {
   display: none;
 }
 
-:global(html.dark-reader) .app-shell {
-  background: #181715;
-}
-
-:global(html.dark-reader) .app-sidebar {
-  color: var(--app-text);
-  background: #222;
-  border-right-color: #303030;
-}
-
-:global(html.dark-reader) .app-brand-title {
-  color: #bbb;
-}
-
-:global(html.dark-reader) .app-version-text {
-  color: #7f766c;
-}
-
-:global(html.dark-reader) .app-brand-subtitle,
-:global(html.dark-reader) .app-nav-title {
-  color: #7f766c;
-}
-
-:global(html.dark-reader) .app-nav-title-action {
-  color: #b5b5b5;
-}
-
-:global(html.dark-reader) .setting-select :deep(.el-select__wrapper),
-:global(html.dark-reader) .app-shell-search :deep(.el-input__wrapper),
-:global(html.dark-reader) .app-nav-item,
-:global(html.dark-reader) .sidebar-recent-book,
-:global(html.dark-reader) .sidebar-bottom-icon {
-  color: #aaa;
-  background: #2a2927;
-  border-color: #39352f;
-  box-shadow: none;
-}
-
-:global(html.dark-reader) .app-nav-item:hover,
-:global(html.dark-reader) .app-nav-item.active,
-:global(html.dark-reader) .sidebar-bottom-icon:hover {
-  color: var(--app-primary-strong);
-  background: #243b37;
-  border-color: #365b55;
-}
-
-:global(html.dark-reader) .sidebar-recent-book {
-  color: #d39d3d;
-}
-
 .app-brand {
   display: flex;
   align-items: center;
@@ -1095,7 +1044,7 @@ function readError(err, fallback) {
 }
 
 .app-brand-title {
-  color: #26394a;
+  color: var(--app-text);
   font-size: 24px;
   font-weight: 800;
   line-height: 1.2;
@@ -1105,7 +1054,7 @@ function readError(err, fallback) {
 .app-version-text {
   min-width: 0;
   padding: 0;
-  color: #b5b5b5;
+  color: var(--app-text-subtle);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -1117,12 +1066,12 @@ function readError(err, fallback) {
 }
 
 .app-version-text:hover {
-  color: #8f8f8f;
+  color: var(--app-text-subtle);
 }
 
 .app-brand-subtitle {
   margin-top: 18px;
-  color: #b5b5b5;
+  color: var(--app-text-subtle);
   font-size: 16px;
   line-height: 1.35;
   white-space: normal;
@@ -1136,7 +1085,7 @@ function readError(err, fallback) {
 .app-shell-search :deep(.el-input__wrapper) {
   min-height: 28px;
   border-radius: 14px;
-  box-shadow: 0 0 0 1px #e6e6e6 inset;
+  box-shadow: 0 0 0 1px var(--app-border) inset;
 }
 
 .app-search-setting {
@@ -1151,9 +1100,9 @@ function readError(err, fallback) {
 
 .setting-select :deep(.el-select__wrapper) {
   min-height: 28px;
-  background: #fffdf8;
-  border-radius: 4px;
-  box-shadow: 0 0 0 1px #e6e6e6 inset;
+  background: var(--app-surface);
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--app-border) inset;
 }
 
 .sidebar-recent {
@@ -1176,7 +1125,7 @@ function readError(err, fallback) {
 .sidebar-recent-title button {
   flex: 0 0 auto;
   padding: 0;
-  color: #b5b5b5;
+  color: var(--app-text-subtle);
   background: transparent;
   border: 0;
   font: inherit;
@@ -1196,10 +1145,10 @@ function readError(err, fallback) {
   width: fit-content;
   max-width: 100%;
   padding: 9px 12px;
-  color: #d39d3d;
-  background: #fffaf0;
-  border: 1px solid #fde6bd;
-  border-radius: 4px;
+  color: var(--app-warning);
+  background: var(--app-surface-muted);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
   cursor: pointer;
   text-align: left;
 }
@@ -1223,7 +1172,7 @@ function readError(err, fallback) {
 }
 
 .sidebar-recent-book small {
-  color: #766a5c;
+  color: var(--app-text-muted);
   font-size: 12px;
 }
 
@@ -1256,7 +1205,7 @@ function readError(err, fallback) {
   justify-content: space-between;
   gap: 10px;
   margin: 0 0 4px;
-  color: #b5b5b5;
+  color: var(--app-text-subtle);
   font-size: 14px;
   font-weight: 500;
   line-height: 1.35;
@@ -1268,7 +1217,7 @@ function readError(err, fallback) {
 .app-nav-title-action {
   flex: 0 0 auto;
   padding: 0;
-  color: #9d9d9d;
+  color: var(--app-text-subtle);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -1303,26 +1252,27 @@ function readError(err, fallback) {
   min-height: 32px;
   align-items: center;
   justify-content: center;
-  padding: 7px 12px;
-  color: #9aa1aa;
-  background: #fafafa;
-  border: 1px solid #e6e9ef;
-  border-radius: 4px;
+  padding: 7px 14px;
+  color: var(--app-text-muted);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
   cursor: pointer;
   margin-right: 15px;
   margin-bottom: 15px;
   text-align: center;
+  transition: color 160ms ease, background-color 160ms ease;
 }
 
 .app-nav-item:hover {
-  color: #1f6feb;
-  background: #fff;
+  color: var(--app-primary-strong);
+  background: var(--app-surface-muted);
 }
 
 .app-nav-item.active {
-  color: #1f6feb;
-  background: #eef6ff;
-  border-color: #bfdbfe;
+  color: var(--app-primary-strong);
+  background: var(--app-primary-soft);
+  border-color: var(--app-primary-soft);
 }
 
 .app-nav-item span {
@@ -1341,7 +1291,7 @@ function readError(err, fallback) {
   width: 36px;
   height: 36px;
   place-items: center;
-  color: #24201b;
+  color: var(--app-text);
   background: transparent;
   border: 0;
   border-radius: 50%;
@@ -1355,13 +1305,13 @@ function readError(err, fallback) {
 }
 
 .theme-toggle {
-  color: #f7f7f7;
-  background: #1f1f1f;
+  color: var(--app-text);
+  background: var(--app-surface-muted);
 }
 
 .theme-toggle.night {
-  color: #121212;
-  background: #f4e4c5;
+  color: var(--app-primary-strong);
+  background: var(--app-primary-soft);
 }
 
 .app-workspace {
@@ -1407,7 +1357,6 @@ function readError(err, fallback) {
   max-width: 100%;
   min-width: 0;
   padding-left: 0;
-  padding-bottom: calc(96px + env(safe-area-inset-bottom));
   overflow-x: hidden;
 }
 
@@ -1466,7 +1415,7 @@ function readError(err, fallback) {
 .app-shell.mobile-shell .app-nav-title {
   margin: 0 0 8px;
   overflow: visible;
-  color: #a09282;
+  color: var(--app-text-subtle);
   font-size: 14px;
   line-height: 1.3;
   text-align: left;
@@ -1484,10 +1433,10 @@ function readError(err, fallback) {
   justify-content: center;
   margin-right: 15px;
   margin-bottom: 15px;
-  padding: 7px 12px;
-  background: #fffdf8;
-  border: 1px solid #e4d9c8;
-  border-radius: 4px;
+  padding: 7px 14px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
 }
 
 .app-shell.mobile-shell .app-nav-item span {
@@ -1554,15 +1503,15 @@ function readError(err, fallback) {
 }
 
 .app-shell.mobile-shell .theme-toggle {
-  color: #f7f7f7;
-  background: #1f1f1f;
-  border-color: #1f1f1f;
+  color: var(--app-text);
+  background: var(--app-surface-muted);
+  border-color: var(--app-surface-muted);
 }
 
 .app-shell.mobile-shell .theme-toggle.night {
-  color: #121212;
-  background: #f4e4c5;
-  border-color: #f4e4c5;
+  color: var(--app-primary-strong);
+  background: var(--app-primary-soft);
+  border-color: var(--app-primary-soft);
 }
 
 
@@ -1612,7 +1561,7 @@ function readError(err, fallback) {
   position: fixed;
   inset: 0;
   z-index: 70;
-  background: rgba(16, 18, 17, 0.32);
+  background: var(--el-mask-color-extra-light);
   opacity: 0;
   pointer-events: none;
   transition: opacity 220ms ease;
@@ -1676,7 +1625,7 @@ function readError(err, fallback) {
   place-items: center;
   border-radius: 50%;
   background: var(--app-primary);
-  color: #fff;
+  color: var(--app-on-primary);
   font-size: 18px;
   font-weight: 600;
 }

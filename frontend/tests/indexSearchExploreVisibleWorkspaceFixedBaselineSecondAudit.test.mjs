@@ -97,7 +97,7 @@ test('remote result scenes reuse the shelf title, grid, loading and night contra
 
   assert.match(home, /<style src="\.\.\/styles\/home-shelf\.css"><\/style>/)
   assert.doesNotMatch(home, /style scoped src="\.\.\/styles\/home-shelf\.css"/)
-  assert.match(css, /html\.dark-reader \.shelf-page/)
+  assert.doesNotMatch(css, /html\.dark-reader \.shelf-page/, 'night theming rides the tokens, not manual patches')
   assert.doesNotMatch(css, /:global\(/)
   assert.match(css, /\.result-add-book/)
 

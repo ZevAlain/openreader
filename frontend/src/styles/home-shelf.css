@@ -14,8 +14,8 @@
   box-sizing: border-box;
   flex-direction: column;
   padding: 48px;
-  color: #2c3e50;
-  background: #fff;
+  color: var(--app-text);
+  background: var(--app-bg);
   overflow: hidden;
 }
 
@@ -28,7 +28,7 @@
   flex: 0 0 auto;
   margin-bottom: 5px;
   color: inherit;
-  background: #fff;
+  background: var(--app-bg);
   font-family: -apple-system, "Noto Sans", "Helvetica Neue", Helvetica, "Nimbus Sans L", Arial, "Liberation Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans CN", "Microsoft YaHei", "Wenquanyi Micro Hei", "WenQuanYi Zen Hei", "ST Heiti", SimHei, sans-serif;
   font-size: 20px;
   font-weight: 600;
@@ -89,7 +89,7 @@
   flex: 0 0 auto;
   margin-bottom: 10px;
   padding: 5px 0;
-  background: #fff;
+  background: var(--app-bg);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -229,7 +229,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
-  color: #969ba3;
+  color: var(--app-text-muted);
   font-size: 24px;
 }
 
@@ -257,7 +257,7 @@
   max-height: 45px;
   margin-right: 38px;
   overflow: hidden;
-  color: #33373d;
+  color: var(--app-text);
   font-size: 16px;
   font-weight: 700;
   line-height: 1.35;
@@ -277,7 +277,7 @@
   min-width: 0;
   max-width: 100%;
   flex-direction: row;
-  color: #969ba3;
+  color: var(--app-text-muted);
   font-size: 12px;
   font-weight: 600;
   line-height: 1.35;
@@ -302,7 +302,7 @@
   max-width: 100%;
   margin-top: 3px;
   overflow: hidden;
-  color: #6b6b6b;
+  color: var(--app-text-muted);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
@@ -324,8 +324,8 @@
 
 .shelf-page .el-loading-spinner .path,
 .shelf-page .el-loading-spinner .el-loading-text {
-  color: #b5b5b5;
-  stroke: #b5b5b5;
+  color: var(--app-text-subtle);
+  stroke: var(--app-text-subtle);
 }
 
 .shelf-page .el-loading-spinner .el-loading-text {
@@ -351,59 +351,25 @@
 
 @media (hover: hover) {
   .book-row:hover {
-    background: rgba(0, 0, 0, 0.1);
+    background: var(--app-surface-muted);
     transition-duration: 0.5s;
   }
-}
-
-html.dark-reader .shelf-page,
-html.dark-reader .shelf-title,
-html.dark-reader .book-group-wrapper {
-  background: #222;
-}
-
-html.dark-reader .shelf-page,
-html.dark-reader .shelf-title {
-  color: #bbb;
-}
-
-html.dark-reader .shelf-page .name {
-  color: #bbb;
-}
-
-html.dark-reader .shelf-page .book-operation,
-html.dark-reader .shelf-page .sub {
-  color: #6b6b6b;
-}
-
-html.dark-reader .shelf-page .dur-chapter,
-html.dark-reader .shelf-page .last-chapter {
-  color: #969ba3;
-}
-
-html.dark-reader .shelf-page .group-chip {
-  color: #bbb;
-}
-
-html.dark-reader .shelf-page .group-chip.active {
-  color: var(--reader-active-text, #0f5451);
-}
-
-html.dark-reader .shelf-page .shelf-search-wrapper .el-input__wrapper {
-  background: #444;
-  box-shadow: 0 0 0 1px #444 inset;
-}
-
-html.dark-reader .shelf-page .shelf-search-wrapper .el-input__inner {
-  color: #aaa;
 }
 
 @media (max-width: 750px) {
   .shelf-page,
   .app-shell.mobile-shell .shelf-page {
     height: 100vh;
-    max-height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
     padding: env(safe-area-inset-top) 0 0;
+  }
+
+  /* The floating tab bar overlays this internal scroller; keep the last rows
+     reachable above it. */
+  .app-shell.mobile-shell .books-wrapper,
+  .books-wrapper {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
   }
 
   .shelf-title {
