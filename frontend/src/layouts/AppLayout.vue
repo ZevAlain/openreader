@@ -103,7 +103,6 @@
           <button
             v-for="item in section.items"
             :key="item.key"
-            :ref="node => captureExploreTrigger(item, node)"
             class="app-nav-item"
             :class="{ active: isNavActive(item) }"
             type="button"
@@ -263,7 +262,6 @@ const preferences = usePreferencesStore()
 const workspace = useIndexWorkspaceStore()
 const exploreChooserVisible = ref(false)
 const exploreChooserStyle = ref({})
-const exploreTrigger = ref(null)
 const compatFocusedSection = ref('')
 const sidebarSectionNodes = new Map()
 const offline = ref(false)
@@ -363,7 +361,6 @@ const navSections = computed(() => [
     title: '书源设置',
     items: [
       { key: 'sources', label: '书源管理', action: () => overlay.openSourceManage('manage') },
-      { key: 'discover', label: '探索书源', action: beginWorkspaceExplore, closeMobile: true },
       { key: 'importSources', label: '导入书源', action: () => overlay.openSourceManage('import') },
       { key: 'remoteSources', label: '远程书源', action: () => overlay.openSourceManage('remote') },
       { key: 'sourceHealth', label: '失效书源', action: () => overlay.openSourceManage('health') },
@@ -473,10 +470,6 @@ function goHome() {
 function runNavAction(item) {
   if (exploreChooserVisible.value) {
     closeExploreChooser()
-    if (item?.key === 'discover') {
-      if (isMobileShell.value && item.closeMobile) profilePageVisible.value = false
-      return
-    }
   }
   if (item.action) {
     item.action()
@@ -511,17 +504,8 @@ function handleSidebarSearchConfigChange(query = {}) {
   })
 }
 
-function beginWorkspaceExplore() {
-  workspace.requestExplore()
-  if (route.name !== 'home') router.push({ name: 'home' })
-}
-
 function handleWorkspaceBackgroundClick() {
   if (exploreChooserVisible.value) closeExploreChooser()
-}
-
-function captureExploreTrigger(item, node) {
-  if (item?.key === 'discover' && node) exploreTrigger.value = node
 }
 
 function captureSidebarSection(section, node) {
@@ -571,11 +555,7 @@ function positionExploreChooser() {
     }
     return
   }
-  const trigger = exploreTrigger.value
-  const rect = trigger?.getBoundingClientRect?.()
-  const left = rect
-    ? Math.min(rect.right + 12, window.innerWidth - 612)
-    : 272
+  const left = 272
   exploreChooserStyle.value = {
     top: '0px',
     left: `${Math.max(12, left)}px`,

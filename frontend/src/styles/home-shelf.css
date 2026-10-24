@@ -638,13 +638,16 @@
 }
 
 .search-stream-status {
+  display: flex;
   margin: 0 20px 10px;
-  padding: 7px 14px;
+  padding: 5px 8px 5px 14px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   color: var(--app-text-muted);
   background: var(--app-surface-muted);
   border-radius: 999px;
   font-size: 12px;
-  text-align: center;
 }
 
 /* iOS 26/27 standalone paints a liquid-glass band over the top inset; the
@@ -656,4 +659,15 @@
   .app-shell.mobile-shell .shelf-page {
     padding-top: calc(30px + env(safe-area-inset-top)) !important;
   }
+}
+
+
+.search-stream-stop {
+  flex: 0 0 auto;
+  padding: 3px 12px;
+  color: var(--app-primary-strong);
+  background: var(--app-primary-soft);
+  border: 0;
+  border-radius: 999px;
+  font-size: 12px;
 }

@@ -47,7 +47,9 @@ test('restores the exact normal manager action, group, single-table, pagination,
   assert.match(manager, /\[25, 50, 100, 200, 300, 400\]/)
   assert.match(manager, /layout="total, sizes, prev, pager, next"/)
   assert.match(manager, /:pager-count="isMobile \? 5 : 7"/)
-  assertInOrder(manager, ['批量删除', '已选择 {{ selection.length }} 个', '取消'], 'normal footer')
+  assertInOrder(manager, ['已选择 {{ selection.length }} 个', '批量删除', '取消'], 'normal footer')
+  assert.match(manager, /type="danger" plain :loading="deleting" @click="deleteSelectedSources"/, 'batch delete is the footer danger action')
+  assert.doesNotMatch(manager, /float-left/, 'footer actions share one right-aligned row')
 
   assert.doesNotMatch(manager, /mobile-source-card|mobile-source-list|source-batch-footer/)
   assert.doesNotMatch(manager, /<el-drawer/)

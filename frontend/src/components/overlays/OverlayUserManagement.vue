@@ -218,6 +218,18 @@ function formatUserTime(value, emptyLabel = '') {
 </script>
 
 <style scoped>
+/* Sticky fixed columns need an opaque background, otherwise horizontally
+   scrolled rows bleed their text underneath the pinned username cells. */
+:deep(.el-table .el-table-fixed-column--left),
+:deep(.el-table .el-table-fixed-column--right) {
+  background: var(--app-surface);
+}
+
+:deep(.el-table th.el-table-fixed-column--left),
+:deep(.el-table th.el-table-fixed-column--right) {
+  background: var(--app-surface-muted);
+}
+
 .user-overlay {
   display: grid;
   gap: 12px;

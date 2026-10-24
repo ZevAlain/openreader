@@ -4,9 +4,12 @@ import test from 'node:test'
 
 const overlay = readFileSync(new URL('../src/components/workspace/SourceTransferOverlay.vue', import.meta.url), 'utf8')
 
-test('remote source URL list persists through the per-user server setting', () => {
-  assert.match(overlay, /api\.get\('\/settings\/remoteSourceUrls'\)/, 'opening the manager must load the server-side URL list')
-  assert.match(overlay, /api\.put\('\/settings\/remoteSourceUrls', \{ value: urls, force: true \}\)/, 'every list mutation must save the whole list server-side')
+test('remote source list persists through the per-user server setting', () => {
+  assert.match(overlay, /api\.get\('\/settings\/remoteSourceUrls'\)/, 'opening the manager must load the server-side list')
+  assert.match(overlay, /await saveRemoteEntries\(entries\)/, 'list mutations save the named entries server-side')
+  assert.match(overlay, /\{ name: remoteEntryName\(item\.trim\(\)\), url: item\.trim\(\) \}/, 'legacy plain-URL values migrate to named entries')
+  assert.match(overlay, /v-model="selectedRemoteUrls"[\s\S]*?type="checkbox"/, 'entries carry multi-select checkboxes')
+  assert.match(overlay, /同步选中[\s\S]*?syncSelectedRemote/, 'a batch action syncs every selected entry')
   assert.doesNotMatch(overlay, /localStorage\.setItem/, 'the list must no longer persist to browser storage')
 })
 
@@ -16,7 +19,7 @@ test('legacy browser storage is migrated once and then removed', () => {
   assert.match(overlay, /safeLocalStorageRemove\(`\$\{scope\}@lastRemoteSourceUrl`\)/, 'the retired prompt-flow key must be cleared after upload')
 })
 
-test('server failures roll back optimistic list edits', () => {
-  assert.match(overlay, /rememberRemoteEntry[\s\S]*?remoteEntries\.value = remoteEntries\.value\.filter\(item => item !== url\)/, 'a failed save must drop the optimistically added URL')
+test('server failures keep the authoritative list', () => {
+  assert.match(overlay, /function persistRemoteEntries[\s\S]*?ElMessage\.error\(readError\(error, '保存远程书源列表失败'\)\)/, 'a failed save reports instead of silently diverging')
   assert.match(overlay, /removeRemoteEntry[\s\S]*?await saveRemoteEntries\(next\)[\s\S]*?remoteEntries\.value = next/, 'removal must only apply after the server accepts it')
 })

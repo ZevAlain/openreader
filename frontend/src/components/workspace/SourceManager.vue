@@ -119,10 +119,10 @@
 
     <template #footer>
       <div class="source-dialog-footer">
-        <el-button type="primary" class="float-left" :loading="deleting" @click="deleteSelectedSources">
+        <span class="check-tip">已选择 {{ selection.length }} 个</span>
+        <el-button type="danger" plain :loading="deleting" @click="deleteSelectedSources">
           批量删除
         </el-button>
-        <span class="check-tip">已选择 {{ selection.length }} 个</span>
         <el-button
           v-if="isFailureMode"
           :disabled="checking"
@@ -813,9 +813,6 @@ function readError(error, fallback) {
   gap: 10px;
 }
 
-.source-dialog-footer .float-left {
-  margin-right: auto;
-}
 
 .source-dialog-footer .check-tip {
   color: var(--app-text-muted);
@@ -863,10 +860,6 @@ function readError(error, fallback) {
 
   .source-dialog-footer {
     flex-wrap: wrap;
-  }
-
-  .source-dialog-footer .float-left {
-    margin-right: 0;
   }
 
   .source-json-editor :deep(.el-textarea__inner) {

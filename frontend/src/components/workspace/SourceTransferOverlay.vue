@@ -23,34 +23,39 @@
       class="source-remote-list"
     >
       <p v-if="!remoteEntries.length && !remoteLoading" class="source-remote-tip">
-        暂无远程书源，点击“新增”输入远程书源链接导入。
+        暂无远程书源，点击“新增”填写名称和链接。
       </p>
-      <div v-for="url in remoteEntries" :key="url" class="source-remote-item">
-        <el-link type="primary" :href="url" target="_blank" class="source-remote-url">
-          {{ url }}
+      <label v-for="entry in remoteEntries" :key="entry.url" class="source-remote-item">
+        <input
+          v-model="selectedRemoteUrls"
+          type="checkbox"
+          class="source-remote-check"
+          :value="entry.url"
+          :disabled="remoteLoading || batchSyncing"
+        >
+        <el-link type="primary" :href="entry.url" target="_blank" class="source-remote-url">
+          {{ entry.name }}
         </el-link>
         <span class="source-remote-actions">
-          <el-button link type="primary" :disabled="remoteLoading" @click="syncRemoteEntry(url)">
+          <el-button link type="primary" :disabled="remoteLoading || batchSyncing" @click="syncRemoteEntry(entry.url)">
             同步
           </el-button>
-          <el-button link type="danger" :disabled="remoteLoading" @click="removeRemoteEntry(url)">
+          <el-button link type="danger" :disabled="remoteLoading || batchSyncing" @click="removeRemoteEntry(entry.url)">
             删除
           </el-button>
         </span>
-      </div>
+      </label>
     </section>
     <template #footer>
       <div class="source-import-footer">
-        <el-button
-          type="primary"
-          class="float-left"
-          :loading="remoteLoading"
-          @click="addRemoteEntry"
-        >
+        <span class="check-tip">已选 {{ selectedRemoteUrls.length }}/{{ remoteEntries.length }}</span>
+        <el-button :disabled="remoteLoading || batchSyncing || !selectedRemoteUrls.length" @click="syncSelectedRemote">
+          {{ batchSyncing ? `同步中 ${batchSyncProgress.done}/${batchSyncProgress.total}` : '同步选中' }}
+        </el-button>
+        <el-button type="primary" :loading="remoteLoading" @click="addRemoteEntry">
           新增
         </el-button>
-        <span class="check-tip">共 {{ remoteEntries.length }} 个</span>
-        <el-button :disabled="remoteLoading" @click="requestClose">关闭</el-button>
+        <el-button :disabled="remoteLoading || batchSyncing" @click="requestClose">关闭</el-button>
       </div>
     </template>
   </el-dialog>
@@ -94,7 +99,6 @@
           v-model="importCheckAll"
           :indeterminate="importCheckIndeterminate"
           border
-          class="float-left"
           @change="toggleImportCheckAll"
         >
           全选
@@ -114,6 +118,7 @@ import { nextTick, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   exportSources,
+  importRemoteSource,
   importSources,
   previewRemoteSource,
 } from '../../api/sources'
@@ -132,6 +137,9 @@ const operations = useAuthenticatedOperationGuard()
 const user = useUserStore()
 const ownerClosing = ref(false)
 const remoteEntries = ref([])
+const selectedRemoteUrls = ref([])
+const batchSyncing = ref(false)
+const batchSyncProgress = ref({ done: 0, total: 0 })
 const pendingRemoteURL = ref('')
 let activation = 0
 
@@ -215,18 +223,46 @@ function userStorageScope() {
   return user.profile?.username || user.profile?.id || 'user'
 }
 
-// The remote URL list lives in the per-user server settings so every device
-// converges. localStorage is only read once to migrate the retired keys.
+// The remote source list lives in the per-user server settings so every
+// device converges. Entries carry a user-chosen name plus the URL; older
+// plain-URL values (strings) migrate to {name: hostname, url} once.
 async function loadRemoteEntries() {
   try {
     const { data } = await api.get('/settings/remoteSourceUrls')
-    let urls = Array.isArray(data?.value)
-      ? [...new Set(data.value.map(item => String(item || '').trim()).filter(Boolean))]
-      : []
-    if (!urls.length) urls = await migrateLegacyRemoteEntries()
-    remoteEntries.value = urls
+    let entries = normalizeRemoteEntries(data?.value)
+    if (!entries.length) entries = await migrateLegacyRemoteEntries()
+    remoteEntries.value = entries
+    selectedRemoteUrls.value = []
   } catch {
     remoteEntries.value = []
+    selectedRemoteUrls.value = []
+  }
+}
+
+function normalizeRemoteEntries(value) {
+  if (!Array.isArray(value)) return []
+  const seen = new Set()
+  const entries = []
+  for (const item of value) {
+    let entry = null
+    if (typeof item === 'string' && item.trim()) {
+      entry = { name: remoteEntryName(item.trim()), url: item.trim() }
+    } else if (item && typeof item === 'object' && String(item.url || '').trim()) {
+      const url = String(item.url).trim()
+      entry = { name: String(item.name || '').trim() || remoteEntryName(url), url }
+    }
+    if (!entry || seen.has(entry.url)) continue
+    seen.add(entry.url)
+    entries.push(entry)
+  }
+  return entries
+}
+
+function remoteEntryName(url) {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return url
   }
 }
 
@@ -236,14 +272,15 @@ async function migrateLegacyRemoteEntries() {
   const legacyPrompt = safeLocalStorageGet(`${scope}@lastRemoteSourceUrl`).trim()
   if (legacyPrompt && !local.includes(legacyPrompt)) local.push(legacyPrompt)
   if (!local.length) return []
+  const entries = normalizeRemoteEntries(local)
   try {
-    await api.put('/settings/remoteSourceUrls', { value: local, force: true })
+    await saveRemoteEntries(entries)
     safeLocalStorageRemove(`${scope}@remoteSourceUrls`)
     safeLocalStorageRemove(`${scope}@lastRemoteSourceUrl`)
   } catch {
     // Keep the local copy when the server is unreachable; retry on next open.
   }
-  return local
+  return entries
 }
 
 function parseRemoteURLs(raw) {
@@ -258,33 +295,77 @@ function parseRemoteURLs(raw) {
   return []
 }
 
-async function saveRemoteEntries(urls) {
-  await api.put('/settings/remoteSourceUrls', { value: urls, force: true })
+async function saveRemoteEntries(entries) {
+  await api.put('/settings/remoteSourceUrls', { value: entries, force: true })
+}
+
+async function persistRemoteEntries() {
+  const snapshot = [...remoteEntries.value]
+  try {
+    await saveRemoteEntries(snapshot)
+  } catch (error) {
+    remoteEntries.value = snapshot.length ? remoteEntries.value : snapshot
+    ElMessage.error(readError(error, '保存远程书源列表失败'))
+    return false
+  }
+  selectedRemoteUrls.value = selectedRemoteUrls.value.filter(url =>
+    remoteEntries.value.some(entry => entry.url === url))
+  return true
 }
 
 async function rememberRemoteEntry(url) {
-  if (!url || remoteEntries.value.includes(url)) return
-  remoteEntries.value = [url, ...remoteEntries.value]
-  try {
-    await saveRemoteEntries(remoteEntries.value)
-  } catch (error) {
-    remoteEntries.value = remoteEntries.value.filter(item => item !== url)
-    ElMessage.error(readError(error, '保存远程书源列表失败'))
-  }
+  if (!url || remoteEntries.value.some(entry => entry.url === url)) return
+  remoteEntries.value = [{ name: remoteEntryName(url), url }, ...remoteEntries.value]
+  await persistRemoteEntries()
 }
 
 async function addRemoteEntry() {
-  let result
+  let nameResult
+  let urlResult
   try {
-    result = await ElMessageBox.prompt('请输入远程书源链接', '新增远程书源', {
+    nameResult = await ElMessageBox.prompt('为这个书源起个名字', '新增远程书源 · 名称', {
+      confirmButtonText: '下一步',
+      cancelButtonText: '取消',
+      inputValuePlaceholder: '例如：我的书源合集',
+    })
+    urlResult = await ElMessageBox.prompt('输入远程书源链接（JSON 地址）', '新增远程书源 · 链接', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
     })
   } catch {
     return
   }
-  if (!props.visible) return
-  await startRemoteImport(String(result?.value || '').trim())
+  const name = String(nameResult?.value || '').trim()
+  const url = String(urlResult?.value || '').trim()
+  if (!url || !props.visible) return
+  if (remoteEntries.value.some(entry => entry.url === url)) {
+    ElMessage.warning('该链接已存在')
+    return
+  }
+  remoteEntries.value = [{ name: name || remoteEntryName(url), url }, ...remoteEntries.value]
+  const saved = await persistRemoteEntries()
+  if (saved) await startRemoteImport(url)
+}
+
+async function syncSelectedRemote() {
+  const targets = remoteEntries.value.filter(entry => selectedRemoteUrls.value.includes(entry.url))
+  if (!targets.length || batchSyncing.value) return
+  batchSyncing.value = true
+  batchSyncProgress.value = { done: 0, total: targets.length }
+  let succeeded = 0
+  for (const entry of targets) {
+    try {
+      await importRemoteSource(entry.url)
+      succeeded += 1
+    } catch {
+      // The per-entry summary below reports failures; keep syncing the rest.
+    }
+    batchSyncProgress.value.done += 1
+  }
+  batchSyncing.value = false
+  const failed = targets.length - succeeded
+  if (failed) ElMessage.warning(`同步完成：${succeeded} 成功，${failed} 失败`)
+  else ElMessage.success(`同步完成：${succeeded} 个远程书源已更新`)
 }
 
 async function syncRemoteEntry(url) {
@@ -309,10 +390,11 @@ async function removeRemoteEntry(url) {
   } catch {
     return
   }
-  const next = remoteEntries.value.filter(item => item !== url)
+  const next = remoteEntries.value.filter(item => item.url !== url)
   try {
     await saveRemoteEntries(next)
     remoteEntries.value = next
+    selectedRemoteUrls.value = selectedRemoteUrls.value.filter(item => item !== url)
   } catch (error) {
     ElMessage.error(readError(error, '保存远程书源列表失败'))
   }
@@ -438,6 +520,14 @@ function readError(error, fallback) {
   text-align: center;
 }
 
+.source-remote-check {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--app-primary);
+}
+
 .source-remote-item {
   display: flex;
   min-width: 0;
@@ -474,10 +564,6 @@ function readError(error, fallback) {
   gap: 10px;
 }
 
-.source-import-footer .float-left {
-  margin-right: auto;
-}
-
 .source-import-footer .check-tip {
   color: var(--app-text-muted);
   white-space: nowrap;
@@ -490,10 +576,6 @@ function readError(error, fallback) {
 
   .source-import-footer {
     flex-wrap: wrap;
-  }
-
-  .source-import-footer .float-left {
-    margin-right: 0;
   }
 }
 </style>

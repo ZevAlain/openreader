@@ -66,7 +66,7 @@ test('Index sidebar keeps the fixed-upstream action ownership and order', () => 
     layout.indexOf("key: 'sources'"),
     layout.indexOf("key: 'bookshelf'"),
   )
-  const sourceLabels = ['书源管理', '探索书源', '导入书源', '远程书源', '失效书源', '调试书源']
+  const sourceLabels = ['书源管理', '导入书源', '远程书源', '失效书源', '调试书源']
   assertLabelsInOrder(sourceSection, sourceLabels.map(label => `label: '${label}'`))
 
   const shelfSection = layout.slice(

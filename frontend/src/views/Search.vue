@@ -8,7 +8,8 @@
     </div>
 
     <div v-if="streamingMore && searched" class="search-stream-status" role="status">
-      已找到 {{ results.length }} 条，仍在搜索其他书源…
+      <span>已找到 {{ results.length }} 条，仍在搜索其他书源…</span>
+      <button class="search-stream-stop" type="button" @click="stopSearchStream">停止</button>
     </div>
 
     <div class="search-entry-bar">
@@ -230,6 +231,17 @@ function searchHotTitle(title) {
   keyword.value = title
   doSearch()
 }
+
+function stopSearchStream() {
+  // Supersede the stream and drop any in-flight window so its late response
+  // cannot mutate the list the user just stopped on.
+  searchStreamSerial += 1
+  remoteRequestGate.invalidate()
+  streamingMore.value = false
+  loadingMore.value = false
+  workspace.setResultLoading(false)
+  ElMessage.info(`已停止搜索，保留当前 ${results.value.length} 条结果`)
+}
 const searchMode = ref('remote')
 const sources = ref([])
 const selectedIds = ref([])
@@ -336,10 +348,27 @@ onMounted(async () => {
   if (!searchSessionOperations.canCommit(mountOperation)) return
   syncSelection()
   workspaceSearchReady.value = true
+  // A resumed session (tab round-trip) already carries its keyword in the
+  // store; apply it before the mount-time search check or the restored
+  // search never re-runs.
+  applyWorkspaceSearchIntent()
   if (keyword.value || searchMode.value === 'local') doSearch()
 })
 
 onBeforeUnmount(() => {
+  // Leaving the workspace suspends the session (Home's route watcher runs
+  // before unmount); enrich it with the live keyword so returning restores
+  // and re-runs the exact search instead of dropping back to the rank board.
+  if (workspace.suspendedSession?.mode === 'search') {
+    workspace.suspendedSession.search = {
+      ...workspace.suspendedSession.search,
+      keyword: keyword.value,
+      searchType: searchType.value,
+      group: selectedGroup.value,
+      sourceId: singleSourceId.value != null ? String(singleSourceId.value) : '',
+      concurrent: concurrentCount.value,
+    }
+  }
   window.removeEventListener('resize', updateResultViewport)
   window.removeEventListener('orientationchange', updateResultViewport)
   remoteRequestGate.invalidate()
@@ -534,6 +563,22 @@ function isActiveRemoteRequest(requestToken, workspaceStamp) {
     && isWorkspaceRequestCurrent(workspace, workspaceStamp)
 }
 
+// Exact title matches float to the top, then prefix matches, then partial
+// matches, so the book the user typed surfaces above loose hits no matter
+// which source window delivered it.
+function rankSearchResults(rows, keyword) {
+  const needle = String(keyword || '').trim().toLowerCase()
+  if (!needle) return rows
+  const tier = item => {
+    const title = String(item?.title || '').trim().toLowerCase()
+    if (title === needle) return 0
+    if (title.startsWith(needle)) return 1
+    if (title.includes(needle)) return 2
+    return 3
+  }
+  return [...rows].sort((a, b) => tier(a) - tier(b))
+}
+
 function remoteSearchPayload(page, lastIndex) {
   const payload = {
     keyword: activeSearchKeyword.value,
@@ -568,7 +613,7 @@ async function requestRemoteSearch({ append, page, lastIndex, requestToken, work
   }
   const incoming = Array.isArray(data) ? data : (data?.list || [])
   const { rows, added } = mergeRemoteSearchResults(append ? results.value : [], incoming)
-  results.value = rows
+  results.value = rankSearchResults(rows, activeSearchKeyword.value)
   if (activeSearchIsSingleSource.value) {
     searchPage.value = Number(data?.page || page)
     searchLastIndex.value = -1

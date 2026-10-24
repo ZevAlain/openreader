@@ -72,18 +72,14 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button
-          type="primary"
           size="default"
-          class="float-left"
           @click="createCategory"
         >
           添加分组
         </el-button>
         <el-button
           v-if="isGroupOrderDirty"
-          type="primary"
           size="default"
-          class="float-left"
           :loading="groupOrderSaving"
           @click="saveOrder"
         >
@@ -279,7 +275,4 @@ function readError(error, fallback) {
   text-align: right;
 }
 
-.float-left {
-  float: left;
-}
 </style>

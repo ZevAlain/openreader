@@ -291,6 +291,10 @@ function backToShelf() {
 function applyRouteWorkspaceIntent() {
   if (route.name !== 'home') return
   if (route.query.workspace === 'search') {
+    if (!route.query.q && !route.query.mode && workspace.suspendedSession?.mode === 'search') {
+      workspace.resumeSuspendedSession()
+      return
+    }
     workspace.beginSearch({
       keyword: route.query.q,
       mode: route.query.mode,
@@ -310,8 +314,13 @@ function applyRouteWorkspaceIntent() {
     })
     return
   }
-  // Leaving a workspace (shelf tab) must clear it even while results are on
-  // screen, or the URL changes but the view keeps showing search/explore.
+  // Leaving a workspace (shelf tab): suspend the session so returning to the
+  // search tab restores the same keyword and results instead of the rank
+  // board, while the shelf itself renders again.
+  if (workspace.mode === 'search') {
+    workspace.suspendSessionState()
+    return
+  }
   if (workspace.showingResults) workspace.backToShelf()
 }
 

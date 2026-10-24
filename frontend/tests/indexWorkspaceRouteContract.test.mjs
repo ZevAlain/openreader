@@ -30,16 +30,18 @@ test('makes the root route the canonical shelf, search, and explore workspace', 
 
 test('opens the upstream Explore chooser before changing the root result body', () => {
   const layout = readFileSync(layoutPath, 'utf8')
+  const home = readFileSync(homePath, 'utf8')
   const discover = readFileSync(discoverPath, 'utf8')
   const popover = readFileSync(explorePopoverPath, 'utf8')
 
   assert.match(layout, /useIndexWorkspaceStore/)
   assert.match(layout, /onWorkspaceSearch:\s*beginWorkspaceSearch/)
   assert.match(layout, /function beginWorkspaceSearch\(/)
-  assert.match(layout, /function beginWorkspaceExplore\(/)
-  assert.match(layout, /\{ key: 'discover',[\s\S]*?action:\s*beginWorkspaceExplore/)
   assert.match(layout, /<ExploreWorkspacePopover[\s\S]*v-show="exploreChooserVisible"/)
-  assert.match(layout, /workspace\.requestExplore\(/)
+  // The discover nav entry is retired from the sidebar/profile by design;
+  // the chooser stays reachable from the Discover workspace and deep links.
+  assert.doesNotMatch(layout, /key: 'discover'/)
+  assert.match(home, /workspace\.requestExplore\(/)
   assert.match(layout, /workspace\.exploreChooserRevision/)
   assert.match(layout, /workspace\.consumeExploreChooserRequest\(\)/)
   assert.match(layout, /onMounted\(\(\) => \{[\s\S]*?workspace\.consumeExploreChooserRequest\(\)[\s\S]*?openExploreChooser\(\)/)
