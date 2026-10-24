@@ -1626,7 +1626,7 @@ function readError(err, fallback) {
 }
 
 .profile-page-header {
-  padding: calc(18px + env(safe-area-inset-top)) 20px 8px;
+  padding: calc(30px + env(safe-area-inset-top)) 20px 8px;
 }
 
 .profile-page-header h1 {

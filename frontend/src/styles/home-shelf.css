@@ -636,3 +636,24 @@
 .search-load-more:disabled {
   opacity: 0.55;
 }
+
+.search-stream-status {
+  margin: 0 20px 10px;
+  padding: 7px 14px;
+  color: var(--app-text-muted);
+  background: var(--app-surface-muted);
+  border-radius: 999px;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* iOS 26/27 standalone paints a liquid-glass band over the top inset; the
+   shelf/search/discover pages need extra headroom there. These selectors sit
+   next to the mobile rules they override and use !important to win the
+   specificity race decisively in exactly one display mode. */
+@media (display-mode: standalone) {
+  .app-page.shelf-page,
+  .app-shell.mobile-shell .shelf-page {
+    padding-top: calc(30px + env(safe-area-inset-top)) !important;
+  }
+}

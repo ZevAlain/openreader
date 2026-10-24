@@ -116,7 +116,9 @@ test('the search header stays clean; load-more lives at the list tail', () => {
   assert.ok(headerStart >= 0, 'the search header exists')
   assert.doesNotMatch(header, /书架|加载更多|没有更多/, 'the shelf and load-more buttons moved out of the header')
   assert.match(search, /class="search-load-more"[\s\S]*?@click="loadMoreRemote"/, 'load-more is an inline pill at the results tail')
-  assert.match(search, /v-if="searchMode === 'remote' && searched && remoteHasMore"/, 'the tail button only appears when more pages exist')
+  assert.match(search, /v-if="searchMode === 'remote' && searched && remoteHasMore && !streamingMore"/, 'the tail button only appears when more pages exist and auto-streaming has paused')
+  assert.match(search, /class="search-stream-status"/, 'streaming progress is visible while later windows are still being searched')
+  assert.match(search, /runSearchStream/, 'remaining windows stream in automatically after the first paint')
 })
 
 test('a fully failed search explains itself instead of looking empty', () => {

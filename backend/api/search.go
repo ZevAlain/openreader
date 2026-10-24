@@ -201,7 +201,11 @@ func (s *Server) concurrentSearchFrom(parent context.Context, userID uint, sourc
 				aggregated = append(aggregated, result)
 			}
 		}
-		if searchSize > 0 && len(aggregated) >= searchSize {
+		// A streaming request (searchSize set) returns after ONE window so the
+		// client can paint partial results while later windows are still being
+		// fetched via the lastIndex cursor. Non-streaming callers keep the
+		// legacy behavior of aggregating up to maxRemoteSearchWindows here.
+		if searchSize > 0 {
 			break
 		}
 		if parent.Err() != nil {

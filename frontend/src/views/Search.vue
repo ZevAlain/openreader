@@ -7,6 +7,10 @@
       <div class="title-actions" />
     </div>
 
+    <div v-if="streamingMore && searched" class="search-stream-status" role="status">
+      已找到 {{ results.length }} 条，仍在搜索其他书源…
+    </div>
+
     <div class="search-entry-bar">
       <el-input
         v-model="keyword"
@@ -64,7 +68,7 @@
         />
 
         <button
-          v-if="searchMode === 'remote' && searched && remoteHasMore"
+          v-if="searchMode === 'remote' && searched && remoteHasMore && !streamingMore"
           class="search-load-more"
           type="button"
           :disabled="searching || loadingMore"
@@ -165,6 +169,42 @@ const workspace = useIndexWorkspaceStore()
 const keyword = ref('')
 const lastSearchStats = ref({ attempted: 0, failed: 0 })
 const searchFailed = ref(false)
+const streamingMore = ref(false)
+// Bumped by every new doSearch so an in-flight stream can tell it was
+// superseded (the gate token is rotated by each streaming window itself).
+let searchStreamSerial = 0
+
+function finishSearchFeedback(added) {
+  const stats = lastSearchStats.value
+  if (added) {
+    if (stats.failed) ElMessage.success(`共找到 ${results.value.length} 条结果（${stats.failed} 个书源失败）`)
+    else ElMessage.success(`共找到 ${results.value.length} 条结果`)
+  } else if (stats.failed && stats.attempted && stats.failed >= stats.attempted) {
+    ElMessage.error(`${stats.failed} 个书源全部搜索失败，请检查网络或书源可用性`)
+    searchFailed.value = true
+  } else {
+    ElMessage.info('没有找到相关书籍')
+  }
+}
+
+async function runSearchStream(serial) {
+  streamingMore.value = true
+  try {
+    // The cap is a belt-and-braces guard: one window per iteration and at
+    // most this many windows can exist for the source-count ceiling.
+    for (let window = 0; window < 50 && remoteHasMore.value; window += 1) {
+      if (serial !== searchStreamSerial) return
+      const outcome = await loadMoreRemote({ auto: true })
+      // busy/skipped mean no request ran — retrying synchronously would spin
+      // the microtask queue, so stop and leave the manual pill as the way on.
+      if (outcome === 'busy' || outcome === 'skipped' || outcome === 'error') return
+      if (serial !== searchStreamSerial) return
+    }
+    finishSearchFeedback(results.value.length > 0)
+  } finally {
+    if (serial === searchStreamSerial) streamingMore.value = false
+  }
+}
 const hotRankItems = ref([])
 const hotRankLoading = ref(false)
 const hotRankError = ref('')
@@ -405,6 +445,8 @@ async function doSearch() {
   results.value = []
   resetRemotePagination()
   lastSearchStats.value = { attempted: 0, failed: 0 }
+  searchStreamSerial += 1
+  streamingMore.value = false
   const requestToken = remoteRequestGate.begin()
   const workspaceStamp = captureWorkspaceRequest(workspace, 'search')
   activeSearchKeyword.value = value
@@ -421,35 +463,37 @@ async function doSearch() {
     })
     if (!current) return
     searched.value = true
-    const stats = lastSearchStats.value
-    if (added) {
-      if (stats.failed) ElMessage.success(`找到 ${added} 条结果（${stats.failed} 个书源失败）`)
-      else ElMessage.success(`找到 ${added} 条结果`)
-    } else if (stats.failed && stats.attempted && stats.failed >= stats.attempted) {
-      ElMessage.error(`${stats.failed} 个书源全部搜索失败，请检查网络或书源可用性`)
-      searchFailed.value = true
-    } else {
-      ElMessage.info('没有找到相关书籍')
+    if (remoteHasMore.value && !activeSearchIsSingleSource.value) {
+      // First window is in — keep streaming the remaining windows in the
+      // background so results appear progressively instead of after every
+      // source has finished.
+      runSearchStream(searchStreamSerial)
+      return
     }
+    finishSearchFeedback(added)
   } catch (err) {
     if (isActiveRemoteRequest(requestToken, workspaceStamp)) {
       ElMessage.error(readError(err, '搜索失败'))
     }
   } finally {
+    // Clear unconditionally: the streaming continuation rotates the gate
+    // token on its first window, and a stale check here would leave the
+    // search button latched in its loading state after the stream ends.
+    searching.value = false
     if (isActiveRemoteRequest(requestToken, workspaceStamp)) {
-      searching.value = false
       workspace.setResultLoading(false)
     }
   }
 }
 
-async function loadMoreRemote() {
-  if (loadingMore.value) return
+// Returns 'busy' when another load owns the flag (the auto-stream treats
+// that as abort), 'skipped' when there is nothing to do, 'done' otherwise.
+async function loadMoreRemote(options = {}) {
+  if (loadingMore.value) return 'busy'
   if (!remoteHasMore.value) {
-    ElMessage.info('没有更多了')
-    return
+    if (!options.auto) ElMessage.info('没有更多了')
+    return 'skipped'
   }
-  lastSearchStats.value = { attempted: 0, failed: 0 }
   const requestToken = remoteRequestGate.begin()
   const workspaceStamp = captureWorkspaceRequest(workspace, 'search')
   const nextPage = searchPage.value + 1
@@ -465,17 +509,21 @@ async function loadMoreRemote() {
       requestToken,
       workspaceStamp,
     })
-    if (!current) return
-    if (!added) {
+    if (!current) return 'skipped'
+    if (!options.auto && !added) {
       ElMessage.info(remoteHasMore.value ? '本批没有新增结果，仍可继续加载' : '没有更多了')
     }
+    return 'done'
   } catch (err) {
     if (isActiveRemoteRequest(requestToken, workspaceStamp)) {
-      ElMessage.error(readError(err, '加载更多失败'))
+      ElMessage.error(readError(err, options.auto ? '继续搜索失败，可点击列表尾部继续' : '加载更多失败'))
     }
+    return 'error'
   } finally {
+    // Always clear the busy flag this call owns; a stale gate must never
+    // leave loadingMore latched true or the auto-stream spins on it.
+    loadingMore.value = false
     if (isActiveRemoteRequest(requestToken, workspaceStamp)) {
-      loadingMore.value = false
       workspace.setResultLoading(false)
     }
   }
@@ -490,7 +538,11 @@ function remoteSearchPayload(page, lastIndex) {
   const payload = {
     keyword: activeSearchKeyword.value,
     sourceIds: activeSourceIds.value,
-    concurrentCount: activeConcurrentCount.value,
+    // The first window only fans out to a few sources so the first results
+    // paint quickly; the auto-stream continuation uses the full concurrency.
+    concurrentCount: lastIndex === -1 && !activeSearchIsSingleSource.value
+      ? Math.min(activeConcurrentCount.value, 4)
+      : activeConcurrentCount.value,
   }
   if (activeSearchIsSingleSource.value) {
     payload.page = page
@@ -507,10 +559,10 @@ async function requestRemoteSearch({ append, page, lastIndex, requestToken, work
   const response = await api.post('/search', remoteSearchPayload(page, lastIndex), { timeout: 90000 })
   const data = response.data
   const headers = response.headers || {}
-  lastSearchStats.value = {
-    attempted: Number(data?.attempted ?? headers['x-openreader-search-attempted'] ?? 0),
-    failed: Number(data?.failed ?? headers['x-openreader-search-failed'] ?? 0),
-  }
+  // Streaming searches run one window per request; accumulate the stats so
+  // the final summary covers every window, not just the last one.
+  lastSearchStats.value.attempted += Number(data?.attempted ?? headers['x-openreader-search-attempted'] ?? 0)
+  lastSearchStats.value.failed += Number(data?.failed ?? headers['x-openreader-search-failed'] ?? 0)
   if (!isActiveRemoteRequest(requestToken, workspaceStamp)) {
     return { added: 0, current: false }
   }

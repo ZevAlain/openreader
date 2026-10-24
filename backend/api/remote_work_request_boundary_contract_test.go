@@ -261,7 +261,10 @@ func TestRemoteProbeBoundaryRejectsOversizedFieldsBeforeWork(t *testing.T) {
 	}
 }
 
-func TestRemoteSearchStopsAfterEightStableSourceWindows(t *testing.T) {
+// Streaming requests (searchSize set) return after one window so the client
+// paints partial results; the eight-window aggregate bound stays on the
+// legacy path, covered by TestRemoteSearchLegacyResponseAdvertisesStableTruncationCursor.
+func TestRemoteSearchStreamingRequestReturnsAfterFirstWindow(t *testing.T) {
 	router, server := setupTestServer(t)
 	auth := authHeader(t, router)
 	sources := createRemoteWorkSearchSources(t, server, 10)
@@ -281,8 +284,8 @@ func TestRemoteSearchStopsAfterEightStableSourceWindows(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil {
 		t.Fatal(err)
 	}
-	if requests.Load() != 8 || result.LastIndex != 7 || !result.HasMore {
-		t.Fatalf("search work boundary requests=%d response=%+v, want 8/lastIndex=7/hasMore", requests.Load(), result)
+	if requests.Load() != 1 || result.LastIndex != 0 || !result.HasMore {
+		t.Fatalf("streaming search boundary requests=%d response=%+v, want 1/lastIndex=0/hasMore", requests.Load(), result)
 	}
 }
 
