@@ -98,14 +98,20 @@ test('leaving a workspace returns to the shelf instead of freezing the view', ()
   )
 })
 
-test('the search workspace shows a discovery rank board under the entry', () => {
+test('the search workspace shows the built-in hot rank board under the entry', () => {
   const search = read('src/views/Search.vue')
   const css = read('src/styles/home-shelf.css')
   assert.match(search, /class="search-rank-board"/, 'the board renders in the search workspace')
-  assert.match(search, /listExploreSources\(\)/, 'the board loads explore sources')
-  assert.match(search, /exploreBooks\(sourceId\)/, 'switching a source fetches its rank list')
-  assert.match(search, /search-rank-empty[\s\S]*?去导入书源/, 'a no-explore-sources state guides the user to import')
-  assert.match(css, /\.rank-chip\s*\{[\s\S]*?flex:\s*0 0 auto[\s\S]*?border-radius:\s*999px/, 'chips stay content-sized pills instead of stretching')
+  assert.match(search, /getHotRank\(\)/, 'the board loads the built-in hot rank')
+  assert.match(search, /function searchHotTitle\(title\) \{[\s\S]*?keyword\.value = title[\s\S]*?doSearch\(\)/, 'tapping an entry seeds the search flow with the title')
+  assert.match(search, /热门榜单暂时不可用/, 'a network failure explains itself instead of a blank board')
+  assert.match(css, /\.search-rank-item\s*\{[\s\S]*?border-radius:\s*14px/, 'rank rows are compact cards')
+})
+
+test('a fully failed search explains itself instead of looking empty', () => {
+  const search = read('src/views/Search.vue')
+  assert.match(search, /全部搜索失败/, 'the toast distinguishes total source failure from no hits')
+  assert.match(search, /class="search-failed-card"/, 'the result area keeps a visible failure card')
 })
 
 test('remote result scenes reuse the shelf title, grid, loading and night contract', () => {

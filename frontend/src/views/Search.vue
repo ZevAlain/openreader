@@ -32,41 +32,36 @@
       >搜索</el-button>
     </div>
 
-    <section v-if="showRankBoard" class="search-rank-board" aria-label="发现榜单">
+    <section v-if="showRankBoard" class="search-rank-board" aria-label="热门榜单">
       <div class="search-rank-header">
-        <span class="search-rank-title">发现榜单</span>
-        <div v-if="exploreSources.length > 1" class="search-rank-chips">
-          <button
-            v-for="source in exploreSources"
-            :key="source.id"
-            class="rank-chip"
-            :class="{ active: source.id === activeExploreId }"
-            type="button"
-            @click="switchExploreSource(source.id)"
-          >{{ source.name }}</button>
-        </div>
+        <span class="search-rank-title">热门榜单</span>
+        <span class="search-rank-sub">24 小时畅销 · 点击搜索本书</span>
       </div>
-      <p v-if="!exploreSources.length && !exploreLoading" class="search-rank-empty">
-        当前书源暂不含榜单；导入带「发现」能力的书源后，这里会展示起点等榜单。
-        <button type="button" @click="overlay.openSourceManage('import')">去导入书源</button>
+      <p v-if="hotRankError && !hotRankItems.length" class="search-rank-empty">
+        {{ hotRankError }}
       </p>
-      <div v-else class="search-rank-list" :class="{ loading: exploreLoading }">
-        <RemoteBookResultList
-          :books="exploreBookList"
-          :adding-book-key="addingRemoteBookKey"
-          :is-night="reader.themeType === 'night'"
-          @preview="openPreview"
-          @read="openRemoteReader"
-          @add="addResultToShelf"
-          @edit="openResultEditor"
-        />
-      </div>
+      <ol v-else class="search-rank-list" :class="{ loading: hotRankLoading }">
+        <li v-for="item in hotRankItems" :key="item.bookId || item.rank">
+          <button class="search-rank-item" type="button" @click="searchHotTitle(item.title)">
+            <span class="search-rank-no" :class="{ top: item.rank <= 3 }">{{ item.rank }}</span>
+            <span class="search-rank-info">
+              <strong>{{ item.title }}</strong>
+              <small>{{ item.author || '—' }}</small>
+            </span>
+            <el-icon><Search /></el-icon>
+          </button>
+        </li>
+      </ol>
     </section>
 
     <main class="shelf-main">
       <div ref="resultArea" class="books-wrapper">
+        <div v-if="searchFailed" class="search-failed-card">
+          <p>所有书源搜索失败，通常是书源站点不可达或网络受限。</p>
+          <p class="search-failed-hint">可尝试：更换书源、稍后重试，或在「我的 → 书源管理」中检查失效书源。</p>
+        </div>
         <RemoteBookResultList
-          v-if="searchMode === 'remote'"
+          v-if="!searchFailed && searchMode === 'remote'"
           :books="results"
           :adding-book-key="addingRemoteBookKey"
           :is-night="reader.themeType === 'night'"
@@ -122,7 +117,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Document } from '@element-plus/icons-vue'
+import { Document, Search } from '@element-plus/icons-vue'
 import { createRemoteReaderSession } from '../api/remoteReader'
 import { createRemoteBook } from '../api/books'
 import { importFromLocalStore, listLocalStore } from '../api/localStore'
@@ -133,7 +128,7 @@ import { useRemoteBookAddToShelf } from '../composables/useRemoteBookAddToShelf'
 import { useRemoteBookResultEditor } from '../composables/useRemoteBookResultEditor'
 import { useBookshelfStore } from '../stores/bookshelf'
 import { useOverlayStore } from '../stores/overlay'
-import { exploreBooks, listExploreSources } from '../api/explore'
+import { getHotRank } from '../api/hotRank'
 import { useReaderStore } from '../stores/reader'
 import { usePreferencesStore } from '../stores/preferences'
 import { useIndexWorkspaceStore } from '../stores/indexWorkspace'
@@ -169,38 +164,32 @@ const preferences = usePreferencesStore()
 const workspace = useIndexWorkspaceStore()
 
 const keyword = ref('')
-const exploreSources = ref([])
-const activeExploreId = ref(null)
-const exploreBookList = ref([])
-const exploreLoading = ref(false)
+const lastSearchStats = ref({ attempted: 0, failed: 0 })
+const searchFailed = ref(false)
+const hotRankItems = ref([])
+const hotRankLoading = ref(false)
+const hotRankError = ref('')
 const showRankBoard = computed(() => (
   searchMode.value === 'remote' && !searched.value && !results.value.length && !searchStarting.value
 ))
 
-async function loadExploreSources() {
+async function loadHotRank() {
+  hotRankLoading.value = true
+  hotRankError.value = ''
   try {
-    const { data } = await listExploreSources()
-    exploreSources.value = Array.isArray(data) ? data : []
-    const first = exploreSources.value[0]
-    if (first) switchExploreSource(first.id)
+    const { data } = await getHotRank()
+    hotRankItems.value = Array.isArray(data?.items) ? data.items : []
   } catch {
-    exploreSources.value = []
+    hotRankItems.value = []
+    hotRankError.value = '热门榜单暂时不可用（服务器访问外网受限），可稍后再试。'
+  } finally {
+    hotRankLoading.value = false
   }
 }
 
-async function switchExploreSource(sourceId) {
-  if (exploreLoading.value) return
-  activeExploreId.value = sourceId
-  exploreLoading.value = true
-  exploreBookList.value = []
-  try {
-    const { data } = await exploreBooks(sourceId)
-    exploreBookList.value = Array.isArray(data?.books) ? data.books : []
-  } catch {
-    exploreBookList.value = []
-  } finally {
-    exploreLoading.value = false
-  }
+function searchHotTitle(title) {
+  keyword.value = title
+  doSearch()
 }
 const searchMode = ref('remote')
 const sources = ref([])
@@ -289,7 +278,7 @@ onMounted(async () => {
   updateResultViewport()
   window.addEventListener('resize', updateResultViewport)
   window.addEventListener('orientationchange', updateResultViewport)
-  loadExploreSources()
+  loadHotRank()
   const mountOperation = searchSessionOperations.begin('mount')
   applyWorkspaceSearchIntent()
   const shelfReady = await warmSearchShelf()
@@ -413,8 +402,10 @@ async function doSearch() {
   searching.value = true
   searchStarting.value = false
   searched.value = false
+  searchFailed.value = false
   results.value = []
   resetRemotePagination()
+  lastSearchStats.value = { attempted: 0, failed: 0 }
   const requestToken = remoteRequestGate.begin()
   const workspaceStamp = captureWorkspaceRequest(workspace, 'search')
   activeSearchKeyword.value = value
@@ -431,7 +422,16 @@ async function doSearch() {
     })
     if (!current) return
     searched.value = true
-    ElMessage.success(added ? `找到 ${added} 条结果` : '没有找到相关书籍')
+    const stats = lastSearchStats.value
+    if (added) {
+      if (stats.failed) ElMessage.success(`找到 ${added} 条结果（${stats.failed} 个书源失败）`)
+      else ElMessage.success(`找到 ${added} 条结果`)
+    } else if (stats.failed && stats.attempted && stats.failed >= stats.attempted) {
+      ElMessage.error(`${stats.failed} 个书源全部搜索失败，请检查网络或书源可用性`)
+      searchFailed.value = true
+    } else {
+      ElMessage.info('没有找到相关书籍')
+    }
   } catch (err) {
     if (isActiveRemoteRequest(requestToken, workspaceStamp)) {
       ElMessage.error(readError(err, '搜索失败'))
@@ -450,6 +450,7 @@ async function loadMoreRemote() {
     ElMessage.info('没有更多了')
     return
   }
+  lastSearchStats.value = { attempted: 0, failed: 0 }
   const requestToken = remoteRequestGate.begin()
   const workspaceStamp = captureWorkspaceRequest(workspace, 'search')
   const nextPage = searchPage.value + 1
@@ -502,7 +503,15 @@ function remoteSearchPayload(page, lastIndex) {
 }
 
 async function requestRemoteSearch({ append, page, lastIndex, requestToken, workspaceStamp }) {
-  const { data } = await api.post('/search', remoteSearchPayload(page, lastIndex))
+  // Multi-source search fans out server-side and can legitimately run past
+  // the default axios timeout (12s); give it room instead of racing it.
+  const response = await api.post('/search', remoteSearchPayload(page, lastIndex), { timeout: 90000 })
+  const data = response.data
+  const headers = response.headers || {}
+  lastSearchStats.value = {
+    attempted: Number(data?.attempted ?? headers['x-openreader-search-attempted'] ?? 0),
+    failed: Number(data?.failed ?? headers['x-openreader-search-failed'] ?? 0),
+  }
   if (!isActiveRemoteRequest(requestToken, workspaceStamp)) {
     return { added: 0, current: false }
   }

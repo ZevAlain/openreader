@@ -57,6 +57,7 @@ type Server struct {
 	defaultSourcesMu sync.Mutex
 	assetLocksMu     sync.Mutex
 	assetLocks       map[uint]*userAssetGate
+	hotRank          hotRankCache
 }
 
 func RegisterRoutes(router *gin.Engine, cfg config.Config, database *gorm.DB, hub *readersync.Hub, sched *scheduler.Scheduler, backupSvc *backup.Service) *Server {
@@ -210,6 +211,7 @@ func RegisterRoutes(router *gin.Engine, cfg config.Config, database *gorm.DB, hu
 	protected.GET("/rss/articles", server.listRSSArticles)
 	protected.GET("/rss/articles/:id/content", server.getRSSArticleContent)
 	protected.PUT("/rss/articles/:id", server.updateRSSArticleState)
+	protected.GET("/hot-rank", server.getHotRank)
 	protected.GET("/explore/sources", server.listExploreSources)
 	protected.GET("/explore/:sourceId", server.exploreBooks)
 

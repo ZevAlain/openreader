@@ -529,3 +529,95 @@
 .search-rank-list.loading {
   opacity: 0.55;
 }
+
+/* Built-in hot-rank board (compact MoviePilot-style rows). */
+.search-rank-sub {
+  color: var(--app-text-subtle);
+  font-size: 12px;
+}
+
+.search-rank-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  gap: 6px;
+}
+
+.search-rank-list.loading {
+  opacity: 0.55;
+}
+
+.search-rank-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  color: var(--app-text);
+  text-align: left;
+}
+
+.search-rank-no {
+  flex: 0 0 22px;
+  color: var(--app-text-subtle);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.search-rank-no.top {
+  color: var(--app-primary-strong);
+}
+
+.search-rank-info {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 1px;
+}
+
+.search-rank-info strong {
+  overflow: hidden;
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-rank-info small {
+  overflow: hidden;
+  color: var(--app-text-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-rank-item .el-icon {
+  flex: 0 0 auto;
+  color: var(--app-text-subtle);
+  font-size: 14px;
+}
+
+.search-failed-card {
+  margin: 12px 16px;
+  padding: 16px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  color: var(--app-text);
+  font-size: 14px;
+}
+
+.search-failed-card p {
+  margin: 0 0 6px;
+}
+
+.search-failed-hint {
+  color: var(--app-text-muted);
+  font-size: 13px;
+}

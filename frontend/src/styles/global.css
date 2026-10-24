@@ -168,6 +168,15 @@ html.dark-reader .el-button--primary {
   --el-button-active-text-color: var(--app-on-primary);
 }
 
+/* Toasts must clear the notch/home-indicator on the standalone shell. The
+   per-message inline top from Element Plus loses to !important here, which is
+   fine for the one-or-two messages a phone shows at a time. */
+@media (max-width: 750px) {
+  .el-message {
+    top: calc(16px + env(safe-area-inset-top)) !important;
+  }
+}
+
 /* Inputs below 16px make iOS Safari zoom the whole viewport on focus. */
 @media (max-width: 750px) {
   input,

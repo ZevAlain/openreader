@@ -30,6 +30,10 @@ type searchResponse struct {
 	Page      int                   `json:"page"`
 	LastIndex int                   `json:"lastIndex"`
 	HasMore   bool                  `json:"hasMore"`
+	// Attempted/Failed let the client tell "no hits" apart from "every
+	// source errored" so users see why a search came back empty.
+	Attempted int `json:"attempted,omitempty"`
+	Failed    int `json:"failed,omitempty"`
 }
 
 func (s *Server) search(c *gin.Context) {
@@ -69,7 +73,7 @@ func (s *Server) search(c *gin.Context) {
 	}
 
 	if !pagedRequest {
-		results, nextIndex := s.concurrentSearchFrom(
+		results, nextIndex, attempted, failed := s.concurrentSearchFrom(
 			c.Request.Context(),
 			userID,
 			sources,
@@ -83,6 +87,10 @@ func (s *Server) search(c *gin.Context) {
 			c.Header("X-OpenReader-Search-Truncated", "1")
 			c.Header("X-OpenReader-Search-Last-Index", strconv.Itoa(nextIndex))
 		}
+		// This branch keeps the legacy bare-array body shape; failure stats
+		// ride headers so reader-dev-style clients keep parsing the list.
+		c.Header("X-OpenReader-Search-Attempted", strconv.Itoa(attempted))
+		c.Header("X-OpenReader-Search-Failed", strconv.Itoa(failed))
 		c.JSON(http.StatusOK, s.projectSearchResultCovers(userID, results))
 		return
 	}
@@ -117,7 +125,7 @@ func (s *Server) search(c *gin.Context) {
 	if req.LastIndex != nil {
 		lastIndex = *req.LastIndex
 	}
-	results, nextIndex := s.concurrentSearchFrom(
+	results, nextIndex, attempted, failed := s.concurrentSearchFrom(
 		c.Request.Context(),
 		userID,
 		sources,
@@ -132,20 +140,24 @@ func (s *Server) search(c *gin.Context) {
 		Page:      page,
 		LastIndex: nextIndex,
 		HasMore:   hasActiveSearchSourceAfter(sources, activeFailures, nextIndex),
+		Attempted: attempted,
+		Failed:    failed,
 	})
 }
 
-func (s *Server) concurrentSearchFrom(parent context.Context, userID uint, sources []models.BookSource, keyword string, concurrentCount, lastIndex, searchSize int, activeFailures map[uint]models.SourceFailure) ([]engine.SearchResult, int) {
+func (s *Server) concurrentSearchFrom(parent context.Context, userID uint, sources []models.BookSource, keyword string, concurrentCount, lastIndex, searchSize int, activeFailures map[uint]models.SourceFailure) ([]engine.SearchResult, int, int, int) {
 	start := lastIndex + 1
 	if start < 0 {
 		start = 0
 	}
 	if start >= len(sources) {
-		return []engine.SearchResult{}, len(sources) - 1
+		return []engine.SearchResult{}, len(sources) - 1, 0, 0
 	}
 	seen := make(map[string]bool)
 	aggregated := make([]engine.SearchResult, 0)
 	nextIndex := lastIndex
+	attempted := 0
+	failed := 0
 
 	for windows := 0; start < len(sources) && windows < maxRemoteSearchWindows; windows++ {
 		if parent.Err() != nil {
@@ -171,8 +183,10 @@ func (s *Server) concurrentSearchFrom(parent context.Context, userID uint, sourc
 			continue
 		}
 		outcomes := searchSourceBatch(parent, batch, keyword, len(batch))
+		attempted += len(batch)
 		for _, outcome := range outcomes {
 			if outcome.Error != nil {
+				failed++
 				if outcome.Index >= 0 && outcome.Index < len(batch) {
 					s.recordSourceFailure(userID, batch[outcome.Index], outcome.Error)
 				}
@@ -195,7 +209,7 @@ func (s *Server) concurrentSearchFrom(parent context.Context, userID uint, sourc
 		}
 		start = end
 	}
-	return aggregated, nextIndex
+	return aggregated, nextIndex, attempted, failed
 }
 
 func hasActiveSearchSourceAfter(sources []models.BookSource, activeFailures map[uint]models.SourceFailure, lastIndex int) bool {
