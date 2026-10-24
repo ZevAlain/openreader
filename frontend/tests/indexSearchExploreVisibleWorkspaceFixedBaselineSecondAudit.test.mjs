@@ -108,6 +108,17 @@ test('the search workspace shows the built-in hot rank board under the entry', (
   assert.match(css, /\.search-rank-item\s*\{[\s\S]*?border-radius:\s*14px/, 'rank rows are compact cards')
 })
 
+test('the search header stays clean; load-more lives at the list tail', () => {
+  const search = read('src/views/Search.vue')
+  const headerStart = search.indexOf('<div class="title-actions"')
+  const headerEnd = search.indexOf('</div>', headerStart)
+  const header = search.slice(headerStart, headerEnd)
+  assert.ok(headerStart >= 0, 'the search header exists')
+  assert.doesNotMatch(header, /书架|加载更多|没有更多/, 'the shelf and load-more buttons moved out of the header')
+  assert.match(search, /class="search-load-more"[\s\S]*?@click="loadMoreRemote"/, 'load-more is an inline pill at the results tail')
+  assert.match(search, /v-if="searchMode === 'remote' && searched && remoteHasMore"/, 'the tail button only appears when more pages exist')
+})
+
 test('a fully failed search explains itself instead of looking empty', () => {
   const search = read('src/views/Search.vue')
   assert.match(search, /全部搜索失败/, 'the toast distinguishes total source failure from no hits')

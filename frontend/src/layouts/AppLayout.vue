@@ -196,16 +196,21 @@
             :data-sidebar-section="section.key"
           >
             <p class="profile-group-title">{{ section.title }}</p>
-            <button
-              v-for="item in section.items"
-              :key="item.key"
-              class="profile-group-item"
-              type="button"
-              @click="runNavAction(item); closeProfileSheet()"
-            >
-              <span>{{ item.label }}</span>
-              <el-icon><ArrowRight /></el-icon>
-            </button>
+            <template v-for="item in section.items" :key="item.key">
+              <div v-if="item.info" class="profile-group-item profile-group-static">
+                <span>{{ item.label }}</span>
+                <span class="profile-static-value">{{ item.info }}</span>
+              </div>
+              <button
+                v-else
+                class="profile-group-item"
+                type="button"
+                @click="runNavAction(item); closeProfileSheet()"
+              >
+                <span>{{ item.label }}</span>
+                <el-icon><ArrowRight /></el-icon>
+              </button>
+            </template>
           </section>
           <section class="profile-group">
             <p class="profile-group-title">关于</p>
@@ -350,7 +355,7 @@ const navSections = computed(() => [
     key: 'backend',
     title: '后端设定',
     items: [
-      { key: 'backendStatus', label: backendConnected.value ? '后端在线' : '后端未连接', action: () => refreshHealthInfo(true) },
+      { key: 'backendStatus', label: '后端状态', info: backendConnected.value ? '在线' : '未连接' },
     ],
   },
   {
@@ -1550,7 +1555,8 @@ function readError(err, fallback) {
   bottom: calc(14px + env(safe-area-inset-bottom));
   z-index: 60;
   display: flex;
-  width: min(400px, calc(100vw - 28px));
+  width: fit-content;
+  max-width: calc(100vw - 28px);
   padding: 7px;
   border: 1px solid var(--glass-chrome-border);
   border-radius: 999px;
@@ -1562,11 +1568,12 @@ function readError(err, fallback) {
 }
 
 .mobile-tab {
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 64px;
   display: grid;
   justify-items: center;
   gap: 1px;
-  padding: 8px 0 6px;
+  padding: 8px 6px 6px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -1719,5 +1726,15 @@ function readError(err, fallback) {
 .profile-group-item .el-icon {
   color: var(--app-text-subtle);
   font-size: 14px;
+}
+
+.profile-group-static {
+  cursor: default;
+}
+
+.profile-static-value {
+  color: var(--app-primary-strong);
+  font-size: 13px;
+  font-weight: 600;
 }
 </style>

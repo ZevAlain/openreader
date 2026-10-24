@@ -621,3 +621,18 @@
   color: var(--app-text-muted);
   font-size: 13px;
 }
+
+.search-load-more {
+  display: block;
+  margin: 4px auto 12px;
+  padding: 7px 22px;
+  color: var(--app-primary-strong);
+  background: var(--app-primary-soft);
+  border: 0;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.search-load-more:disabled {
+  opacity: 0.55;
+}

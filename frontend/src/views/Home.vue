@@ -13,8 +13,6 @@
         <button type="button" :disabled="refreshLoading" @click="refreshShelf">
           {{ refreshLoading ? '刷新中...' : '刷新' }}
         </button>
-        <button v-if="isNormalPage" type="button" @click="overlay.openRSS()">RSS</button>
-        <button v-if="isNormalPage" type="button" @click.stop="openExploreWorkspace">书海</button>
       </div>
     </div>
 
@@ -270,10 +268,6 @@ function readerRouteQuery(book) {
 
 function updateViewportFlags() {
   windowWidth.value = currentViewportWidth()
-}
-
-function openExploreWorkspace() {
-  workspace.requestExplore()
 }
 
 function backToShelf() {

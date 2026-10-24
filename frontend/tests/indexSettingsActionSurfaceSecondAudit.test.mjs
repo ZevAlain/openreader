@@ -56,8 +56,10 @@ test('Index sidebar keeps the fixed-upstream action ownership and order', () => 
     layout.indexOf("key: 'backend'"),
     layout.indexOf("key: 'sources'"),
   )
-  assert.match(backendSection, /backendConnected\.value \? '后端在线' : '后端未连接'/)
-  assert.match(backendSection, /action:\s*\(\) => refreshHealthInfo\(true\)/)
+  assert.match(backendSection, /label: '后端状态', info: backendConnected\.value \? '在线' : '未连接'/, 'backend status is an informational row, not a second-level entry')
+  const profileHost = layout
+  assert.match(profileHost, /v-if="item\.info"[\s\S]*?profile-group-static/, 'info rows render as static rows without click handlers or chevrons')
+  assert.doesNotMatch(backendSection, /action:/)
   assert.doesNotMatch(backendSection, /refreshShelfData/)
 
   const sourceSection = layout.slice(
@@ -86,11 +88,11 @@ test('Home preserves the upstream ordinary-shelf title action sequence', () => {
     home.indexOf('<div class="title-actions">'),
     home.indexOf('</div>', home.indexOf('<div class="title-actions">')),
   )
-  const labels = ['编辑', '刷新', 'RSS', '书海']
+  const labels = ['编辑', '刷新']
   for (let index = 1; index < labels.length; index += 1) {
     assert(actionTemplate.indexOf(labels[index - 1]) < actionTemplate.indexOf(labels[index]))
   }
-  assert.doesNotMatch(actionTemplate, /view-switch|网格显示|列表显示/)
+  assert.doesNotMatch(actionTemplate, /RSS|书海|view-switch|网格显示|列表显示/, 'RSS/explore moved off the shelf header; the tab bar and 我的 own navigation')
 })
 
 test('workspace refresh reloads every current-account workspace owner', async () => {

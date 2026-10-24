@@ -4,15 +4,7 @@
       <div class="shelf-title-main">
         <strong>搜索 ({{ searchMode === 'local' ? shownLocalResults.length : results.length }})</strong>
       </div>
-      <div class="title-actions">
-        <button
-          v-if="searchMode === 'remote'"
-          type="button"
-          :disabled="searching || loadingMore || (searched && !remoteHasMore)"
-          @click="loadMoreRemote"
-        >{{ remoteSearchActionLabel }}</button>
-        <button type="button" @click="backToShelf">书架</button>
-      </div>
+      <div class="title-actions" />
     </div>
 
     <div class="search-entry-bar">
@@ -70,6 +62,14 @@
           @add="addResultToShelf"
           @edit="openResultEditor"
         />
+
+        <button
+          v-if="searchMode === 'remote' && searched && remoteHasMore"
+          class="search-load-more"
+          type="button"
+          :disabled="searching || loadingMore"
+          @click="loadMoreRemote"
+        >{{ remoteSearchActionLabel }}</button>
 
         <div v-else-if="shownLocalResults.length" class="local-result-list">
           <article
@@ -156,7 +156,6 @@ import {
 import { currentViewportWidth, shouldUseMiniInterface } from '../utils/responsive.js'
 
 const router = useRouter()
-const emit = defineEmits(['back-to-shelf'])
 const bookshelf = useBookshelfStore()
 const overlay = useOverlayStore()
 const reader = useReaderStore()
@@ -613,13 +612,6 @@ function applyWorkspaceSearchIntent() {
   concurrentCount.value = normalizeSearchConcurrent(intent.concurrent)
   searched.value = false
   searchStarting.value = searchMode.value === 'remote' && Boolean(keyword.value.trim())
-}
-
-function backToShelf() {
-  remoteRequestGate.invalidate()
-  searchSessionOperations.invalidate('local-search')
-  workspace.backToShelf()
-  emit('back-to-shelf')
 }
 
 async function importLocalOne(item) {
