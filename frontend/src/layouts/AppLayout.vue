@@ -1543,17 +1543,17 @@ function readError(err, fallback) {
 }
 
 
-/* ---- Mobile floating glass tab bar ---- */
+/* ---- Mobile floating glass tab bar (iOS 26 Liquid Glass style) ---- */
 .mobile-tabbar {
   position: fixed;
   left: 50%;
   bottom: calc(14px + env(safe-area-inset-bottom));
   z-index: 60;
   display: flex;
-  width: min(420px, calc(100vw - 32px));
-  padding: 8px;
+  width: min(400px, calc(100vw - 28px));
+  padding: 7px;
   border: 1px solid var(--glass-chrome-border);
-  border-radius: 26px;
+  border-radius: 999px;
   background: var(--glass-chrome-bg);
   backdrop-filter: blur(var(--glass-blur-chrome)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur-chrome)) saturate(var(--glass-saturate));
@@ -1565,23 +1565,33 @@ function readError(err, fallback) {
   flex: 1;
   display: grid;
   justify-items: center;
-  gap: 2px;
-  padding: 7px 0 5px;
+  gap: 1px;
+  padding: 8px 0 6px;
   border: 0;
-  border-radius: 18px;
+  border-radius: 999px;
   background: transparent;
   color: var(--app-text-muted);
   font-size: 11px;
-  transition: color 160ms ease, background-color 160ms ease;
+  font-weight: 500;
+  transition: color 180ms ease, background-color 180ms ease, transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mobile-tab:active {
+  transform: scale(0.92);
 }
 
 .mobile-tab .el-icon {
-  font-size: 21px;
+  font-size: 22px;
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .mobile-tab.active {
   color: var(--app-primary-strong);
   background: var(--app-primary-soft);
+}
+
+.mobile-tab.active .el-icon {
+  transform: scale(1.06);
 }
 
 /* ---- "My profile" full page (mobile) ---- */

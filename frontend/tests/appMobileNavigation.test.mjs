@@ -42,7 +42,11 @@ test('the mobile shell replaces the drawer with a floating glass tab bar', () =>
   assert.doesNotMatch(source, /mobile-nav-open/, 'the retired drawer-open state must be gone')
   assert.doesNotMatch(source, /--mobile-nav-width/, 'no off-canvas sidebar sizing remains')
   assert.match(source, /\.mobile-tabbar\s*\{[\s\S]*?backdrop-filter:\s*blur\(var\(--glass-blur-chrome\)\)/, 'the tab bar uses chrome glass')
+  assert.match(source, /\.mobile-tabbar\s*\{[\s\S]*?border-radius:\s*999px/, 'the bar is a floating iOS-style pill')
   assert.match(source, /bottom:\s*calc\(14px \+ env\(safe-area-inset-bottom\)\)/, 'the tab bar respects the home indicator')
+  assert.match(source, /\.mobile-tab:active\s*\{[\s\S]*?transform:\s*scale\(0\.92\)/, 'tabs respond to press with a transform spring')
+  assert.match(source, /\.mobile-tab\s*\{[\s\S]*?border-radius:\s*999px/, 'each tab is capsule-shaped')
+  assert.match(source, /\.mobile-tab\.active\s*\{[\s\S]*?background:\s*var\(--app-primary-soft\)/, 'the active tab carries a tinted capsule background')
 })
 
 test('the tab bar keeps exactly shelf, search, and profile', () => {
@@ -64,6 +68,17 @@ test('switching tabs closes the explore popover and the profile page', () => {
     'leaving a tab must dismiss the explore chooser before navigating',
   )
   assert.match(source, /if \(profilePageVisible\.value\) profilePageVisible\.value = false/, 'leaving the profile tab must close the profile page')
+})
+
+test('the mobile search workspace owns a visible search entry', () => {
+  const search = readFileSync(new URL('../src/views/Search.vue', import.meta.url), 'utf8')
+  const shelfCss = readFileSync(new URL('../src/styles/home-shelf.css', import.meta.url), 'utf8')
+  assert.match(search, /class="search-entry-bar"/, 'the search workspace renders an entry bar')
+  assert.match(search, /v-model="keyword"[\s\S]*?@keyup\.enter="doSearch"/, 'enter submits the search')
+  assert.match(search, /@click="doSearch"/, 'the go button submits the search')
+  assert.match(shelfCss, /\.search-entry-bar\s*\{[\s\S]*?display:\s*none/, 'the bar stays hidden on desktop where the sidebar owns quick-search')
+  assert.match(shelfCss, /@media \(max-width:\s*750px\)\s*\{[\s\S]*?\.search-entry-bar\s*\{[\s\S]*?display:\s*flex/, 'the bar appears on the mobile shell')
+  assert.match(shelfCss, /\.search-entry-bar \.el-input__inner\s*\{[\s\S]*?font-size:\s*16px/, 'the input keeps iOS from zooming on focus')
 })
 
 test('the profile view is a full page, not a bottom sheet', () => {

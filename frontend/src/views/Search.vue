@@ -15,6 +15,23 @@
       </div>
     </div>
 
+    <div class="search-entry-bar">
+      <el-input
+        v-model="keyword"
+        placeholder="搜索书籍 / 作者"
+        clearable
+        :disabled="searchMode !== 'remote'"
+        @keyup.enter="doSearch"
+      />
+      <el-button
+        type="primary"
+        class="search-entry-go"
+        :loading="searchStarting || searching"
+        :disabled="searchMode === 'remote' && !keyword.trim()"
+        @click="doSearch"
+      >搜索</el-button>
+    </div>
+
     <main class="shelf-main">
       <div ref="resultArea" class="books-wrapper">
         <RemoteBookResultList
