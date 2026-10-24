@@ -129,6 +129,8 @@ func RegisterRoutes(router *gin.Engine, cfg config.Config, database *gorm.DB, hu
 	protected.GET("/sources/export", server.exportSources)
 	protected.POST("/sources/remote", server.importRemoteSource)
 	protected.POST("/sources/remote-preview", server.previewRemoteSource)
+	protected.GET("/sources/origin-count", server.countSourcesByOrigin)
+	protected.DELETE("/sources/origin", server.deleteSourcesByOrigin)
 	protected.POST("/sources/batch-test", server.batchTestSources)
 	protected.GET("/sources/:id", server.getSource)
 	protected.PUT("/sources/:id", server.updateSource)

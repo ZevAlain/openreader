@@ -139,6 +139,12 @@ test('dialogs pop from the screen center instead of dropping from the top', () =
   assert.match(globalCss, /\.el-dialog\.is-fullscreen\s*\{[\s\S]*?max-height:\s*none/, 'mobile fullscreen dialogs keep covering the viewport')
 })
 
+test('fullscreen dialogs bound their top and bottom edges', () => {
+  assert.match(globalCss, /\.el-dialog\.is-fullscreen\s*\{[\s\S]*?padding-top:\s*calc\(18px \+ env\(safe-area-inset-top\)\)/, 'fullscreen dialogs clear the status-bar band')
+  assert.match(globalCss, /\.el-dialog\.is-fullscreen\s*\{[\s\S]*?padding-bottom:\s*calc\(12px \+ env\(safe-area-inset-bottom\)\)/, 'fullscreen dialogs clear the home indicator')
+  assert.match(globalCss, /display-mode: standalone\)\s*\{[\s\S]*?\.el-dialog\.is-fullscreen[\s\S]*?30px/, 'standalone shells get the wider headroom')
+})
+
 test('glass blur is bounded for low-power clients', () => {
   const blurs = [...tokens.matchAll(/--glass-blur-(?:chrome|panel):\s*(\d+)px/g)].map(match => Number(match[1]))
   assert.ok(blurs.length >= 2, 'chrome and panel blur radii must be tokenized')

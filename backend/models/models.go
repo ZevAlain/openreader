@@ -44,30 +44,33 @@ type UserSetting struct {
 }
 
 type BookSource struct {
-	ID             uint      `json:"id" gorm:"primaryKey"`
-	Name           string    `json:"name" gorm:"size:120;not null"`
-	BaseURL        string    `json:"baseUrl" gorm:"size:500"`
-	SearchURL      string    `json:"searchUrl" gorm:"size:500"`
-	BookURLPattern string    `json:"bookUrlPattern" gorm:"type:text"`
-	SourceType     int       `json:"bookSourceType" gorm:"default:0"`
-	Comment        string    `json:"bookSourceComment" gorm:"type:text"`
-	Charset        string    `json:"charset" gorm:"size:40;default:utf-8"`
-	ConcurrentRate string    `json:"concurrentRate" gorm:"size:80"`
-	Header         string    `json:"header" gorm:"type:text"`
-	LoginURL       string    `json:"loginUrl" gorm:"type:text"`
-	LoginCheckJS   string    `json:"loginCheckJs" gorm:"type:text"`
-	CustomOrder    int       `json:"customOrder" gorm:"default:0"`
-	LastUpdateTime int64     `json:"lastUpdateTime"`
-	Weight         int       `json:"weight"`
-	RespondTime    int64     `json:"respondTime"`
-	Rules          string    `json:"rules" gorm:"type:text"`
-	Enabled        bool      `json:"enabled"`
-	EnabledExplore *bool     `json:"enabledExplore" gorm:"not null;default:true"`
-	Group          string    `json:"group" gorm:"size:80"`
-	UsedBookCount  int       `json:"usedBookCount" gorm:"-"`
-	UsedBookNames  []string  `json:"-" gorm:"-"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
+	ID             uint   `json:"id" gorm:"primaryKey"`
+	Name           string `json:"name" gorm:"size:120;not null"`
+	BaseURL        string `json:"baseUrl" gorm:"size:500"`
+	SearchURL      string `json:"searchUrl" gorm:"size:500"`
+	BookURLPattern string `json:"bookUrlPattern" gorm:"type:text"`
+	SourceType     int    `json:"bookSourceType" gorm:"default:0"`
+	Comment        string `json:"bookSourceComment" gorm:"type:text"`
+	Charset        string `json:"charset" gorm:"size:40;default:utf-8"`
+	ConcurrentRate string `json:"concurrentRate" gorm:"size:80"`
+	Header         string `json:"header" gorm:"type:text"`
+	LoginURL       string `json:"loginUrl" gorm:"type:text"`
+	LoginCheckJS   string `json:"loginCheckJs" gorm:"type:text"`
+	CustomOrder    int    `json:"customOrder" gorm:"default:0"`
+	LastUpdateTime int64  `json:"lastUpdateTime"`
+	Weight         int    `json:"weight"`
+	RespondTime    int64  `json:"respondTime"`
+	Rules          string `json:"rules" gorm:"type:text"`
+	Enabled        bool   `json:"enabled"`
+	EnabledExplore *bool  `json:"enabledExplore" gorm:"not null;default:true"`
+	Group          string `json:"group" gorm:"size:80"`
+	// OriginURL records the remote collection a source was imported from so
+	// deleting that remote entry can offer to clean up its sources.
+	OriginURL     string    `json:"-" gorm:"column:origin_url;size:500"`
+	UsedBookCount int       `json:"usedBookCount" gorm:"-"`
+	UsedBookNames []string  `json:"-" gorm:"-"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
 // UserBookSource owns the visibility of one reusable BookSource snapshot in a

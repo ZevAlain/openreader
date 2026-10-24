@@ -901,6 +901,10 @@ func (s *Server) importRemoteSource(c *gin.Context) {
 		return
 	}
 
+	for index := range sources {
+		sources[index].OriginURL = req.URL
+	}
+
 	userID, _ := middleware.UserID(c)
 	result, err := s.bookSources.Import(userID, sources)
 	if errors.Is(err, booksources.ErrSourceLimitExceeded) {
@@ -1145,4 +1149,35 @@ func (s *Server) getSource(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, source)
+}
+
+func (s *Server) countSourcesByOrigin(c *gin.Context) {
+	if !s.requireSourceEdit(c) {
+		return
+	}
+	originURL := strings.TrimSpace(c.Query("url"))
+	userID, _ := middleware.UserID(c)
+	count, err := s.bookSources.CountByOrigin(userID, originURL)
+	if err != nil {
+		internalError(c, "failed to count sources")
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"count": count})
+}
+
+func (s *Server) deleteSourcesByOrigin(c *gin.Context) {
+	if !s.requireSourceEdit(c) {
+		return
+	}
+	userID, _ := middleware.UserID(c)
+	originURL := strings.TrimSpace(c.Query("url"))
+	deleted, skipped, err := s.bookSources.DeleteByOrigin(userID, originURL)
+	if err != nil {
+		internalError(c, "failed to delete sources")
+		return
+	}
+	if deleted > 0 {
+		s.broadcastSourcesUpdate(userID, "origin-cleanup")
+	}
+	c.JSON(http.StatusOK, gin.H{"deleted": deleted, "skippedInUse": skipped})
 }

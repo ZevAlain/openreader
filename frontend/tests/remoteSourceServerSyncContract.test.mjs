@@ -19,6 +19,15 @@ test('legacy browser storage is migrated once and then removed', () => {
   assert.match(overlay, /safeLocalStorageRemove\(`\$\{scope\}@lastRemoteSourceUrl`\)/, 'the retired prompt-flow key must be cleared after upload')
 })
 
+test('deleting a remote entry offers to clean up its imported sources', () => {
+  const overlay = readFileSync(new URL('../src/components/workspace/SourceTransferOverlay.vue', import.meta.url), 'utf8')
+  assert.match(overlay, /\/sources\/origin-count/, 'deletion first counts sources imported from that link')
+  assert.match(overlay, /删除并清理书源/, 'the confirm offers linked cleanup')
+  assert.match(overlay, /仅删除链接/, 'keeping the imported sources is an explicit choice')
+  assert.match(overlay, /distinguishCancelAndClose/, 'closing without choosing aborts the deletion')
+  assert.match(overlay, /\/sources\/origin[^-]/, 'linked cleanup calls the origin delete endpoint')
+})
+
 test('server failures keep the authoritative list', () => {
   assert.match(overlay, /function persistRemoteEntries[\s\S]*?ElMessage\.error\(readError\(error, '保存远程书源列表失败'\)\)/, 'a failed save reports instead of silently diverging')
   assert.match(overlay, /removeRemoteEntry[\s\S]*?await saveRemoteEntries\(next\)[\s\S]*?remoteEntries\.value = next/, 'removal must only apply after the server accepts it')

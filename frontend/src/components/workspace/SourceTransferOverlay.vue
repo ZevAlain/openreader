@@ -381,14 +381,53 @@ async function startRemoteImport(url) {
 }
 
 async function removeRemoteEntry(url) {
+  let importedCount = 0
   try {
-    await ElMessageBox.confirm(
-      '确认要移除该远程书源链接吗？已导入的书源不会被删除。',
-      '移除远程书源',
-      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
-    )
+    const { data } = await api.get('/sources/origin-count', { params: { url } })
+    importedCount = Number(data?.count || 0)
   } catch {
-    return
+    importedCount = 0
+  }
+  let cleanup = false
+  if (importedCount > 0) {
+    try {
+      await ElMessageBox.confirm(
+        `该链接曾导入 ${importedCount} 个书源。是否连同这些书源一起删除？`,
+        '移除远程书源',
+        {
+          confirmButtonText: '删除并清理书源',
+          cancelButtonText: '仅删除链接',
+          distinguishCancelAndClose: true,
+          type: 'warning',
+        },
+      )
+      cleanup = true
+    } catch (action) {
+      // 'close' (X) means abort; 'cancel' means keep the imported sources.
+      if (action === 'close') return
+    }
+  } else {
+    try {
+      await ElMessageBox.confirm(
+        '确认要移除该远程书源链接吗？没有从该链接导入的书源。',
+        '移除远程书源',
+        { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
+      )
+    } catch {
+      return
+    }
+  }
+  if (cleanup) {
+    try {
+      const { data } = await api.delete('/sources/origin', { params: { url } })
+      const deleted = Number(data?.deleted || 0)
+      const skipped = Number(data?.skippedInUse || 0)
+      if (skipped) ElMessage.warning(`已清理 ${deleted} 个书源，${skipped} 个因在用保留`)
+      else ElMessage.success(`已清理 ${deleted} 个书源`)
+    } catch (error) {
+      ElMessage.error(readError(error, '清理书源失败，链接未删除'))
+      return
+    }
   }
   const next = remoteEntries.value.filter(item => item.url !== url)
   try {

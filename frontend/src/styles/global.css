@@ -148,6 +148,17 @@ body {
 .el-dialog.is-fullscreen {
   max-height: none;
   animation: none;
+  /* Fullscreen managers still clear the status-bar glass band at the top
+     and the home indicator at the bottom — same shelf headroom. */
+  box-sizing: border-box;
+  padding-top: calc(18px + env(safe-area-inset-top));
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+@media (display-mode: standalone) {
+  .el-dialog.is-fullscreen {
+    padding-top: calc(30px + env(safe-area-inset-top));
+  }
 }
 
 @keyframes app-dialog-pop {

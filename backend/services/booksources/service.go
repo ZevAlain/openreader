@@ -585,6 +585,48 @@ func (s *Service) BatchDelete(userID uint, sourceIDs []uint) (int, int, error) {
 	return affected, skippedUsed, err
 }
 
+// CountByOrigin returns how many of the user's active sources were imported
+// from the given remote collection URL.
+func (s *Service) CountByOrigin(userID uint, originURL string) (int64, error) {
+	if originURL == "" {
+		return 0, nil
+	}
+	var ids []uint
+	if err := activeSourceQuery(s.db, userID).
+		Where("book_sources.origin_url = ?", originURL).
+		Pluck("book_sources.id", &ids).Error; err != nil {
+		return 0, err
+	}
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	var count int64
+	if err := s.db.Model(&models.UserBookSource{}).
+		Where("user_id = ? AND source_id IN ? AND detached = ?", userID, ids, false).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// DeleteByOrigin removes the user's active sources imported from the given
+// remote collection URL, reusing the BatchDelete in-use protections.
+func (s *Service) DeleteByOrigin(userID uint, originURL string) (int, int, error) {
+	if originURL == "" {
+		return 0, 0, nil
+	}
+	var ids []uint
+	if err := activeSourceQuery(s.db, userID).
+		Where("book_sources.origin_url = ?", originURL).
+		Pluck("book_sources.id", &ids).Error; err != nil {
+		return 0, 0, err
+	}
+	if len(ids) == 0 {
+		return 0, 0, nil
+	}
+	return s.BatchDelete(userID, ids)
+}
+
 func (s *Service) Import(userID uint, sources []models.BookSource) (ImportResult, error) {
 	if err := s.EnsureNamespace(userID); err != nil {
 		return ImportResult{}, err
