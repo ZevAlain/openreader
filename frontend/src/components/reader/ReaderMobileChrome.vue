@@ -209,7 +209,7 @@ defineEmits(['action', 'page-progress-input', 'page-progress-change', 'cache', '
   z-index: 11;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  padding: max(5px, env(safe-area-inset-top)) 8px 5px;
+  padding: max(14px, calc(10px + env(safe-area-inset-top))) 8px 6px;
   background: color-mix(in srgb, var(--reader-popup-bg) 78%, transparent);
   backdrop-filter: blur(20px) saturate(1.35);
   -webkit-backdrop-filter: blur(20px) saturate(1.35);

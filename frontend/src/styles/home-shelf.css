@@ -708,3 +708,34 @@
   background: var(--app-primary-soft);
   border-color: transparent;
 }
+
+.search-mode-toggle {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  color: var(--app-primary-strong);
+  background: var(--app-primary-soft);
+  border: 0;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reader-catalog-empty {
+  display: grid;
+  min-height: 40dvh;
+  place-content: center;
+  gap: 12px;
+  color: var(--reader-text, var(--app-text-muted));
+  font-size: 14px;
+  text-align: center;
+}
+
+.reader-catalog-empty button {
+  justify-self: center;
+  padding: 8px 20px;
+  color: var(--app-on-primary);
+  background: var(--app-primary);
+  border: 0;
+  border-radius: 999px;
+  font-size: 14px;
+}

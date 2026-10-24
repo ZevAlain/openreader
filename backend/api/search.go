@@ -199,6 +199,9 @@ func (s *Server) concurrentSearchFrom(parent context.Context, userID uint, sourc
 				continue
 			}
 			for _, result := range outcome.Results {
+				if isJunkSearchResult(result.Title) {
+					continue
+				}
 				key := result.Title + "|" + result.Author
 				if seen[key] {
 					continue
@@ -220,6 +223,22 @@ func (s *Server) concurrentSearchFrom(parent context.Context, userID uint, sourc
 		start = end
 	}
 	return aggregated, nextIndex, attempted, failed
+}
+
+// Some community sources' rules capture the search page's own heading (e.g.
+// 与""相关的小说 - 最多显示100条) instead of book titles; those rows are page
+// echoes, not books, and get dropped here.
+func isJunkSearchResult(title string) bool {
+	trimmed := strings.TrimSpace(title)
+	if trimmed == "" {
+		return true
+	}
+	for _, marker := range []string{"与\"相关", "相关的小说", "最多显示"} {
+		if strings.Contains(trimmed, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func hasActiveSearchSourceAfter(sources []models.BookSource, activeFailures map[uint]models.SourceFailure, lastIndex int) bool {

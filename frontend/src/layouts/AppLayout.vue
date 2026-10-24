@@ -453,8 +453,11 @@ const isNightTheme = computed(() => reader.themeType === 'night')
 const appVersionLabel = computed(() => {
   const version = String(healthInfo.value?.version || '').trim()
   const commit = shortCommit(healthInfo.value?.commit)
-  if (version && !['dev', 'unknown'].includes(version)) return version
-  return commit || 'dev'
+  if (version && !['dev', 'unknown'].includes(version)) {
+    // Versions are always displayed as Vx.y.z (capital V, v-prefixed line).
+    return version.startsWith('V') ? version : `V${version.replace(/^v/, '')}`
+  }
+  return commit ? `dev (${commit})` : 'V-dev'
 })
 function goHome() {
   workspace.backToShelf()
@@ -1550,6 +1553,7 @@ function readError(err, fallback) {
 .mobile-tab {
   flex: 0 0 auto;
   min-width: 64px;
+  touch-action: manipulation;
   display: grid;
   justify-items: center;
   gap: 1px;

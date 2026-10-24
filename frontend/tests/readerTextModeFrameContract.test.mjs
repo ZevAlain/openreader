@@ -36,7 +36,7 @@ test('mobile flip mode owns its upstream viewport, inner clip, and page stride',
   )
   assert.match(
     readerSource,
-    /\.reader-shell\.mini-interface\.flip \.reader-content\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?top:\s*calc\(30px \+ env\(safe-area-inset-top\)\);[\s\S]*?bottom:\s*24px;[\s\S]*?width:\s*100%;[\s\S]*?height:\s*auto;/,
+    /\.reader-shell\.mini-interface\.flip \.reader-content\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?top:\s*calc\(38px \+ env\(safe-area-inset-top\)\);[\s\S]*?bottom:\s*24px;[\s\S]*?width:\s*100%;[\s\S]*?height:\s*auto;/,
     'mobile flip content must use the upstream top/bottom viewport instead of a normal full-height scroller',
   )
   assert.match(
@@ -143,7 +143,7 @@ test('reader exposes the current chapter number and title in the upstream runnin
   )
   assert.match(
     readerSource,
-    /\.reader-shell\.mini-interface \.reader-page-head\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?height:\s*calc\(30px \+ env\(safe-area-inset-top\)\);[\s\S]*?padding:\s*calc\(6px \+ env\(safe-area-inset-top\)\) 16px 6px;[\s\S]*?font-size:\s*12px;/,
+    /\.reader-shell\.mini-interface \.reader-page-head\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?height:\s*calc\(38px \+ env\(safe-area-inset-top\)\);[\s\S]*?padding:\s*calc\(10px \+ env\(safe-area-inset-top\)\) 16px 6px;[\s\S]*?font-size:\s*12px;/,
     'mobile header must retain the upstream fixed safe-area geometry',
   )
   assert.match(

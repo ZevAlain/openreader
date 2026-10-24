@@ -2,7 +2,7 @@
   <section class="app-page shelf-page result-shelf-page search-page">
     <div class="shelf-title">
       <div class="shelf-title-main">
-        <strong>搜索 ({{ searchMode === 'local' ? shownLocalResults.length : results.length }})</strong>
+        <strong>搜索</strong>
       </div>
       <div class="title-actions" />
     </div>
@@ -31,6 +31,12 @@
         :disabled="searchMode !== 'remote'"
         @keyup.enter="doSearch"
       />
+      <button
+        class="search-mode-toggle"
+        type="button"
+        :title="matchMode === 'strict' ? '严格匹配：书名必须完全一致' : '宽松匹配：书名包含关键词即可'"
+        @click="toggleMatchMode"
+      >{{ matchMode === 'strict' ? '严格' : '宽松' }}</button>
       <el-button
         type="primary"
         class="search-entry-go"
@@ -39,6 +45,23 @@
         @click="doSearch"
       >搜索</el-button>
     </div>
+
+    <section v-if="showRecentSearches && recentSearches.length" class="search-rank-board" aria-label="最近搜索">
+      <div class="search-rank-header">
+        <span class="search-rank-title">最近搜索</span>
+        <button class="search-stream-stop" type="button" @click="clearRecentSearches">清除</button>
+      </div>
+      <ol class="search-rank-list">
+        <li v-for="term in recentSearches" :key="term">
+          <button class="search-rank-item" type="button" @click="searchRecent(term)">
+            <span class="search-rank-info">
+              <strong>{{ term }}</strong>
+            </span>
+            <el-icon><Search /></el-icon>
+          </button>
+        </li>
+      </ol>
+    </section>
 
     <section v-if="showRankBoard" class="search-rank-board" aria-label="热门榜单">
       <div class="search-rank-header">
@@ -144,6 +167,7 @@ import { useRemoteBookAddToShelf } from '../composables/useRemoteBookAddToShelf'
 import { useRemoteBookResultEditor } from '../composables/useRemoteBookResultEditor'
 import { useBookshelfStore } from '../stores/bookshelf'
 import { useOverlayStore } from '../stores/overlay'
+import { useUserStore } from '../stores/user'
 import { getHotRank } from '../api/hotRank'
 import { useReaderStore } from '../stores/reader'
 import { usePreferencesStore } from '../stores/preferences'
@@ -174,11 +198,30 @@ import { currentViewportWidth, shouldUseMiniInterface } from '../utils/responsiv
 const router = useRouter()
 const bookshelf = useBookshelfStore()
 const overlay = useOverlayStore()
+const user = useUserStore()
 const reader = useReaderStore()
 const preferences = usePreferencesStore()
 const workspace = useIndexWorkspaceStore()
 
 const keyword = ref('')
+const STRICT_SEARCH_KEY = 'searchMatchMode'
+const matchMode = ref((() => {
+  try {
+    return localStorage.getItem(STRICT_SEARCH_KEY) === 'strict' ? 'strict' : 'loose'
+  } catch {
+    return 'loose'
+  }
+})())
+
+function toggleMatchMode() {
+  matchMode.value = matchMode.value === 'strict' ? 'loose' : 'strict'
+  try {
+    localStorage.setItem(STRICT_SEARCH_KEY, matchMode.value)
+  } catch {
+    // Preference stays session-only when storage is blocked.
+  }
+  if (searched.value && keyword.value.trim()) doSearch()
+}
 const lastSearchStats = ref({ attempted: 0, failed: 0 })
 const searchFailed = ref(false)
 const streamingMore = ref(false)
@@ -217,14 +260,20 @@ async function runSearchStream(serial) {
     if (serial === searchStreamSerial) streamingMore.value = false
   }
 }
+// The hot-rank board is temporarily retired from the UI; flip this flag to
+// bring it back (all rendering, loading, and tap-to-search code is kept).
+const HOT_RANK_ENABLED = false
+
 const hotRankItems = ref([])
 const hotRankLoading = ref(false)
 const hotRankError = ref('')
 const showRankBoard = computed(() => (
-  searchMode.value === 'remote' && !searched.value && !results.value.length && !searchStarting.value
+  HOT_RANK_ENABLED
+  && searchMode.value === 'remote' && !searched.value && !results.value.length && !searchStarting.value
 ))
 
 async function loadHotRank() {
+  if (!HOT_RANK_ENABLED) return
   hotRankLoading.value = true
   hotRankError.value = ''
   try {
@@ -236,6 +285,54 @@ async function loadHotRank() {
   } finally {
     hotRankLoading.value = false
   }
+}
+
+const RECENT_SEARCH_LIMIT = 8
+const recentSearches = ref([])
+const showRecentSearches = computed(() => (
+  !HOT_RANK_ENABLED
+  && searchMode.value === 'remote' && !searched.value && !results.value.length && !searchStarting.value
+))
+
+function recentSearchScope() {
+  return user.profile?.username || user.profile?.id || 'user'
+}
+
+function loadRecentSearches() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(`${recentSearchScope()}@recentSearches`) || '[]')
+    recentSearches.value = Array.isArray(parsed)
+      ? [...new Set(parsed.map(item => String(item || '').trim()).filter(Boolean))].slice(0, RECENT_SEARCH_LIMIT)
+      : []
+  } catch {
+    recentSearches.value = []
+  }
+}
+
+function rememberRecentSearch(term) {
+  const value = String(term || '').trim()
+  if (!value) return
+  const next = [value, ...recentSearches.value.filter(item => item !== value)].slice(0, RECENT_SEARCH_LIMIT)
+  recentSearches.value = next
+  try {
+    localStorage.setItem(`${recentSearchScope()}@recentSearches`, JSON.stringify(next))
+  } catch {
+    // A blocked storage backend must not break the search flow.
+  }
+}
+
+function clearRecentSearches() {
+  recentSearches.value = []
+  try {
+    localStorage.removeItem(`${recentSearchScope()}@recentSearches`)
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function searchRecent(term) {
+  keyword.value = term
+  doSearch()
 }
 
 function searchHotTitle(title) {
@@ -371,6 +468,7 @@ onMounted(async () => {
   window.addEventListener('resize', updateResultViewport)
   window.addEventListener('orientationchange', updateResultViewport)
   loadHotRank()
+  loadRecentSearches()
   const mountOperation = searchSessionOperations.begin('mount')
   applyWorkspaceSearchIntent()
   const shelfReady = await warmSearchShelf()
@@ -520,6 +618,7 @@ async function doSearch() {
   const requestToken = remoteRequestGate.begin()
   const workspaceStamp = captureWorkspaceRequest(workspace, 'search')
   activeSearchKeyword.value = value
+  rememberRecentSearch(value)
   activeSourceIds.value = [...selectedIds.value]
   activeConcurrentCount.value = searchType.value === 'single' ? 1 : concurrentCount.value
   activeSearchIsSingleSource.value = activeSourceIds.value.length === 1
@@ -654,7 +753,10 @@ async function requestRemoteSearch({ append, page, lastIndex, requestToken, work
   }
   const incoming = Array.isArray(data) ? data : (data?.list || [])
   const { rows, added } = mergeRemoteSearchResults(append ? results.value : [], incoming)
-  results.value = rankSearchResults(rows, activeSearchKeyword.value)
+  const ranked = rankSearchResults(rows, activeSearchKeyword.value)
+  results.value = matchMode.value === 'strict'
+    ? ranked.filter(item => String(item?.title || '').trim().toLowerCase() === String(activeSearchKeyword.value || '').trim().toLowerCase())
+    : ranked
   if (activeSearchIsSingleSource.value) {
     searchPage.value = Number(data?.page || page)
     searchLastIndex.value = -1

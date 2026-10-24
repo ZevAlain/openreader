@@ -71,7 +71,8 @@ test('search and explore share one flat upstream result list and result editor',
   assert.match(result, /v-for="book in books"/)
   assert.match(result, /class="book-row book remote-result-book"/)
   assert.match(result, /fallbackSourceId/)
-  assert.match(result, /cover-img[\s\S]*book-operation[\s\S]*class="name edit"[\s\S]*class="sub"[\s\S]*class="last-chapter"[\s\S]*result-add-book/)
+  assert.match(result, /cover-img[\s\S]*book-operation[\s\S]*class="name edit"[\s\S]*class="last-chapter"[\s\S]*result-add-book/)
+  assert.doesNotMatch(result, /class="sub"/, 'the metadata sub-line under the title is retired')
   assert.match(result, /@click\.stop="\$emit\('edit', book\)"/)
   assert.match(result, /@click\.stop="\$emit\('add', book\)"/)
   assert.doesNotMatch(result, /source-result-group|source-result-head|result-intro|remoteBookKind|remoteBookWordCount|remoteBookUpdateTime/)
@@ -139,7 +140,7 @@ test('remote result scenes reuse the shelf title, grid, loading and night contra
   assert.doesNotMatch(css, /:global\(/)
   assert.match(css, /\.result-add-book/)
 
-  assert.match(search, /<strong>搜索 \(\{\{[\s\S]*results\.length[\s\S]*\}\}\)<\/strong>/)
+  assert.match(search, /<strong>搜索<\/strong>/, 'the search title carries no result count')
   assert.match(search, /remoteSearchActionLabel/)
   assert.doesNotMatch(search, /v-loading="searching"/)
   assert.match(discover, /<strong>探索 \(\{\{ books\.length \}\}\)<\/strong>/)

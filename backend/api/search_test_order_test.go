@@ -21,3 +21,23 @@ func TestSortSearchSourcesByRespondTime(t *testing.T) {
 		t.Fatalf("unknown-health sources must sort last, got %s,%s", sources[2].Name, sources[3].Name)
 	}
 }
+
+func TestIsJunkSearchResult(t *testing.T) {
+	junk := []string{
+		`与""相关的小说 - (最多显示100条)`,
+		`相关的小说`,
+		``,
+		`  `,
+	}
+	for _, title := range junk {
+		if !isJunkSearchResult(title) {
+			t.Fatalf("junk not filtered: %q", title)
+		}
+	}
+	good := []string{`遮天`, `医手遮天`, `遮天 · 辰东`}
+	for _, title := range good {
+		if isJunkSearchResult(title) {
+			t.Fatalf("good result filtered: %q", title)
+		}
+	}
+}

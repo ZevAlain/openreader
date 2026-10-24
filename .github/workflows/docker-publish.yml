@@ -106,6 +106,7 @@ jobs:
           echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
           echo "image=${IMAGE_NAME,,}" >> "$GITHUB_OUTPUT"
+          echo "app_version=$(tr -d ' \n' < ../VERSION | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -138,7 +139,7 @@ jobs:
           push: false
           tags: openreader-ci:${{ github.sha }}
           build-args: |
-            VERSION=${{ steps.metadata.outputs.short_sha }}
+            VERSION=${{ steps.metadata.outputs.app_version }}
             VCS_REF=${{ github.sha }}
             BUILD_DATE=${{ steps.metadata.outputs.build_date }}
           cache-from: type=gha,scope=openreader-docker
@@ -166,7 +167,7 @@ jobs:
           provenance: false
           outputs: type=image,name=${{ steps.metadata.outputs.image }},push-by-digest=true,name-canonical=true,push=true
           build-args: |
-            VERSION=${{ steps.metadata.outputs.short_sha }}
+            VERSION=${{ steps.metadata.outputs.app_version }}
             VCS_REF=${{ github.sha }}
             BUILD_DATE=${{ steps.metadata.outputs.build_date }}
           cache-from: type=gha,scope=openreader-docker
@@ -190,6 +191,7 @@ jobs:
           echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
           echo "image=${IMAGE_NAME,,}" >> "$GITHUB_OUTPUT"
+          echo "app_version=$(tr -d ' \n' < ../VERSION | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -222,7 +224,7 @@ jobs:
           push: false
           tags: openreader-ci-arm64:${{ github.sha }}
           build-args: |
-            VERSION=${{ steps.metadata.outputs.short_sha }}
+            VERSION=${{ steps.metadata.outputs.app_version }}
             VCS_REF=${{ github.sha }}
             BUILD_DATE=${{ steps.metadata.outputs.build_date }}
           cache-from: type=gha,scope=openreader-docker-arm64
@@ -250,7 +252,7 @@ jobs:
           provenance: false
           outputs: type=image,name=${{ steps.metadata.outputs.image }},push-by-digest=true,name-canonical=true,push=true
           build-args: |
-            VERSION=${{ steps.metadata.outputs.short_sha }}
+            VERSION=${{ steps.metadata.outputs.app_version }}
             VCS_REF=${{ github.sha }}
             BUILD_DATE=${{ steps.metadata.outputs.build_date }}
           cache-from: type=gha,scope=openreader-docker-arm64
@@ -277,7 +279,7 @@ jobs:
         shell: bash
         run: |
           echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-          echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          echo "app_version=$(tr -d ' \n' < ../VERSION | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
       # Only the tiny apk comparison helper may run through emulation (arm64-only releases).
       - name: Set up QEMU
@@ -331,6 +333,7 @@ jobs:
           fi
           docker buildx imagetools create \
             -t "${IMAGE_NAME,,}:latest" \
+            -t "${IMAGE_NAME,,}:v${{ steps.metadata.outputs.app_version }}" \
             -t "${IMAGE_NAME,,}:${{ steps.metadata.outputs.short_sha }}" \
             "${refs[@]}"
 

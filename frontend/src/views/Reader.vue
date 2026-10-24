@@ -155,7 +155,13 @@
         @mouseup="handleReaderSelectionEnd"
       >
         <div ref="contentBody" class="reader-body" :style="bodyStyle">
-          <ReaderChapterContent
+          <div v-if="catalogEmpty" class="reader-catalog-empty">
+            <p>这本书还没有目录——可能书源暂时不可用。</p>
+            <button type="button" :disabled="catalogRetryBusy" @click="retryCatalogLoad">
+              {{ catalogRetryBusy ? '正在重试…' : '重试加载目录' }}
+            </button>
+          </div>
+          <ReaderChapterContent v-if="!catalogEmpty"
             :blocks="displayedChapterBlocks"
             :error="chapterLoadError"
             :loaded="chapterLoaded"
@@ -598,6 +604,30 @@ const chapterBlocks = ref([])
 const chapterWindowBusy = ref(false)
 const chapterLoading = ref(true)
 const chapterLoadError = ref('')
+const catalogRetryBusy = ref(false)
+const catalogEmpty = computed(() => (
+  !chapterLoading.value && !chapterLoaded.value && chapters.value.length === 0
+))
+
+async function retryCatalogLoad() {
+  if (catalogRetryBusy.value || !bookId.value) return
+  catalogRetryBusy.value = true
+  try {
+    await refreshBook(bookId.value)
+  } catch {
+    // Fall through and reload whatever catalog state exists.
+  }
+  try {
+    const { data } = await api.get(`/books/${bookId.value}/chapters`)
+    if (Array.isArray(data) && data.length) {
+      chapters.value = data
+    }
+  } catch {
+    // Keep the retry affordance; the empty state explains the situation.
+  } finally {
+    catalogRetryBusy.value = false
+  }
+}
 const chapterLoaded = ref(false)
 const contentEl = ref(null)
 const contentBody = ref(null)
@@ -2708,8 +2738,8 @@ function readError(err, fallback) {
   left: 0;
   right: auto;
   width: 100vw;
-  height: calc(30px + env(safe-area-inset-top));
-  padding: calc(6px + env(safe-area-inset-top)) 16px 6px;
+  height: calc(38px + env(safe-area-inset-top));
+  padding: calc(10px + env(safe-area-inset-top)) 16px 6px;
   box-sizing: border-box;
   background: inherit;
   color: var(--reader-text);
@@ -2733,7 +2763,7 @@ function readError(err, fallback) {
 }
 
 .reader-shell.mini-interface .reader-body {
-  margin-top: calc(30px + env(safe-area-inset-top));
+  margin-top: calc(38px + env(safe-area-inset-top));
   padding-top: 15px;
   padding-bottom: calc(var(--reader-mobile-content-bottom-space) + env(safe-area-inset-bottom));
   text-align: justify;
@@ -2774,7 +2804,7 @@ function readError(err, fallback) {
 
 .reader-shell.mini-interface.flip .reader-content {
   position: absolute;
-  top: calc(30px + env(safe-area-inset-top));
+  top: calc(38px + env(safe-area-inset-top));
   right: 0;
   bottom: 24px;
   left: 0;

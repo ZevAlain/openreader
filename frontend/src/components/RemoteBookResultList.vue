@@ -19,11 +19,6 @@
           </button>
         </span>
         <strong class="name edit">{{ remoteBookTitle(book) }}</strong>
-        <span class="sub">
-          <span class="author">{{ remoteBookAuthor(book) }}</span>
-          <span v-if="remoteBookChapterCount(book)" class="dot">•</span>
-          <span v-if="remoteBookChapterCount(book)" class="size">共{{ remoteBookChapterCount(book) }}章</span>
-        </span>
         <span v-if="remoteBookLatestChapter(book)" class="last-chapter">
           {{ latestChapterLabel(book) }}：{{ remoteBookLatestChapter(book) }}
         </span>
