@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -59,6 +60,11 @@ func (s *Server) search(c *gin.Context) {
 		return
 	}
 	sources = orderSearchSources(sources, req.SourceIDs)
+	// Fast sources first: with hundreds of community sources most are dead,
+	// and a dead source burns its whole timeout. Sorting by observed respond
+	// time puts healthy sources into the first streaming windows so results
+	// paint quickly while the dead tail slowly times out behind them.
+	sortSearchSourcesByRespondTime(sources)
 	pagedRequest := req.Page != nil || req.LastIndex != nil || req.SearchSize != nil
 	if len(sources) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "未配置书源"})
@@ -313,6 +319,21 @@ func normalizedSearchSize(value *int) int {
 		return 200
 	}
 	return *value
+}
+
+func sortSearchSourcesByRespondTime(sources []models.BookSource) {
+	sort.SliceStable(sources, func(i, j int) bool {
+		return searchSourceRespondRank(sources[i]) < searchSourceRespondRank(sources[j])
+	})
+}
+
+// Sources without a usable respond time sort last so unknown health never
+// preempts a known-fast source.
+func searchSourceRespondRank(source models.BookSource) int64 {
+	if source.RespondTime <= 0 {
+		return 1<<62 - 1
+	}
+	return source.RespondTime
 }
 
 func orderSearchSources(sources []models.BookSource, sourceIDs []uint) []models.BookSource {

@@ -671,3 +671,40 @@
   border-radius: 999px;
   font-size: 12px;
 }
+
+/* Group filter chips under the mobile search bar: with hundreds of sources
+   the chip row is the compact way to narrow a search to one source group. */
+.search-group-chips {
+  display: none;
+}
+
+@media (max-width: 750px) {
+  .search-group-chips {
+    display: flex;
+    padding: 0 20px 10px;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+}
+
+.search-group-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.search-group-chip {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  color: var(--app-text-muted);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.search-group-chip.active {
+  color: var(--app-primary-strong);
+  background: var(--app-primary-soft);
+  border-color: transparent;
+}

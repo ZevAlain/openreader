@@ -7,6 +7,17 @@
       <div class="title-actions" />
     </div>
 
+    <div v-if="mobileGroupChips.length" class="search-group-chips" role="tablist" aria-label="书源分组">
+      <button
+        v-for="chip in mobileGroupChips"
+        :key="chip.key"
+        class="group-chip search-group-chip"
+        :class="{ active: activeGroupKey === chip.key }"
+        type="button"
+        @click="applyMobileGroupChip(chip.key)"
+      >{{ chip.label }}</button>
+    </div>
+
     <div v-if="streamingMore && searched" class="search-stream-status" role="status">
       <span>已找到 {{ results.length }} 条，仍在搜索其他书源…</span>
       <button class="search-stream-stop" type="button" @click="stopSearchStream">停止</button>
@@ -244,6 +255,36 @@ function stopSearchStream() {
 }
 const searchMode = ref('remote')
 const sources = ref([])
+const mobileGroupChips = computed(() => {
+  const counts = new Map()
+  for (const source of enabledSources.value) {
+    const key = String(source.group || '').trim()
+    if (!key) continue
+    counts.set(key, (counts.get(key) || 0) + 1)
+  }
+  return [
+    { key: '', label: '全部' },
+    ...[...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12)
+      .map(([key, count]) => ({ key, label: `${key} ${count}` })),
+  ]
+})
+
+const activeGroupKey = computed(() => (searchType.value === 'group' ? selectedGroup.value : ''))
+
+function applyMobileGroupChip(key) {
+  if (!key) {
+    searchType.value = 'all'
+    selectedGroup.value = ''
+  } else {
+    searchType.value = 'group'
+    selectedGroup.value = key
+  }
+  syncSelection()
+  saveSearchPreference()
+  if (keyword.value.trim()) doSearch()
+}
 const selectedIds = ref([])
 const selectedGroup = ref(preferences.search.group)
 const singleSourceId = ref(Number(preferences.search.sourceId || 0) || null)
@@ -701,6 +742,14 @@ function applyWorkspaceSearchIntent() {
   const intent = workspace.search
   searchMode.value = intent.mode === 'local' ? 'local' : 'remote'
   keyword.value = intent.keyword || ''
+  if (!intent.keyword) {
+    // A keyword-less intent is a fresh mount: keep the persisted search-type
+    // and group preferences instead of resetting them to the defaults (and
+    // letting the preference watcher write that reset back to the server).
+    searched.value = false
+    searchStarting.value = false
+    return
+  }
   searchType.value = ['all', 'group', 'single', 'custom'].includes(intent.searchType)
     ? intent.searchType
     : DEFAULT_SEARCH.searchType
