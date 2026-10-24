@@ -30,7 +30,20 @@ test('application-shell service worker never caches live data', () => {
   assert.match(sw, /cacheFirst/, 'hashed assets must be cache-first')
   assert.match(sw, /CACHE_VERSION/, 'activation must evict previous cache versions')
   assert.match(sw, /offlineFallback/, 'offline navigations need a readable fallback page')
-  assert.match(main, /navigator\.serviceWorker\.register\('\/sw\.js'\)/, 'main.js must register the shell worker')
+})
+
+test('a stale cached shell offers a tap-to-reload update path', () => {
+  const updateHook = readFileSync(new URL('../src/composables/useShellUpdate.js', import.meta.url), 'utf8')
+  const layout = readFileSync(new URL('../src/layouts/AppLayout.vue', import.meta.url), 'utf8')
+  const server = readFileSync(new URL('../../backend/main.go', import.meta.url), 'utf8')
+  assert.match(sw, /__OPENREADER_BUILD_ID__/, 'the cache version carries a build-id placeholder')
+  assert.match(sw, /SKIP_WAITING/, 'the worker honors the skip-waiting handoff')
+  assert.match(updateHook, /navigator\.serviceWorker\.register\('\/sw\.js'\)/, 'the hook registers the shell worker')
+  assert.match(updateHook, /registration\.waiting/, 'a waiting worker must surface the update prompt')
+  assert.match(updateHook, /postMessage\(\{ type: 'SKIP_WAITING' \}\)/, 'applying the update asks the waiting worker to activate')
+  assert.match(layout, /shellUpdateReady/, 'the shell shows the update banner when a new version waits')
+  assert.match(layout, /刷新加载/, 'the banner offers an explicit reload action')
+  assert.match(server, /__OPENREADER_BUILD_ID__/, 'the Go server stamps sw.js so every deploy changes its bytes')
 })
 
 test('iOS interaction details stay guardrailed', () => {

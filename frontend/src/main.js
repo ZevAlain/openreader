@@ -20,11 +20,5 @@ app.use(ElementPlus, { locale: zhCn })
 
 app.mount('#app')
 
-// Register the application-shell service worker. Browsers only expose
-// navigator.serviceWorker on secure contexts; plain-http LAN deployments keep
-// working without the shell cache.
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {})
-  })
-}
+// The application-shell service worker (and its update prompt) is wired up in
+// the app shell via useShellUpdate(); registration happens on window load.

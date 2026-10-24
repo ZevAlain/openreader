@@ -3,16 +3,23 @@
 // stale-while-revalidate; navigations are network-first with a cached-shell
 // fallback; API, uploads, and websockets are never cached.
 
-const CACHE_VERSION = 'openreader-shell-v1'
+// The build id is injected by the Go server on every deploy, so a changed
+// sw.js byte-for-byte triggers the browser update flow.
+const CACHE_VERSION = 'openreader-shell-__OPENREADER_BUILD_ID__'
 const PRECACHE_URLS = ['/', '/manifest.webmanifest', '/openreader.svg']
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches
       .open(CACHE_VERSION)
-      .then(cache => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting()),
+      .then(cache => cache.addAll(PRECACHE_URLS)),
+    // No skipWaiting here: a new worker must wait so the page can offer the
+    // "refresh to update" prompt instead of silently reloading the app.
   )
+})
+
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
 })
 
 self.addEventListener('activate', event => {

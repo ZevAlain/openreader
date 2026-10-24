@@ -10,7 +10,7 @@
 | 级别 | 用途 | 令牌 | blur 上限 |
 |---|---|---|---|
 | chrome | 顶栏、标签栏、阅读器工具条 | `--glass-chrome-bg/border` + `--glass-blur-chrome` | 22px |
-| panel | 侧栏、对话框、弹层、我的 sheet | `--glass-panel-bg/border` + `--glass-blur-panel` | 30px |
+| panel | 侧栏、对话框、弹层、更新提示条 | `--glass-panel-bg/border` + `--glass-blur-panel` | 30px |
 | scrim | 模态遮罩 | `.el-overlay` | 2px |
 
 ## 性能护栏(硬约束,见 designTokensGlassContract / readerMobilePrimaryPopoverContract 测试)
@@ -19,6 +19,7 @@
 2. `backdrop-filter` 只用于 chrome/panel 小面积与弹层;**滚动正文区域(reader-body)永不做 blur**。
 3. 大位移动画只用 `transform`/`opacity`(标签栏、sheet、抽屉均已如此)。
 4. 阅读器玻璃颜色必须从 `--reader-popup-bg`/`--reader-popup-text` color-mix 派生,保证任意用户主题下可读;边框用 `color-mix(popup-text 14~16%, transparent)`,不写死色值。
+5. 「我的」移动页是整页平铺(`--app-bg` 不透明底),不是弹层;页面入场只用 transform/opacity。
 
 ## 圆角刻度
 

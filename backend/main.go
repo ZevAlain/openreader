@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"mime"
@@ -259,6 +260,21 @@ func serveFrontendFile(c *gin.Context, publicDir, name string) bool {
 	}
 	defer file.Close()
 
+	if name == "sw.js" {
+		// Stamp the build id so every deploy changes sw.js byte-for-byte and
+		// browsers pick up the new shell instead of serving a stale cache.
+		data, readErr := io.ReadAll(file)
+		_ = file.Close()
+		if readErr != nil {
+			return false
+		}
+		patched := strings.ReplaceAll(string(data), "__OPENREADER_BUILD_ID__", api.Version)
+		if contentType := mime.TypeByExtension(".js"); contentType != "" {
+			c.Header("Content-Type", contentType)
+		}
+		http.ServeContent(c.Writer, c.Request, filepath.Base(name), info.ModTime(), strings.NewReader(patched))
+		return true
+	}
 	if extension := strings.ToLower(filepath.Ext(name)); extension == ".webmanifest" {
 		c.Header("Content-Type", "application/manifest+json")
 	} else if contentType := mime.TypeByExtension(extension); contentType != "" {

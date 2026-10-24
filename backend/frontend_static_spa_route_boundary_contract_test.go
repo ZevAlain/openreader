@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"openreader/backend/api"
 	"openreader/backend/config"
 )
 
@@ -409,5 +410,39 @@ func TestFrontendMethodHandlingPreservesCORSOptions(t *testing.T) {
 	ordinary := performFrontendBoundaryRequest(router, http.MethodOptions, "/api/health")
 	if ordinary.Code != http.StatusNoContent {
 		t.Fatalf("ordinary OPTIONS = %d, want 204", ordinary.Code)
+	}
+}
+
+func TestFrontendServiceWorkerCarriesTheBuildStamp(t *testing.T) {
+	router := gin.New()
+	publicDir := t.TempDir()
+	// serveFrontend only wires its handlers once index.html exists.
+	if err := os.WriteFile(filepath.Join(publicDir, "index.html"), []byte(testFrontendIndex), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stamped := "const CACHE_VERSION = 'openreader-shell-__OPENREADER_BUILD_ID__';\nself.addEventListener('message', event => {\n  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()\n})\n"
+	if err := os.WriteFile(filepath.Join(publicDir, "sw.js"), []byte(stamped), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	serveFrontend(router, publicDir)
+
+	response := performFrontendBoundaryRequest(router, http.MethodGet, "/sw.js")
+	if response.Code != http.StatusOK {
+		t.Fatalf("GET /sw.js = %d, want 200", response.Code)
+	}
+	body := response.Body.String()
+	if strings.Contains(body, "__OPENREADER_BUILD_ID__") {
+		t.Fatal("sw.js served the raw placeholder instead of the stamped build id")
+	}
+	if !strings.Contains(body, "'openreader-shell-"+api.Version+"'") {
+		t.Fatalf("sw.js misses the stamped cache version %q: %s", api.Version, body)
+	}
+	if !strings.Contains(response.Header().Get("Content-Type"), "javascript") {
+		t.Fatalf("sw.js content-type = %q", response.Header().Get("Content-Type"))
+	}
+
+	head := performFrontendBoundaryRequest(router, http.MethodHead, "/sw.js")
+	if head.Code != http.StatusOK {
+		t.Fatalf("HEAD /sw.js = %d, want 200", head.Code)
 	}
 }

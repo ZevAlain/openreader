@@ -45,11 +45,33 @@ test('the mobile shell replaces the drawer with a floating glass tab bar', () =>
   assert.match(source, /bottom:\s*calc\(14px \+ env\(safe-area-inset-bottom\)\)/, 'the tab bar respects the home indicator')
 })
 
-test('the profile sheet aggregates the account surface behind the profile tab', () => {
+test('the tab bar keeps exactly shelf, search, and profile', () => {
   const source = readFileSync(new URL('../src/layouts/AppLayout.vue', import.meta.url), 'utf8')
-  assert.match(source, /aria-label="我的"/, 'the sheet must exist for the profile tab')
-  assert.match(source, /v-for="section in navSections"[\s\S]*?profile-group/, 'the sheet reuses the sidebar nav sections')
-  assert.match(source, /workspace: 'search'/, 'the search tab drives the Home workspace query')
-  assert.match(source, /workspace: 'explore'/, 'the explore tab drives the Home workspace query')
-  assert.match(source, /transform: translate\(-50%, 100%\)/, 'the sheet slides with transform only')
+  assert.match(source, /\{ key: 'shelf', label: '书架'/, 'shelf tab exists')
+  assert.match(source, /\{ key: 'search', label: '搜索', icon: Search, workspace: 'search' \}/, 'search tab drives the Home workspace query')
+  assert.match(source, /\{ key: 'profile', label: '我的', icon: User, workspace: null \}/, 'profile tab exists')
+  assert.doesNotMatch(source, /key: 'explore', label: '发现'/, 'the explore tab is retired from the bar')
+  const tabsArray = source.match(/const mobileTabs = \[([\s\S]*?)\]/)
+  assert.ok(tabsArray, 'mobileTabs must be a literal array')
+  assert.equal((tabsArray[1].match(/\{ key: '/g) || []).length, 3, 'exactly three tabs are declared')
+})
+
+test('switching tabs closes the explore popover and the profile page', () => {
+  const source = readFileSync(new URL('../src/layouts/AppLayout.vue', import.meta.url), 'utf8')
+  assert.match(
+    source,
+    /function handleMobileTab\(tab\) \{[\s\S]*?if \(exploreChooserVisible\.value\) closeExploreChooser\(\)[\s\S]*?router\.push/,
+    'leaving a tab must dismiss the explore chooser before navigating',
+  )
+  assert.match(source, /if \(profilePageVisible\.value\) profilePageVisible\.value = false/, 'leaving the profile tab must close the profile page')
+})
+
+test('the profile view is a full page, not a bottom sheet', () => {
+  const source = readFileSync(new URL('../src/layouts/AppLayout.vue', import.meta.url), 'utf8')
+  assert.match(source, /class="profile-page"/, 'the profile view renders as a page')
+  assert.match(source, /aria-label="我的"/, 'the page must exist for the profile tab')
+  assert.match(source, /v-for="section in navSections"[\s\S]*?profile-group/, 'the page reuses the sidebar nav sections')
+  assert.match(source, /\.profile-page\s*\{[\s\S]*?inset:\s*0[\s\S]*?background:\s*var\(--app-bg\)/, 'the page fills the viewport with the app background')
+  assert.match(source, /@keyframes profile-page-in[\s\S]*?transform: translateY\(14px\)/, 'the page enters with a transform/opacity motion only')
+  assert.doesNotMatch(source, /profile-sheet-backdrop|translate\(-50%, 100%\)/, 'no bottom-sheet machinery remains')
 })

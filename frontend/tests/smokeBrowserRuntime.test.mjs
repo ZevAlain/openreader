@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
-const smokeDirectory = resolve(process.cwd(), '../scripts/smoke')
+const smokeDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '../../scripts/smoke')
 
 test('browser smoke scripts use the shared crash-safe Playwright runtime', () => {
   const directLaunchers = readdirSync(smokeDirectory)

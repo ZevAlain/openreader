@@ -1,9 +1,13 @@
 <template>
   <div
     class="app-shell"
-    :class="{ 'mobile-shell': isMobileShell, 'profile-sheet-open': profileSheetVisible }"
+    :class="{ 'mobile-shell': isMobileShell }"
   >
     <div v-if="offline" class="app-offline">网络已断开，部分同步能力会在恢复连接后继续。</div>
+    <div v-if="shellUpdateReady" class="app-update" role="status">
+      <span>当前是旧缓存页面，已有新版本。</span>
+      <button type="button" @click="applyShellUpdate">刷新加载</button>
+    </div>
 
     <aside class="app-sidebar">
       <div class="app-sidebar-scroll">
@@ -155,23 +159,15 @@
       </button>
     </nav>
 
-    <Teleport to="body">
-      <div
-        v-if="isMobileShell"
-        class="profile-sheet-backdrop"
-        :class="{ visible: profileSheetVisible }"
-        @click="closeProfileSheet"
-      />
-      <section
-        v-if="isMobileShell"
-        class="profile-sheet"
-        :class="{ visible: profileSheetVisible }"
-        aria-label="我的"
-      >
-        <div class="profile-sheet-header">
-          <span class="profile-sheet-grabber" />
-        </div>
-        <div class="profile-sheet-account">
+    <section
+      v-if="isMobileShell && profilePageVisible"
+      class="profile-page"
+      aria-label="我的"
+    >
+      <header class="profile-page-header">
+        <h1>我的</h1>
+      </header>
+      <div class="profile-page-account">
           <div class="profile-avatar">{{ profileInitial }}</div>
           <div class="profile-account-text">
             <strong>{{ userStore.profile?.username || '未登录' }}</strong>
@@ -192,7 +188,7 @@
             @click="toggleNightTheme"
           ><el-icon><Moon /></el-icon></button>
         </div>
-        <div class="profile-sheet-scroll">
+        <div class="profile-page-scroll">
           <section
             v-for="section in navSections"
             :key="section.key"
@@ -219,8 +215,7 @@
             </a>
           </section>
         </div>
-      </section>
-    </Teleport>
+    </section>
   </div>
 </template>
 
@@ -228,7 +223,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowRight, Compass, Moon, Notebook, Search, Sunny, User } from '@element-plus/icons-vue'
+import { ArrowRight, Moon, Notebook, Search, Sunny, User } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/user'
 import { useOverlayStore } from '../stores/overlay'
 import { useBookshelfStore } from '../stores/bookshelf'
@@ -238,6 +233,7 @@ import { useIndexWorkspaceStore } from '../stores/indexWorkspace'
 import { useAppCacheManagement } from '../composables/useAppCacheManagement'
 import { useAppMobileNavigation } from '../composables/useAppMobileNavigation'
 import { useAppRecentReading } from '../composables/useAppRecentReading'
+import { useShellUpdate } from '../composables/useShellUpdate'
 import { useAppSidebarSearch } from '../composables/useAppSidebarSearch'
 import { useAuthenticatedOperationGuard } from '../composables/useAuthenticatedOperationGuard'
 import { useIndexWorkspaceRefresh } from '../composables/useIndexWorkspaceRefresh'
@@ -322,32 +318,32 @@ const {
 })
 const canAccessLocalStore = computed(() => userStore.profile?.canAccessStore !== false)
 
-const profileSheetVisible = ref(false)
+const profilePageVisible = ref(false)
+const { updateReady: shellUpdateReady, applyUpdate: applyShellUpdate } = useShellUpdate()
 const mobileTabs = [
   { key: 'shelf', label: '书架', icon: Notebook, workspace: '' },
   { key: 'search', label: '搜索', icon: Search, workspace: 'search' },
-  { key: 'explore', label: '发现', icon: Compass, workspace: 'explore' },
   { key: 'profile', label: '我的', icon: User, workspace: null },
 ]
 const activeMobileTab = computed(() => {
-  if (profileSheetVisible.value) return 'profile'
+  if (profilePageVisible.value) return 'profile'
   if (route.query.workspace === 'search') return 'search'
-  if (route.query.workspace === 'explore') return 'explore'
   return 'shelf'
 })
 const profileInitial = computed(() => String(userStore.profile?.username || '访').slice(0, 1).toUpperCase())
 
 function handleMobileTab(tab) {
   if (tab.workspace === null) {
-    profileSheetVisible.value = !profileSheetVisible.value
+    profilePageVisible.value = !profilePageVisible.value
     return
   }
-  profileSheetVisible.value = false
+  if (profilePageVisible.value) profilePageVisible.value = false
+  if (exploreChooserVisible.value) closeExploreChooser()
   router.push({ path: '/', query: tab.workspace ? { workspace: tab.workspace } : {} })
 }
 
 function closeProfileSheet() {
-  profileSheetVisible.value = false
+  profilePageVisible.value = false
 }
 const navSections = computed(() => [
   {
@@ -432,7 +428,7 @@ const {
   onWorkspaceSearch: beginWorkspaceSearch,
   onSearchConfigChange: handleSidebarSearchConfigChange,
   afterNavigate: () => {
-    if (isMobileShell.value) profileSheetVisible.value = false
+    if (isMobileShell.value) profilePageVisible.value = false
   },
   afterSourcesUpdated: () => loadCacheStats(),
 })
@@ -473,19 +469,19 @@ function runNavAction(item) {
   if (exploreChooserVisible.value) {
     closeExploreChooser()
     if (item?.key === 'discover') {
-      if (isMobileShell.value && item.closeMobile) profileSheetVisible.value = false
+      if (isMobileShell.value && item.closeMobile) profilePageVisible.value = false
       return
     }
   }
   if (item.action) {
     item.action()
-    if (isMobileShell.value && item.closeMobile) profileSheetVisible.value = false
+    if (isMobileShell.value && item.closeMobile) profilePageVisible.value = false
     return
   }
   if (item.route) {
     const query = navRouteQuery(item)
     router.push({ name: item.route, query })
-    if (isMobileShell.value && item.closeMobile) profileSheetVisible.value = false
+    if (isMobileShell.value && item.closeMobile) profilePageVisible.value = false
   }
 }
 
@@ -534,7 +530,7 @@ function captureSidebarSection(section, node) {
 
 function focusSidebarSection(sectionKey) {
   if (!['account', 'cache'].includes(sectionKey)) return
-  if (isMobileShell.value) profileSheetVisible.value = true
+  if (isMobileShell.value) profilePageVisible.value = true
   compatFocusedSection.value = sectionKey
   clearTimeout(compatibilityFocusTimer)
   nextTick(() => {
@@ -968,9 +964,41 @@ function readError(err, fallback) {
     linear-gradient(180deg, var(--app-surface), var(--app-bg));
 }
 
+.app-update {
+  position: fixed;
+  z-index: 65;
+  top: calc(10px + env(safe-area-inset-top));
+  left: 50%;
+  display: flex;
+  max-width: calc(100vw - 24px);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  border: 1px solid var(--glass-panel-border);
+  border-radius: 999px;
+  background: var(--glass-panel-bg);
+  backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  color: var(--app-text);
+  font-size: 13px;
+  transform: translateX(-50%);
+}
+
+.app-update button {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--app-primary);
+  color: var(--app-on-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
 .app-offline {
   position: fixed;
-  z-index: 50;
+  z-index: 66;
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
@@ -1556,77 +1584,58 @@ function readError(err, fallback) {
   background: var(--app-primary-soft);
 }
 
-/* ---- "My profile" bottom sheet ---- */
-.profile-sheet-backdrop {
+/* ---- "My profile" full page (mobile) ---- */
+.profile-page {
   position: fixed;
   inset: 0;
-  z-index: 70;
-  background: var(--el-mask-color-extra-light);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 220ms ease;
+  z-index: 55;
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  background: var(--app-bg);
+  animation: profile-page-in 220ms ease;
 }
 
-.profile-sheet-backdrop.visible {
-  opacity: 1;
-  pointer-events: auto;
+@keyframes profile-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-.profile-sheet {
-  position: fixed;
-  left: 50%;
-  bottom: 0;
-  z-index: 71;
-  display: grid;
-  width: min(560px, 100vw);
-  max-height: min(78dvh, 640px);
-  grid-template-rows: auto auto 1fr;
-  overflow: hidden;
-  border: 1px solid var(--glass-panel-border);
-  border-bottom: 0;
-  border-radius: 26px 26px 0 0;
-  background: var(--glass-panel-bg);
-  backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
-  box-shadow: var(--glass-shadow), var(--glass-highlight);
-  transform: translate(-50%, 100%);
-  transition: transform 260ms ease;
+.profile-page-header {
+  padding: calc(18px + env(safe-area-inset-top)) 20px 8px;
 }
 
-.profile-sheet.visible {
-  transform: translate(-50%, 0);
+.profile-page-header h1 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 28px;
+  font-weight: 800;
 }
 
-.profile-sheet-header {
-  display: grid;
-  padding: 8px 0 2px;
-  justify-items: center;
-}
-
-.profile-sheet-grabber {
-  width: 38px;
-  height: 5px;
-  border-radius: 999px;
-  background: var(--app-border-strong);
-}
-
-.profile-sheet-account {
+.profile-page-account {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 20px 14px;
+  padding: 12px 20px 16px;
   border-bottom: 1px solid var(--app-border);
 }
 
 .profile-avatar {
   display: grid;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   border-radius: 50%;
   background: var(--app-primary);
   color: var(--app-on-primary);
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 600;
 }
 
@@ -1653,19 +1662,22 @@ function readError(err, fallback) {
   font-size: 17px;
 }
 
-.profile-sheet-scroll {
+.profile-page-scroll {
+  flex: 1;
   overflow: auto;
-  padding: 6px 14px calc(20px + env(safe-area-inset-bottom));
+  padding: 8px 16px calc(24px + env(safe-area-inset-bottom) + 96px);
 }
 
 .profile-group {
-  margin: 10px 0;
+  margin: 14px 0;
 }
 
 .profile-group-title {
-  margin: 0 0 4px 10px;
+  margin: 0 0 6px 10px;
   color: var(--app-text-subtle);
   font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .profile-group-item {
@@ -1673,10 +1685,10 @@ function readError(err, fallback) {
   width: 100%;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 12px;
+  padding: 12px 14px;
   border: 0;
   border-bottom: 1px solid var(--app-border);
-  background: transparent;
+  background: var(--app-surface);
   color: var(--app-text);
   font-size: 15px;
   text-align: left;
@@ -1697,11 +1709,5 @@ function readError(err, fallback) {
 .profile-group-item .el-icon {
   color: var(--app-text-subtle);
   font-size: 14px;
-}
-
-/* The profile sheet teleports to body, so scope its theme to either shell. */
-.profile-sheet,
-.profile-sheet-backdrop {
-  font-family: inherit;
 }
 </style>
