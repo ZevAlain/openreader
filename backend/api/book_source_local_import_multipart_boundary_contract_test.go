@@ -365,3 +365,38 @@ func (reader *bookSourceImportReadTracker) Read([]byte) (int, error) {
 	reader.reads++
 	return 0, io.EOF
 }
+
+func TestBookSourceImportAcceptsStringifiedNumericFields(t *testing.T) {
+	router, server := setupTestServer(t)
+	auth := authHeader(t, router)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	file, err := writer.CreateFormFile("file", "community-sources.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Community collections ship timestamps as JSON strings; the import must
+	// decode them instead of rejecting the whole file.
+	if _, err := file.Write([]byte(`[{"bookSourceName":"字符串时间戳源","bookSourceUrl":"https://example.org/","bookSourceGroup":"G","enabled":true,"customOrder":"3","lastUpdateTime":"1783245325095","weight":"7","respondTime":"120"}]`)); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodPost, "/api/sources/import", body)
+	request.Header.Set("Authorization", auth)
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"imported":1`) {
+		t.Fatalf("stringified-number import = %d %s", response.Code, response.Body.String())
+	}
+	var source models.BookSource
+	if err := server.db.Where("name = ?", "字符串时间戳源").First(&source).Error; err != nil {
+		t.Fatal(err)
+	}
+	if source.LastUpdateTime != 1783245325095 {
+		t.Fatalf("stringified lastUpdateTime = %d, want 1783245325095", source.LastUpdateTime)
+	}
+}

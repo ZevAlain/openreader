@@ -64,10 +64,10 @@ type bookSourcePayload struct {
 	ConcurrentRate    string                     `json:"concurrentRate"`
 	LoginURL          string                     `json:"loginUrl"`
 	LoginCheckJS      string                     `json:"loginCheckJs"`
-	CustomOrder       int                        `json:"customOrder"`
-	LastUpdateTime    int64                      `json:"lastUpdateTime"`
-	Weight            int                        `json:"weight"`
-	RespondTime       *int64                     `json:"respondTime"`
+	CustomOrder       flexibleInt                `json:"customOrder"`
+	LastUpdateTime    flexibleInt64              `json:"lastUpdateTime"`
+	Weight            flexibleInt                `json:"weight"`
+	RespondTime       *flexibleInt64             `json:"respondTime"`
 	Rules             string                     `json:"rules"`
 	Enabled           *bool                      `json:"enabled"`
 	EnabledExplore    *bool                      `json:"enabledExplore"`
@@ -185,7 +185,7 @@ func (p bookSourcePayload) toModel() models.BookSource {
 	}
 	respondTime := int64(180000)
 	if p.RespondTime != nil {
-		respondTime = *p.RespondTime
+		respondTime = int64(*p.RespondTime)
 	}
 	rules := strings.TrimSpace(p.Rules)
 	if rules == "" {
@@ -208,9 +208,9 @@ func (p bookSourcePayload) toModel() models.BookSource {
 		Header:         p.rawHeader(),
 		LoginURL:       strings.TrimSpace(p.LoginURL),
 		LoginCheckJS:   strings.TrimSpace(p.LoginCheckJS),
-		CustomOrder:    p.CustomOrder,
-		LastUpdateTime: p.LastUpdateTime,
-		Weight:         p.Weight,
+		CustomOrder:    int(p.CustomOrder),
+		LastUpdateTime: int64(p.LastUpdateTime),
+		Weight:         int(p.Weight),
 		RespondTime:    respondTime,
 		Rules:          rules,
 		Enabled:        enabled,

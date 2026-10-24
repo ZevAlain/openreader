@@ -316,7 +316,9 @@ function applyRouteWorkspaceIntent() {
     })
     return
   }
-  if (!workspace.showingResults) workspace.backToShelf()
+  // Leaving a workspace (shelf tab) must clear it even while results are on
+  // screen, or the URL changes but the view keeps showing search/explore.
+  if (workspace.showingResults) workspace.backToShelf()
 }
 
 async function warmHomeShelf() {

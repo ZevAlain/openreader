@@ -89,6 +89,25 @@ test('search and explore share one flat upstream result list and result editor',
   assert.match(editor, />保 存</)
 })
 
+test('leaving a workspace returns to the shelf instead of freezing the view', () => {
+  const home = read('src/views/Home.vue')
+  assert.match(
+    home,
+    /if \(workspace\.showingResults\) workspace\.backToShelf\(\)/,
+    'clearing the workspace query must reset an on-screen search/explore view',
+  )
+})
+
+test('the search workspace shows a discovery rank board under the entry', () => {
+  const search = read('src/views/Search.vue')
+  const css = read('src/styles/home-shelf.css')
+  assert.match(search, /class="search-rank-board"/, 'the board renders in the search workspace')
+  assert.match(search, /listExploreSources\(\)/, 'the board loads explore sources')
+  assert.match(search, /exploreBooks\(sourceId\)/, 'switching a source fetches its rank list')
+  assert.match(search, /search-rank-empty[\s\S]*?去导入书源/, 'a no-explore-sources state guides the user to import')
+  assert.match(css, /\.rank-chip\s*\{[\s\S]*?flex:\s*0 0 auto[\s\S]*?border-radius:\s*999px/, 'chips stay content-sized pills instead of stretching')
+})
+
 test('remote result scenes reuse the shelf title, grid, loading and night contract', () => {
   const home = read('src/views/Home.vue')
   const css = read('src/styles/home-shelf.css')

@@ -32,6 +32,37 @@
       >搜索</el-button>
     </div>
 
+    <section v-if="showRankBoard" class="search-rank-board" aria-label="发现榜单">
+      <div class="search-rank-header">
+        <span class="search-rank-title">发现榜单</span>
+        <div v-if="exploreSources.length > 1" class="search-rank-chips">
+          <button
+            v-for="source in exploreSources"
+            :key="source.id"
+            class="rank-chip"
+            :class="{ active: source.id === activeExploreId }"
+            type="button"
+            @click="switchExploreSource(source.id)"
+          >{{ source.name }}</button>
+        </div>
+      </div>
+      <p v-if="!exploreSources.length && !exploreLoading" class="search-rank-empty">
+        当前书源暂不含榜单；导入带「发现」能力的书源后，这里会展示起点等榜单。
+        <button type="button" @click="overlay.openSourceManage('import')">去导入书源</button>
+      </p>
+      <div v-else class="search-rank-list" :class="{ loading: exploreLoading }">
+        <RemoteBookResultList
+          :books="exploreBookList"
+          :adding-book-key="addingRemoteBookKey"
+          :is-night="reader.themeType === 'night'"
+          @preview="openPreview"
+          @read="openRemoteReader"
+          @add="addResultToShelf"
+          @edit="openResultEditor"
+        />
+      </div>
+    </section>
+
     <main class="shelf-main">
       <div ref="resultArea" class="books-wrapper">
         <RemoteBookResultList
@@ -102,6 +133,7 @@ import { useRemoteBookAddToShelf } from '../composables/useRemoteBookAddToShelf'
 import { useRemoteBookResultEditor } from '../composables/useRemoteBookResultEditor'
 import { useBookshelfStore } from '../stores/bookshelf'
 import { useOverlayStore } from '../stores/overlay'
+import { exploreBooks, listExploreSources } from '../api/explore'
 import { useReaderStore } from '../stores/reader'
 import { usePreferencesStore } from '../stores/preferences'
 import { useIndexWorkspaceStore } from '../stores/indexWorkspace'
@@ -137,6 +169,39 @@ const preferences = usePreferencesStore()
 const workspace = useIndexWorkspaceStore()
 
 const keyword = ref('')
+const exploreSources = ref([])
+const activeExploreId = ref(null)
+const exploreBookList = ref([])
+const exploreLoading = ref(false)
+const showRankBoard = computed(() => (
+  searchMode.value === 'remote' && !searched.value && !results.value.length && !searchStarting.value
+))
+
+async function loadExploreSources() {
+  try {
+    const { data } = await listExploreSources()
+    exploreSources.value = Array.isArray(data) ? data : []
+    const first = exploreSources.value[0]
+    if (first) switchExploreSource(first.id)
+  } catch {
+    exploreSources.value = []
+  }
+}
+
+async function switchExploreSource(sourceId) {
+  if (exploreLoading.value) return
+  activeExploreId.value = sourceId
+  exploreLoading.value = true
+  exploreBookList.value = []
+  try {
+    const { data } = await exploreBooks(sourceId)
+    exploreBookList.value = Array.isArray(data?.books) ? data.books : []
+  } catch {
+    exploreBookList.value = []
+  } finally {
+    exploreLoading.value = false
+  }
+}
 const searchMode = ref('remote')
 const sources = ref([])
 const selectedIds = ref([])
@@ -224,6 +289,7 @@ onMounted(async () => {
   updateResultViewport()
   window.addEventListener('resize', updateResultViewport)
   window.addEventListener('orientationchange', updateResultViewport)
+  loadExploreSources()
   const mountOperation = searchSessionOperations.begin('mount')
   applyWorkspaceSearchIntent()
   const shelfReady = await warmSearchShelf()

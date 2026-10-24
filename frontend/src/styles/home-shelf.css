@@ -453,3 +453,79 @@
     border-radius: 999px;
   }
 }
+
+/* Discovery rank board under the mobile search entry (MoviePilot-style
+   compact chips and cards; nothing stretches edge-to-edge). */
+.search-rank-board {
+  display: grid;
+  min-width: 0;
+  padding: 0 16px 12px;
+  gap: 10px;
+}
+
+.search-rank-header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.search-rank-title {
+  color: var(--app-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.search-rank-chips {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.rank-chip {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  color: var(--app-text-muted);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.rank-chip.active {
+  color: var(--app-primary-strong);
+  background: var(--app-primary-soft);
+  border-color: transparent;
+}
+
+.search-rank-empty {
+  margin: 8px 0 0;
+  padding: 18px 16px;
+  color: var(--app-text-muted);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.search-rank-empty button {
+  margin-top: 10px;
+  padding: 6px 14px;
+  color: var(--app-on-primary);
+  background: var(--app-primary);
+  border: 0;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.search-rank-list.loading {
+  opacity: 0.55;
+}
