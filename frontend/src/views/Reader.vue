@@ -810,6 +810,17 @@ const {
   onUnavailable: temporaryReaderUnavailable,
   fetchChapters: async targetBookId => {
     const { data } = await api.get(`/books/${targetBookId}/chapters`)
+    if (Array.isArray(data) && data.length === 0) {
+      // Shelf entries can land before their catalog (adding tolerates TOC
+      // failures); pull it once on open instead of showing an empty TOC.
+      try {
+        await refreshBook(targetBookId)
+        const retry = await api.get(`/books/${targetBookId}/chapters`)
+        return retry.data
+      } catch {
+        return data
+      }
+    }
     return data
   },
   writeDataCache: writeReaderDataCache,
@@ -871,6 +882,17 @@ const {
   getPendingChapterLoad: () => pendingReaderChapterLoad,
   fetchChapters: async targetBookId => {
     const { data } = await api.get(`/books/${targetBookId}/chapters`)
+    if (Array.isArray(data) && data.length === 0) {
+      // Shelf entries can land before their catalog (adding tolerates TOC
+      // failures); pull it once on open instead of showing an empty TOC.
+      try {
+        await refreshBook(targetBookId)
+        const retry = await api.get(`/books/${targetBookId}/chapters`)
+        return retry.data
+      } catch {
+        return data
+      }
+    }
     return data
   },
   resetContentSearch: () => overlay.resetSearchBookContent(),

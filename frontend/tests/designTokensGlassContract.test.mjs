@@ -132,6 +132,13 @@ test('the floating tab bar never covers the last shelf rows', () => {
   )
 })
 
+test('dialogs pop from the screen center instead of dropping from the top', () => {
+  assert.match(globalCss, /\.el-overlay-dialog\s*\{[\s\S]*?align-items:\s*center/, 'the overlay centers dialogs vertically')
+  assert.match(globalCss, /\.el-dialog\s*\{[\s\S]*?margin:\s*0 !important/, 'per-dialog top offsets are neutralized')
+  assert.match(globalCss, /app-dialog-pop[\s\S]*?transform:\s*scale/, 'the pop animation is transform-only')
+  assert.match(globalCss, /\.el-dialog\.is-fullscreen\s*\{[\s\S]*?max-height:\s*none/, 'mobile fullscreen dialogs keep covering the viewport')
+})
+
 test('glass blur is bounded for low-power clients', () => {
   const blurs = [...tokens.matchAll(/--glass-blur-(?:chrome|panel):\s*(\d+)px/g)].map(match => Number(match[1]))
   assert.ok(blurs.length >= 2, 'chrome and panel blur radii must be tokenized')

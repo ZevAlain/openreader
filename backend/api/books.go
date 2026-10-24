@@ -2149,6 +2149,13 @@ func firstNonBlankCanRename(remote string, current string, allowRename bool) str
 	return current
 }
 
+func lastRemoteChapterTitle(chapters []engine.RemoteChapter) string {
+	if len(chapters) == 0 {
+		return ""
+	}
+	return chapters[len(chapters)-1].Title
+}
+
 func (s *Server) createRemoteBook(c *gin.Context) {
 	userID, _ := middleware.UserID(c)
 
@@ -2268,15 +2275,15 @@ func (s *Server) createRemoteBook(c *gin.Context) {
 		if isRequestContextError(err) || ctx.Err() != nil {
 			return
 		}
+		// The search result already carries usable metadata; shelve the book
+		// anyway with zero chapters instead of failing the whole add — the
+		// source may be flaky right now, and the reader refreshes the
+		// catalog when the book is opened.
 		s.recordSourceFailure(userID, source, err)
-		writeSourceError(c, http.StatusBadRequest, "failed to fetch chapters", err, "book_info")
-		return
+		remoteInfo = engine.RemoteBookInfo{}
+		chapters = nil
 	}
 	if err := ctx.Err(); err != nil {
-		return
-	}
-	if len(chapters) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "source returned no chapters"})
 		return
 	}
 
@@ -2292,7 +2299,7 @@ func (s *Server) createRemoteBook(c *gin.Context) {
 		WordCount:    firstNonBlank(remoteInfo.WordCount, req.WordCount),
 		URL:          req.BookURL,
 		Variable:     variable,
-		LastChapter:  chapters[len(chapters)-1].Title,
+		LastChapter:  lastRemoteChapterTitle(chapters),
 		ChapterCount: len(chapters),
 		CanUpdate:    true,
 	}

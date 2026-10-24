@@ -53,13 +53,17 @@ func TestSourceRequestErrorsAreStructuredAndRedacted(t *testing.T) {
 		assertSourceErrorResponse(t, writer, http.StatusOK, "failed to request book source", "source_request_failed", "search")
 	})
 
-	t.Run("add remote book", func(t *testing.T) {
+	t.Run("add remote book shelves despite TOC failure", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/api/books/remote", strings.NewReader(`{"title":"测试书","bookUrl":"https://source-errors.example/book/1","sourceId":`+strconv.FormatUint(uint64(source.ID), 10)+`}`))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", token)
 		writer := httptest.NewRecorder()
 		router.ServeHTTP(writer, req)
-		assertSourceErrorResponse(t, writer, http.StatusBadRequest, "failed to fetch chapters", "source_request_failed", "book_info")
+		// The structured book_info error surfaces via /books/:id/refresh;
+		// the add itself shelves the book with zero chapters.
+		if writer.Code != http.StatusCreated {
+			t.Fatalf("resilient add = %d %s, want 201", writer.Code, writer.Body.String())
+		}
 	})
 }
 
@@ -328,7 +332,9 @@ func TestDynamicSourceHeaderFailsBeforeFetchWithStructuredErrors(t *testing.T) {
 		{name: "source debug search", method: http.MethodPost, path: "/api/sources/" + strconv.FormatUint(uint64(source.ID), 10) + "/test", body: `{"keyword":"测试"}`, status: http.StatusOK, message: "book source rule is unsupported", stage: "search"},
 		{name: "source debug toc", method: http.MethodPost, path: "/api/sources/" + strconv.FormatUint(uint64(source.ID), 10) + "/test-chapter", body: `{"bookUrl":"https://source-errors.example/book/1"}`, status: http.StatusOK, message: "book source rule is unsupported", stage: "toc"},
 		{name: "source debug content", method: http.MethodPost, path: "/api/sources/" + strconv.FormatUint(uint64(source.ID), 10) + "/test-content", body: `{"chapterUrl":"https://source-errors.example/chapter/1"}`, status: http.StatusOK, message: "book source rule is unsupported", stage: "content"},
-		{name: "add remote book", method: http.MethodPost, path: "/api/books/remote", body: `{"title":"测试书","bookUrl":"https://source-errors.example/book/2","sourceId":` + strconv.FormatUint(uint64(source.ID), 10) + `}`, status: http.StatusBadRequest, message: "failed to fetch chapters", stage: "book_info"},
+		// Add-to-shelf tolerates TOC failures now (the reader refreshes on
+		// open), so the structured book_info error surfaces via refresh.
+		{name: "refresh book", method: http.MethodPost, path: "/api/books/" + strconv.FormatUint(uint64(book.ID), 10) + "/refresh", status: http.StatusBadRequest, message: "failed to fetch chapters", stage: "book_info"},
 		{name: "reader content", method: http.MethodGet, path: "/api/books/" + strconv.FormatUint(uint64(book.ID), 10) + "/chapters/0/content", status: http.StatusBadGateway, message: "failed to load chapter content", stage: "content"},
 	}
 	for _, test := range tests {
@@ -399,5 +405,40 @@ func assertSourceErrorResponse(t *testing.T, writer *httptest.ResponseRecorder, 
 	}
 	if payload["error"] == "" {
 		t.Fatal("source error must remain visible to legacy clients")
+	}
+}
+
+func TestAddRemoteBookShelvesWithZeroChaptersWhenTOCFails(t *testing.T) {
+	router, server := setupTestServer(t)
+	auth := authHeader(t, router)
+	user := lifecycleUser(t, server, "testuser")
+	source := sourceErrorContractSource(t)
+	if err := server.db.Create(&source).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	response := httptest.NewRequest(http.MethodPost, "/api/books/remote", strings.NewReader(
+		`{"title":"遮天","bookUrl":"https://source-errors.example/book/9","sourceId":`+strconv.FormatUint(uint64(source.ID), 10)+`}`,
+	))
+	response.Header.Set("Content-Type", "application/json")
+	response.Header.Set("Authorization", auth)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, response)
+	if recorder.Code != http.StatusCreated {
+		t.Fatalf("resilient add = %d %s, want 201", recorder.Code, recorder.Body.String())
+	}
+	var created models.Book
+	if err := server.db.Where("user_id = ? AND title = ?", user.ID, "遮天").First(&created).Error; err != nil {
+		t.Fatalf("book was not shelved: %v", err)
+	}
+	var chapters int64
+	if err := server.db.Model(&models.Chapter{}).Where("book_id = ?", created.ID).Count(&chapters).Error; err != nil {
+		t.Fatal(err)
+	}
+	if chapters != 0 {
+		t.Fatalf("shelved book has %d chapters, want 0 until refresh", chapters)
+	}
+	if created.LastChapter != "" || created.ChapterCount != 0 {
+		t.Fatalf("chapter metadata not zeroed: %+v", created)
 	}
 }
