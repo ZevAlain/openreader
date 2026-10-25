@@ -12,7 +12,7 @@ export function useReaderWheel(options) {
     if (unref(options.isOverlayOpen)) return
     if (!unref(options.shellEl)?.contains(event.target)) return
     const target = event.target
-    if (target?.closest?.('a, input, textarea, select, .el-drawer, .el-dialog')) return
+    if (target?.closest?.('a, input, textarea, select, .v-dialog, .v-overlay--active')) return
 
     const viewport = unref(options.contentEl)
     const delta = normalizedReaderWheelDelta({

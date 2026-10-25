@@ -70,7 +70,7 @@ export function useGesture(elementRef, handlers) {
   }
 
   function shouldIgnoreTap(target) {
-    return !!target?.closest?.('button,a,input,textarea,select,[role="button"],.el-drawer,.el-dialog')
+    return !!target?.closest?.('button,a,input,textarea,select,[role="button"],.v-dialog,.v-overlay--active')
   }
 
   function handleTap(clientX, clientY, target) {

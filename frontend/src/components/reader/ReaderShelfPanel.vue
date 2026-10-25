@@ -172,7 +172,7 @@ onBeforeUnmount(() => {
     padding: 10px 0;
   }
 
-  .reader-shelf-list :deep(.el-empty) {
+  .reader-shelf-list .reader-empty-tip {
     grid-column: 1 / -1;
   }
 }

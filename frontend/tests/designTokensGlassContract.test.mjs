@@ -23,72 +23,11 @@ test('design tokens define paired light and dark values with glass materials', (
   assert.match(tokens, /--app-radius-lg:\s*20px/, 'the redesign baseline sets a 20px large radius')
 })
 
-test('Element Plus surfaces inherit the app palette through the token bridge', () => {
-  assert.match(tokens, /--el-color-primary:\s*var\(--app-primary\)/, 'EP primary follows the app brand')
-  assert.match(tokens, /--el-dialog-border-radius:\s*var\(--app-radius-xl\)/, 'dialogs use the extra-large radius')
-})
-
-test('the dark EP bridge is complete so components never fall back to EP blue', () => {
-  // element-plus/theme-chalk/dark targets html.dark with the same specificity
-  // as html.dark-reader; every --el-* value must be re-asserted inside the
-  // dark block or the official dark palette (blue) wins the cascade.
-  const darkBlock = tokens.match(/html\.dark-reader\s*\{[\s\S]*?\n\}/)[0]
-  for (const token of [
-    '--el-color-primary',
-    '--el-color-primary-dark-2',
-    '--el-color-success',
-    '--el-color-warning',
-    '--el-color-danger',
-    '--el-color-info',
-    '--el-text-color-primary',
-    '--el-text-color-regular',
-    '--el-border-color',
-    '--el-fill-color',
-    '--el-bg-color',
-    '--el-bg-color-overlay',
-  ]) {
-    assert.match(
-      darkBlock,
-      new RegExp(token.replace(/-/g, '\\-') + '\\s*:\\s*var\\(--(?:app|glass)-'),
-      `dark block must bridge ${token} back to the app palette`,
-    )
-  }
-  // The light-3..9 ramp is a hand-picked teal scale; requiring an explicit
-  // definition proves every EP dark blue value is overridden.
-  for (const level of ['3', '4', '5', '6', '7', '8', '9']) {
-    assert.match(
-      darkBlock,
-      new RegExp(`--el-color-primary-light-${level}\\s*:`),
-      `dark block must override EP's blue light-${level} with the teal ramp`,
-    )
-  }
-  // Deep tiers (status ramps, fills, card/shadow) must also leave EP's
-  // static dark values behind and derive from the app palette.
-  for (const token of [
-    '--el-color-success-light-3',
-    '--el-color-warning-light-5',
-    '--el-color-danger-light-7',
-    '--el-color-info-light-9',
-    '--el-color-success-dark-2',
-    '--el-border-color-dark',
-    '--el-border-color-darker',
-    '--el-fill-color-dark',
-    '--el-fill-color-darker',
-    '--el-fill-color-lighter',
-    '--el-text-color-disabled',
-    '--el-card-bg-color',
-    '--el-button-disabled-text-color',
-    '--el-empty-fill-color-0',
-    '--el-box-shadow',
-    '--el-box-shadow-light',
-  ]) {
-    assert.match(
-      darkBlock,
-      new RegExp(token.replace(/-/g, '\\-') + '\\s*:\\s*(?:var\\(--(?:app|glass)-|color-mix\\(in srgb, var\\(--app-)'),
-      `dark block must derive ${token} from the app palette`,
-    )
-  }
-  assert.match(darkBlock, /--el-color-primary:\s*var\(--app-primary\)/, 'the primary button color must follow the brand, not EP blue')
+test('Element Plus is fully removed from the frontend', () => {
+  assert.doesNotMatch(tokens, /--el-/, 'the retired EP token bridge must not linger')
+  const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
+  assert.doesNotMatch(main, /element-plus/, 'main.js must not register Element Plus')
+  assert.match(main, /defaultSet: 'svg'/, 'Vuetify SVG icons stay the default set')
 })
 
 test('the shelf page consumes theme tokens instead of hardcoded surfaces', () => {
@@ -120,7 +59,8 @@ test('shell surfaces stay tokenized with no legacy hex leftovers', () => {
   }
   assert.match(layout, /linear-gradient\(180deg, var\(--app-surface\), var\(--app-bg\)\)/, 'the shell gradient must ride the tokens')
   assert.match(layout, /\.profile-avatar[\s\S]*?color:\s*var\(--app-on-primary\)/, 'avatar ink uses the on-primary token')
-  assert.match(globalCss2, /--el-button-text-color:\s*var\(--app-on-primary\)/, 'primary-button ink uses the token, not a hex')
+  const feedbackHost = readFileSync(new URL('../src/components/AppFeedbackHost.vue', import.meta.url), 'utf8')
+  assert.match(feedbackHost, /\.app-confirm-btn\.ok\s*\{[\s\S]*?color:\s*var\(--app-on-primary\)/, 'confirm-button ink uses the token, not a hex')
 })
 
 test('the floating tab bar never covers the last shelf rows', () => {
@@ -132,17 +72,14 @@ test('the floating tab bar never covers the last shelf rows', () => {
   )
 })
 
-test('dialogs pop from the screen center instead of dropping from the top', () => {
-  assert.match(globalCss, /\.el-overlay-dialog\s*\{[\s\S]*?align-items:\s*center/, 'the overlay centers dialogs vertically')
-  assert.match(globalCss, /\.el-dialog\s*\{[\s\S]*?margin:\s*0 !important/, 'per-dialog top offsets are neutralized')
-  assert.match(globalCss, /app-dialog-pop[\s\S]*?transform:\s*scale/, 'the pop animation is transform-only')
-  assert.match(globalCss, /\.el-dialog\.is-fullscreen\s*\{[\s\S]*?max-height:\s*none/, 'mobile fullscreen dialogs keep covering the viewport')
+test('dialogs ride the shared v-dialog glass card', () => {
+  assert.match(globalCss, /\.app-dialog-card\s*\{[\s\S]*?max-height:\s*calc\(100dvh - 48px\)/, 'dialog cards stay inside the viewport')
+  assert.match(globalCss, /\.v-dialog--fullscreen \.app-dialog-card\s*\{[\s\S]*?max-height:\s*100dvh/, 'mobile fullscreen dialogs keep covering the viewport')
 })
 
 test('fullscreen dialogs bound their top and bottom edges', () => {
-  assert.match(globalCss, /\.el-dialog\.is-fullscreen\s*\{[\s\S]*?padding-top:\s*calc\(18px \+ env\(safe-area-inset-top\)\)/, 'fullscreen dialogs clear the status-bar band')
-  assert.match(globalCss, /\.el-dialog\.is-fullscreen\s*\{[\s\S]*?padding-bottom:\s*calc\(12px \+ env\(safe-area-inset-bottom\)\)/, 'fullscreen dialogs clear the home indicator')
-  assert.match(globalCss, /display-mode: standalone\)\s*\{[\s\S]*?\.el-dialog\.is-fullscreen[\s\S]*?30px/, 'standalone shells get the wider headroom')
+  assert.match(globalCss, /\.v-dialog--fullscreen \.app-dialog-head\s*\{[\s\S]*?padding-top:\s*calc\(18px \+ env\(safe-area-inset-top\)\)/, 'fullscreen dialogs clear the status-bar band')
+  assert.match(globalCss, /\.v-dialog--fullscreen \.app-dialog-actions\s*\{[\s\S]*?padding-bottom:\s*calc\(18px \+ env\(safe-area-inset-bottom\)\)/, 'fullscreen dialogs clear the home indicator')
 })
 
 test('glass blur is bounded for low-power clients', () => {
@@ -151,8 +88,8 @@ test('glass blur is bounded for low-power clients', () => {
   assert.ok(blurs.every(blur => blur <= 32), 'blur radii stay at or below 32px for weak hardware')
 })
 
-test('global glass skin applies to dialogs and poppers but not the reading content', () => {
-  assert.match(globalCss, /\.el-dialog[\s\S]*?backdrop-filter:\s*blur\(var\(--glass-blur-panel\)\)/, 'dialogs get panel glass')
-  assert.match(globalCss, /\.el-overlay[\s\S]*?backdrop-filter:\s*blur\(2px\)/, 'the modal scrim stays a faint blur only')
+test('global glass skin applies to dialogs and menus but not the reading content', () => {
+  assert.match(globalCss, /\.app-dialog-card[\s\S]*?backdrop-filter:\s*blur\(var\(--glass-blur-panel\)\)/, 'dialogs get panel glass')
+  assert.match(globalCss, /\.v-overlay__scrim\s*\{[\s\S]*?backdrop-filter:\s*blur\(2px\)/, 'the modal scrim stays a faint blur only')
   assert.doesNotMatch(globalCss, /reader-body[\s\S]*?backdrop-filter/, 'reading content must never be blurred')
 })

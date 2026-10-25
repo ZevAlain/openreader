@@ -608,7 +608,7 @@
   white-space: nowrap;
 }
 
-.search-rank-item .el-icon {
+.search-rank-item .v-icon {
   flex: 0 0 auto;
   color: var(--app-text-subtle);
   font-size: 14px;

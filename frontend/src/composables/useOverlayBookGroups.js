@@ -281,7 +281,7 @@ export function useOverlayBookGroups(options) {
     destroyGroupSortable()
     resolveGroupTable()?.doLayout?.()
     const tableBody = resolveGroupTable()?.$el
-      ?.querySelector('.el-table__body-wrapper tbody, .v-table__wrapper tbody')
+      ?.querySelector('.v-table__wrapper tbody')
     if (!tableBody) return
     sortable = options.createSortable(tableBody, {
       handle: '.group-drag-icon',

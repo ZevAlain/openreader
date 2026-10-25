@@ -30,7 +30,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { message } from '../../composables/useAppFeedback.js'
 import { createRemoteBook, listChapters, refreshLocalBook, updateBook } from '../../api/books'
 import { useRemoteBookAddToShelf } from '../../composables/useRemoteBookAddToShelf'
 import { useAuthenticatedOperationGuard } from '../../composables/useAuthenticatedOperationGuard'
@@ -84,8 +84,8 @@ const addToShelf = useRemoteBookAddToShelf({
   buildPayload: (book, categoryIds, context) => remoteBookCreatePayload(book, categoryIds, context),
   createRemoteBook,
   upsertBook: book => bookshelf.upsertBook(book),
-  onSuccess: message => ElMessage.success(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onSuccess: text => message.success(text),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
 const addingBookInfoToShelf = computed(() => (
   addToShelf.addingBookKey.value === bookInfoKey(overlay.bookInfoBook)
@@ -127,8 +127,8 @@ const {
       { detail },
     ))
   },
-  onSuccess: message => ElMessage.success(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onSuccess: text => message.success(text),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
 
 watch(
@@ -143,12 +143,12 @@ watch(
     const [categoryResult, booksResult] = await Promise.allSettled(warmTasks)
     if (!operations.canCommit(operation)) return
     if (categoryResult.status === 'rejected') {
-      ElMessage.warning(
+      message.warning(
         readError(categoryResult.reason, '分组加载失败，书籍信息仍可查看'),
       )
     }
     if (booksResult?.status === 'rejected') {
-      ElMessage.warning(
+      message.warning(
         readError(booksResult.reason, '书架状态加载失败，书籍信息仍可查看'),
       )
     }
@@ -156,7 +156,7 @@ watch(
     if (overlay.bookInfoBook?.sourceId && !sourceRows.value.length) {
       await loadSourceRows(operation).catch((error) => {
         if (!operations.canCommit(operation)) return
-        ElMessage.warning(
+        message.warning(
           readError(error, '书源加载失败，书籍信息仍可查看'),
         )
       })

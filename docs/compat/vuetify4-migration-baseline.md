@@ -1,6 +1,6 @@
 # Vuetify 4 重构迁移基线(2026-10-25)
 
-重构前功能快照。迁移期间 EP 与 Vuetify 共存、逐视图替换,每完成一个 Phase 跑对应功能点复测;全部完成后整体移除 EP 并重定基源码契约测试。
+> **状态:已完成(2026-10-25,v1.1.3–v1.1.34)。** P1–P4 逐文件迁移完毕(v-dialog 共享玻璃卡 `.app-dialog-card` 体系、v-data-table(v-model 存 id + 深度 watch 回_EMIT 行对象、click:row 的 item 即原始行)、v-select/v-combobox/v-text-field、@mdi/js SVG 图标集 `defaultSet:'svg'`、ElMessage/ElMessageBox → 自研 useAppFeedback(message/confirm/prompt 含 distinguishCancelAndClose 与多行)。P5 已移除 element-plus 与 @element-plus/icons-vue 依赖、EP 皮肤 CSS 与 --el-* 令牌桥,契约测试重定基。下表为迁移前功能快照与验证方式,仍作为回归清单使用。
 
 ## 功能点清单与验证方式
 

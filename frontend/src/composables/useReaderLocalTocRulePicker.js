@@ -22,7 +22,7 @@ export function useReaderLocalTocRulePicker(options) {
     const selected = ref(currentBook?.tocRule || 'spin+toc')
     const selector = h('select', {
       value: selected.value,
-      style: 'width:100%;min-height:38px;padding:0 10px;border:1px solid var(--el-border-color);border-radius:4px;background:var(--el-bg-color);color:var(--el-text-color-primary)',
+      style: 'width:100%;min-height:38px;padding:0 10px;border:1px solid var(--app-border);border-radius:4px;background:var(--app-surface);color:var(--app-text)',
       onChange: event => {
         selected.value = event.target.value
       },
