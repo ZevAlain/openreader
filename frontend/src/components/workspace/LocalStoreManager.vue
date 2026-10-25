@@ -1,83 +1,100 @@
 <template>
   <section class="store-page">
-    <el-table
-      v-loading="loading"
-      :data="tableItems"
-      row-key="path"
-      stripe
+    <v-data-table
+      :headers="tableHeaders"
+      :items="tableItems"
+      item-value="path"
+      :loading="loading"
+      density="compact"
+      :items-per-page="-1"
+      no-data-text="书仓为空，把文件放入 localStore 目录即可显示"
       class="store-table"
-      :selectable="row => !row.toParent && !row.loadMore"
-      @selection-change="onSelectionChange"
-      @row-dblclick="openRow"
+      @dblclick:row="(_, { item }) => openRow(item)"
     >
-      <el-table-column type="selection" width="42" />
-      <el-table-column prop="name" label="文件名" min-width="260" show-overflow-tooltip>
-        <template #default="{ row }">
-          <button class="file-name" type="button" @click="openRow(row)">
-            <el-icon><component :is="row.isDir ? FolderOpened : Document" /></el-icon>
-            <span>{{ row.name }}</span>
-          </button>
-        </template>
-      </el-table-column>
-      <el-table-column label="大小" width="118">
-        <template #default="{ row }">{{ row.isDir || row.toParent || row.loadMore ? '-' : formatSize(row.size) }}</template>
-      </el-table-column>
-      <el-table-column label="修改时间" width="156">
-        <template #default="{ row }">{{ formatDate(row.lastModified) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="170" fixed="right">
-        <template #header>
-          <div class="operation-header">
-            <span>操作</span>
-            <el-input v-model="keyword" size="small" clearable placeholder="输入关键字搜索" />
-          </div>
-        </template>
-        <template #default="{ row }">
-          <el-button
-            v-if="canImport(row)"
-            text
-            type="primary"
-            :loading="storageImportPending"
-            @click="importOne(row)"
-          >
-            加入书架
-          </el-button>
-          <el-button
-            v-if="!row.toParent && !row.loadMore"
-            text
-            type="danger"
-            @click="deleteItem(row)"
-          >
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <el-empty v-if="!items.length && !loading" description="书仓为空，把文件放入 localStore 目录即可显示" />
+      <template #header.data-table-select="{ allSelected, someSelected, selectAll }">
+        <v-checkbox-btn
+          :model-value="allSelected"
+          :indeterminate="someSelected && !allSelected"
+          @update:model-value="selectAll"
+        />
+      </template>
+      <template #item.data-table-select="{ item }">
+        <v-checkbox-btn
+          v-if="!item.toParent && !item.loadMore"
+          :model-value="selectedIds.includes(item.path)"
+          @update:model-value="checked => toggleRow(item, checked)"
+        />
+      </template>
+      <template #item.name="{ item }">
+        <button class="file-name" type="button" @click="openRow(item)">
+          <v-icon :icon="item.isDir ? mdiFolderOpenOutline : mdiFileDocumentOutline" />
+          <span>{{ item.name }}</span>
+        </button>
+      </template>
+      <template #item.size="{ item }">
+        {{ item.isDir || item.toParent || item.loadMore ? '-' : formatSize(item.size) }}
+      </template>
+      <template #item.lastModified="{ item }">
+        {{ formatDate(item.lastModified) }}
+      </template>
+      <template #header.actions>
+        <div class="operation-header">
+          <span>操作</span>
+          <v-text-field
+            v-model="keyword"
+            density="compact"
+            variant="outlined"
+            clearable
+            hide-details
+            placeholder="输入关键字搜索"
+          />
+        </div>
+      </template>
+      <template #item.actions="{ item }">
+        <v-btn
+          v-if="canImport(item)"
+          variant="text"
+          color="primary"
+          size="small"
+          :loading="storageImportPending"
+          @click="importOne(item)"
+        >
+          加入书架
+        </v-btn>
+        <v-btn
+          v-if="!item.toParent && !item.loadMore"
+          variant="text"
+          color="error"
+          size="small"
+          @click="deleteItem(item)"
+        >
+          删除
+        </v-btn>
+      </template>
+    </v-data-table>
 
     <footer v-if="items.length" class="store-batch-footer app-panel">
       <span class="check-tip">已选择 {{ selectedRows.length }} 个</span>
-      <el-button type="primary" plain :disabled="!selectedRows.length" @click="deleteSelected">批量删除</el-button>
-      <el-button
-        type="primary"
+      <v-btn variant="outlined" color="primary" :disabled="!selectedRows.length" @click="deleteSelected">批量删除</v-btn>
+      <v-btn
+        color="primary"
         :disabled="!selectedImportablePaths.length || storageImportPending"
         :loading="storageImportPending"
         @click="importSelected"
       >
         批量加入书架 {{ selectedImportablePaths.length || '' }}
-      </el-button>
+      </v-btn>
       <input ref="uploadInput" class="hidden-upload" type="file" multiple @change="uploadFiles">
-      <el-button :loading="uploading" @click="chooseFiles">上传书籍</el-button>
-      <el-button @click="clearSelection">取消</el-button>
+      <v-btn variant="outlined" :loading="uploading" @click="chooseFiles">上传书籍</v-btn>
+      <v-btn variant="text" @click="clearSelection">取消</v-btn>
     </footer>
   </section>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Document, FolderOpened } from '@element-plus/icons-vue'
+import { mdiFileDocumentOutline, mdiFolderOpenOutline } from '@mdi/js'
+import { confirm, message } from '../../composables/useAppFeedback.js'
 import { deleteFromLocalStore, listLocalStore, uploadToLocalStore } from '../../api/localStore'
 import { useAuthenticatedOperationGuard } from '../../composables/useAuthenticatedOperationGuard'
 import { useOverlayStore } from '../../stores/overlay'
@@ -87,7 +104,7 @@ import { isLocalStoreImportable } from '../../utils/storageImportable'
 const overlay = useOverlayStore()
 const operations = useAuthenticatedOperationGuard()
 const items = ref([])
-const selectedRows = ref([])
+const selectedIds = ref([])
 const currentPath = ref('')
 const keyword = ref('')
 const loading = ref(false)
@@ -117,8 +134,18 @@ const tableItems = computed(() => {
   }
   return rows
 })
+const selectableRows = computed(() => tableItems.value.filter(row => !row.toParent && !row.loadMore))
+const selectedRows = computed(() => selectableRows.value.filter(row => selectedIds.value.includes(row.path)))
 const selectedImportablePaths = computed(() => selectedRows.value.filter(canImport).map(item => item.path))
 const storageImportPending = computed(() => overlay.storageImportVisible)
+
+const tableHeaders = [
+  { key: 'data-table-select', width: 42 },
+  { title: '文件名', key: 'name', minWidth: 260 },
+  { title: '大小', key: 'size', sortable: false, width: 118 },
+  { title: '修改时间', key: 'lastModified', sortable: false, width: 156 },
+  { title: '操作', key: 'actions', sortable: false, width: 230, fixed: 'end' },
+]
 
 watch(keyword, () => {
   showAllItems.value = false
@@ -140,7 +167,7 @@ async function load(parentOperation = null) {
     return true
   } catch (err) {
     if (operations.canCommit(operation)) {
-      ElMessage.error(readError(err, '加载书仓失败'))
+      message.error(readError(err, '加载书仓失败'))
     }
     return false
   } finally {
@@ -152,8 +179,11 @@ function canImport(row) {
   return !row?.isDir && !row?.toParent && !row?.loadMore && isLocalStoreImportable(row.path || row.name)
 }
 
-function onSelectionChange(rows) {
-  selectedRows.value = rows.filter(row => !row.toParent && !row.loadMore)
+function toggleRow(row, checked) {
+  const current = new Set(selectedIds.value)
+  if (checked) current.add(row.path)
+  else current.delete(row.path)
+  selectedIds.value = [...current]
 }
 
 async function openRow(row) {
@@ -174,7 +204,7 @@ function showMoreItems() {
 }
 
 function clearSelection() {
-  selectedRows.value = []
+  selectedIds.value = []
 }
 
 function chooseFiles() {
@@ -190,11 +220,11 @@ async function uploadFiles(event) {
   try {
     await uploadToLocalStore({ path: uploadPath, files })
     if (!operations.canCommit(operation)) return
-    ElMessage.success('文件已上传')
+    message.success('文件已上传')
     await load(operation)
   } catch (err) {
     if (operations.canCommit(operation)) {
-      ElMessage.error(readError(err, '上传失败'))
+      message.error(readError(err, '上传失败'))
     }
   } finally {
     if (operations.canCommit(operation)) {
@@ -219,16 +249,21 @@ function importPaths(paths) {
 async function deleteItem(row) {
   const operation = operations.begin('delete')
   try {
-    await ElMessageBox.confirm(`确定删除“${row.name}”吗？`, '删除书仓项目', { type: 'warning' })
+    const action = await confirm({
+      title: '删除书仓项目',
+      message: `确定删除“${row.name}”吗？`,
+      tone: 'warning',
+    })
+    if (action !== 'confirm') throw 'cancel'
     if (!operations.canCommit(operation)) return
     await deleteFromLocalStore(row.path)
     if (!operations.canCommit(operation)) return
-    ElMessage.success('已删除')
+    message.success('已删除')
     await load(operation)
   } catch (err) {
     if (err === 'cancel' || err === 'close') return
     if (operations.canCommit(operation)) {
-      ElMessage.error(readError(err, '删除失败'))
+      message.error(readError(err, '删除失败'))
     }
   }
 }
@@ -238,18 +273,23 @@ async function deleteSelected() {
   const operation = operations.begin('delete')
   const selected = [...selectedRows.value]
   try {
-    await ElMessageBox.confirm(`确定删除选中的 ${selected.length} 个书仓项目吗？`, '批量删除书仓项目', { type: 'warning' })
+    const action = await confirm({
+      title: '批量删除书仓项目',
+      message: `确定删除选中的 ${selected.length} 个书仓项目吗？`,
+      tone: 'warning',
+    })
+    if (action !== 'confirm') throw 'cancel'
     if (!operations.canCommit(operation)) return
     for (const row of selected) {
       await deleteFromLocalStore(row.path)
       if (!operations.canCommit(operation)) return
     }
-    ElMessage.success('已批量删除')
+    message.success('已批量删除')
     await load(operation)
   } catch (err) {
     if (err === 'cancel' || err === 'close') return
     if (operations.canCommit(operation)) {
-      ElMessage.error(readError(err, '批量删除失败'))
+      message.error(readError(err, '批量删除失败'))
     }
   }
 }
@@ -365,10 +405,9 @@ function readError(err, fallback) {
     margin: 0;
   }
 
-  .store-batch-footer :deep(.el-button) {
+  .store-batch-footer :deep(.v-btn) {
     width: 100%;
     min-height: 38px;
-    margin-left: 0;
   }
 }
 </style>
