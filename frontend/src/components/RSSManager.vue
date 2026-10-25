@@ -85,28 +85,13 @@
       @preview-images="openArticleImagePreview"
     />
 
-    <div
+    <AppImageLightbox
       v-if="articleImagePreviewVisible"
-      class="rss-lightbox"
-      @click.self="articleImagePreviewVisible = false"
-    >
-      <img class="rss-lightbox-img" :src="articlePreviewImages[articlePreviewIndex]" alt="" @click.stop>
-      <button class="rss-lightbox-close" type="button" aria-label="关闭预览" @click="articleImagePreviewVisible = false">×</button>
-      <button
-        v-if="articlePreviewImages.length > 1"
-        class="rss-lightbox-nav prev"
-        type="button"
-        aria-label="上一张"
-        @click.stop="stepArticlePreview(-1)"
-      >‹</button>
-      <button
-        v-if="articlePreviewImages.length > 1"
-        class="rss-lightbox-nav next"
-        type="button"
-        aria-label="下一张"
-        @click.stop="stepArticlePreview(1)"
-      >›</button>
-    </div>
+      :images="articlePreviewImages"
+      :index="articlePreviewIndex"
+      @update:index="articlePreviewIndex = $event"
+      @close="articleImagePreviewVisible = false"
+    />
   </section>
 </template>
 
@@ -133,6 +118,7 @@ import {
   safeRSSImportIndexes,
   toUpstreamRSSSource,
 } from '../utils/rssSourceImport'
+import AppImageLightbox from './AppImageLightbox.vue'
 import RSSArticleDialog from './rss/RSSArticleDialog.vue'
 import RSSArticleListDialog from './rss/RSSArticleListDialog.vue'
 import RSSImportDialog from './rss/RSSImportDialog.vue'
@@ -535,11 +521,6 @@ function openArticleImagePreview({ images, index }) {
   articleImagePreviewVisible.value = true
 }
 
-function stepArticlePreview(step) {
-  const total = articlePreviewImages.value.length
-  if (!total) return
-  articlePreviewIndex.value = (articlePreviewIndex.value + step + total) % total
-}
 
 function articleBodyHTML(article) {
   return article?.content || article?.description || article?.summary || ''
@@ -638,48 +619,5 @@ function readError(error, fallback) {
   }
 }
 
-.rss-lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 3200;
-  display: grid;
-  place-items: center;
-  background: rgba(16, 18, 17, 0.86);
-}
-
-.rss-lightbox-img {
-  max-width: 92vw;
-  max-height: 88vh;
-  object-fit: contain;
-}
-
-.rss-lightbox-close,
-.rss-lightbox-nav {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  color: #fff;
-  font-size: 28px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 0;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.rss-lightbox-close {
-  top: calc(18px + env(safe-area-inset-top));
-  right: 18px;
-  font-size: 22px;
-}
-
-.rss-lightbox-nav.prev {
-  left: 14px;
-}
-
-.rss-lightbox-nav.next {
-  right: 14px;
-}
 
 </style>

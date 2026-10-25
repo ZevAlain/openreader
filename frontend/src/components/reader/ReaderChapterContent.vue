@@ -59,16 +59,13 @@
         <p data-pos="0" data-reader-block>{{ block.error }}</p>
         <button type="button" @click.stop="emit('retry-block', block.index)" @touchstart.stop @touchend.stop>重新加载</button>
       
-    <div
+    <AppImageLightbox
       v-if="imagePreview.visible"
-      class="reader-image-lightbox"
-      @click.self="closeImagePreview"
-    >
-      <img class="reader-lightbox-img" :src="imagePreview.images[imagePreview.index]" alt="" @click.stop>
-      <button class="reader-lightbox-close" type="button" aria-label="关闭预览" @click="closeImagePreview">×</button>
-      <button v-if="imagePreview.images.length > 1" class="reader-lightbox-nav prev" type="button" aria-label="上一张" @click.stop="stepImagePreview(-1)">‹</button>
-      <button v-if="imagePreview.images.length > 1" class="reader-lightbox-nav next" type="button" aria-label="下一张" @click.stop="stepImagePreview(1)">›</button>
-    </div>
+      :images="imagePreview.images"
+      :index="imagePreview.index"
+      @update:index="imagePreview.index = $event"
+      @close="imagePreview.visible = false"
+    />
   </div>
       <template v-else>
         <h3 v-if="!block.hideTitle" data-pos="0">{{ block.title || '正文' }}</h3>
@@ -99,20 +96,18 @@
     </section>
   </template>
 
-    <div
+    <AppImageLightbox
       v-if="imagePreview.visible"
-      class="reader-image-lightbox"
-      @click.self="closeImagePreview"
-    >
-      <img class="reader-lightbox-img" :src="imagePreview.images[imagePreview.index]" alt="" @click.stop>
-      <button class="reader-lightbox-close" type="button" aria-label="关闭预览" @click="closeImagePreview">×</button>
-      <button v-if="imagePreview.images.length > 1" class="reader-lightbox-nav prev" type="button" aria-label="上一张" @click.stop="stepImagePreview(-1)">‹</button>
-      <button v-if="imagePreview.images.length > 1" class="reader-lightbox-nav next" type="button" aria-label="下一张" @click.stop="stepImagePreview(1)">›</button>
-    </div>
+      :images="imagePreview.images"
+      :index="imagePreview.index"
+      @update:index="imagePreview.index = $event"
+      @close="imagePreview.visible = false"
+    />
   </template>
 
 <script setup>
 import { reactive } from 'vue'
+import AppImageLightbox from '../AppImageLightbox.vue'
 import ReaderAudioContent from './ReaderAudioContent.vue'
 import ReaderEpubContent from './ReaderEpubContent.vue'
 
@@ -230,15 +225,6 @@ function openImagePreview(block, line) {
   imagePreview.visible = true
 }
 
-function closeImagePreview() {
-  imagePreview.visible = false
-}
-
-function stepImagePreview(step) {
-  const total = imagePreview.images.length
-  if (!total) return
-  imagePreview.index = (imagePreview.index + step + total) % total
-}
 
 function handleImageError(line) {
   if (!line?.fallbackSrc || line.fallbackSrc === line.src) return
@@ -411,48 +397,5 @@ p.reader-search-active {
   }
 }
 
-.reader-image-lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 3200;
-  display: grid;
-  place-items: center;
-  background: rgba(16, 18, 17, 0.86);
-}
-
-.reader-lightbox-img {
-  max-width: 92vw;
-  max-height: 88vh;
-  object-fit: contain;
-}
-
-.reader-lightbox-close,
-.reader-lightbox-nav {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  color: #fff;
-  font-size: 28px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 0;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.reader-lightbox-close {
-  top: calc(18px + env(safe-area-inset-top));
-  right: 18px;
-  font-size: 22px;
-}
-
-.reader-lightbox-nav.prev {
-  left: 14px;
-}
-
-.reader-lightbox-nav.next {
-  right: 14px;
-}
 
 </style>

@@ -75,6 +75,7 @@ export function prompt(options = {}) {
       inputValue: options.value ?? '',
       placeholder: options.placeholder || '',
       type: options.type || 'text',
+      multiline: options.multiline || false,
       validator: options.validator,
       confirmText: options.confirmText || '确定',
       cancelText: options.cancelText || '取消',

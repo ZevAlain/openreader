@@ -22,13 +22,20 @@
         <h2 class="app-confirm-title">{{ item.title }}</h2>
         <p v-if="item.message" class="app-confirm-message">{{ item.message }}</p>
         <input
-          v-if="item.kind === 'prompt'"
+          v-if="item.kind === 'prompt' && !item.multiline"
           v-model="item.inputValue"
           class="app-confirm-input"
           :type="item.type || 'text'"
           :placeholder="item.placeholder"
           @keydown.enter.prevent="submitItem(item)"
         >
+        <textarea
+          v-else-if="item.kind === 'prompt'"
+          v-model="item.inputValue"
+          class="app-confirm-input"
+          rows="3"
+          :placeholder="item.placeholder"
+        />
         <p v-if="item.error" class="app-confirm-error">{{ item.error }}</p>
         <div class="app-confirm-actions">
           <button class="app-confirm-btn cancel" type="button" @click="resolveConfirm(item.id, item.kind === 'prompt' ? null : 'cancel')">{{ item.cancelText }}</button>
@@ -197,6 +204,11 @@ function submitItem(item) {
 
 .app-confirm-input:focus {
   border-color: var(--app-primary);
+}
+
+textarea.app-confirm-input {
+  resize: vertical;
+  font-family: inherit;
 }
 
 .app-confirm-error {

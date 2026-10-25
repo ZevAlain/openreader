@@ -381,10 +381,11 @@
       </div>
     </ReaderMobileWorkspacePanel>
 
-    <el-image-viewer
+    <AppImageLightbox
       v-if="epubPreviewVisible"
-      :url-list="epubPreviewImages"
-      :initial-index="epubPreviewIndex"
+      :images="epubPreviewImages"
+      :index="epubPreviewIndex"
+      @update:index="epubPreviewIndex = $event"
       @close="epubPreviewVisible = false"
     />
   </main>
@@ -393,7 +394,8 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { confirm, message, prompt } from '../composables/useAppFeedback.js'
+import AppImageLightbox from '../components/AppImageLightbox.vue'
 import api from '../api/client'
 import { refreshBook, refreshLocalBook } from '../api/books'
 import { getRemoteReaderChapterContent, getRemoteReaderSession } from '../api/remoteReader'
@@ -541,9 +543,9 @@ const {
   removeAsset: deleteAsset,
   saveSettings: () => reader.saveReaderSettings(),
   syncFonts: syncReaderFontFaces,
-  onSuccess: message => ElMessage.success(message),
-  onWarning: message => ElMessage.warning(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onSuccess: message => message.success(message),
+  onWarning: message => message.warning(message),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
 
 const book = ref(null)
@@ -576,14 +578,17 @@ const {
   getPercent: () => currentChapterPercent(),
   getCurrentContext: currentBookmarkParagraphContext,
   getSelectedTextContext: selectedBookmarkContextFromText,
-  onSelectedTextNotFound: () => ElMessage.error('选择1-2段整段文字才能定位段落'),
+  onSelectedTextNotFound: () => message.error('选择1-2段整段文字才能定位段落'),
   openForm: (...args) => overlay.openBookmarkForm(...args),
 })
 const {
   operate: operateSelectedText,
 } = useReaderSelectedTextActions({
   getBook: () => book.value,
-  confirm: (...args) => ElMessageBox.confirm(...args),
+  confirm: (text, title, config = {}) =>
+    confirm({ message: text, title, tone: config.type === 'warning' ? 'warning' : 'primary' }).then(action => {
+      if (action !== 'confirm') return Promise.reject('cancel')
+    }),
   createBookmark: createBookmarkFromSelectedText,
   openReplaceRuleEditor: draft => overlay.openReplaceRuleEditor(draft),
 })
@@ -653,7 +658,7 @@ const {
   contentBody,
   getAction: () => reader.selectionAction,
   onOperate: operateSelectedText,
-  onError: error => ElMessage.error(readError(error, '处理选中文字失败')),
+  onError: error => message.error(readError(error, '处理选中文字失败')),
 })
 const handleReaderSelectionEnd = () => (
   isMobileReader.value
@@ -691,8 +696,8 @@ const {
     const { data } = await listSources()
     return (data || []).filter(source => source.enabled)
   },
-  onError: error => ElMessage.error(readError(error, '搜索可用来源失败')),
-  onInfo: message => ElMessage.info(message),
+  onError: error => message.error(readError(error, '搜索可用来源失败')),
+  onInfo: message => message.info(message),
 })
 const {
   changingSource,
@@ -701,8 +706,8 @@ const {
   book,
   bookId,
   onChanged: (...args) => applyReaderSourceChange(...args),
-  onSuccess: (_data, source) => ElMessage.success(`已切换到 ${sourceCandidateSourceName(source)}`),
-  onError: error => ElMessage.error(readError(error, '换源失败')),
+  onSuccess: (_data, source) => message.success(`已切换到 ${sourceCandidateSourceName(source)}`),
+  onError: error => message.error(readError(error, '换源失败')),
 })
 const {
   visible: showShelfDrawer,
@@ -720,8 +725,8 @@ const {
   currentChapterCount: () => chapters.value.length,
   router,
   saveProgress: () => saveCurrentProgress({ force: true }),
-  onWarning: message => ElMessage.warning(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onWarning: message => message.warning(message),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
 const {
   message: toastMsg,
@@ -798,9 +803,9 @@ const {
   getCacheScope: () => currentUserScope(),
   onClearMemory: () => clearChapterContentMemory(),
   notify: message => showReaderToast(message, 1600),
-  onNoTargets: () => ElMessage.error('不需要缓存'),
+  onNoTargets: () => message.error('不需要缓存'),
   onUnavailable: temporaryReaderUnavailable,
-  onError: error => ElMessage.error(readError(error, '缓存章节失败')),
+  onError: error => message.error(readError(error, '缓存章节失败')),
 })
 const {
   clear: clearChapterContentMemory,
@@ -862,15 +867,35 @@ const {
   clearServerCache: ids => bookshelf.batchClearCache(ids),
   clearCurrentBrowserCache: clearCurrentBookBrowserCache,
   notify: message => showReaderToast(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
 const {
   choose: chooseReaderLocalTocRule,
 } = useReaderLocalTocRulePicker({
   book,
   isEPUBLocalBook,
-  prompt: (...args) => ElMessageBox.prompt(...args),
-  confirm: (...args) => ElMessageBox.confirm(...args),
+  prompt: (text, title, config = {}) => prompt({
+    title,
+    message: text,
+    multiline: config.inputType === 'textarea',
+    type: config.inputType === 'password' ? 'password' : 'text',
+    value: config.inputValue ?? '',
+    placeholder: config.inputPlaceholder || '',
+    validator: config.inputValidator,
+    confirmText: config.confirmButtonText,
+    cancelText: config.cancelButtonText,
+  }),
+  confirm: (text, title, config = {}) =>
+    confirm({
+      message: text,
+      title,
+      confirmText: config.confirmButtonText,
+      cancelText: config.cancelButtonText,
+      tone: config.type === 'warning' ? 'warning' : 'primary',
+      distinguishCancelAndClose: config.distinguishCancelAndClose || false,
+    }).then(action => {
+      if (action !== 'confirm') return Promise.reject('cancel')
+    }),
 })
 const {
   applySourceChange: applyReaderSourceChange,
@@ -932,7 +957,7 @@ const {
   },
   restoreScrollAnchor: anchor => restoreReaderScrollAnchor(anchor),
   notify: (...args) => showReaderToast(...args),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
 const {
   chapterBlockTextLength,
@@ -1177,7 +1202,7 @@ const {
     activate: true,
   }),
   canMatchBookmark: () => chapterFormat.value === 'text',
-  onBookmarkNotFound: () => ElMessage.error('无法定位内容所在段落'),
+  onBookmarkNotFound: () => message.error('无法定位内容所在段落'),
   flashParagraph,
   saveProgress: () => saveCurrentProgress(),
 })
@@ -2128,8 +2153,8 @@ const {
   clearChapterCache: () => clearChapterContentMemory(),
   resetCachedChapters: resetBrowserCachedChapters,
   refreshCachedChapters: computeBrowserCachedChapters,
-  onReplaceSuccess: () => ElMessage.success('已按最新替换规则刷新当前章节'),
-  onReplaceError: error => ElMessage.error(readError(error, '刷新当前章节失败')),
+  onReplaceSuccess: () => message.success('已按最新替换规则刷新当前章节'),
+  onReplaceError: error => message.error(readError(error, '刷新当前章节失败')),
   isTemporaryReader: () => isTemporaryRemoteReader.value,
   isBookDeleted: () => readerBookDeleted.value,
   markBookDeleted: () => {
@@ -2139,8 +2164,8 @@ const {
   stopAutoReading,
   closeDeletedBookOverlays: ids => overlay.reconcileDeletedBooks(ids),
   navigateHome: () => router.replace({ name: 'home' }),
-  onBookDeleted: () => ElMessage.info('书籍已从书架删除'),
-  onBookDeletionError: error => ElMessage.error(readError(error, '返回书架失败')),
+  onBookDeleted: () => message.info('书籍已从书架删除'),
+  onBookDeletionError: error => message.error(readError(error, '返回书架失败')),
 })
 
 useReaderPageLifecycle({
