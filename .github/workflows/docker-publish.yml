@@ -106,7 +106,7 @@ jobs:
           echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
           echo "image=${IMAGE_NAME,,}" >> "$GITHUB_OUTPUT"
-          echo "app_version=$(tr -d ' \n' < ../VERSION | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+          echo "app_version=$(tr -d ' \n' < VERSION | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -191,7 +191,7 @@ jobs:
           echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
           echo "image=${IMAGE_NAME,,}" >> "$GITHUB_OUTPUT"
-          echo "app_version=$(tr -d ' \n' < ../VERSION | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+          echo "app_version=$(tr -d ' \n' < VERSION | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -279,7 +279,7 @@ jobs:
         shell: bash
         run: |
           echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-          echo "app_version=$(tr -d ' \n' < ../VERSION | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+          echo "app_version=$(tr -d ' \n' < VERSION | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
       # Only the tiny apk comparison helper may run through emulation (arm64-only releases).
       - name: Set up QEMU
