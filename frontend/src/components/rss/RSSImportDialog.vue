@@ -1,46 +1,54 @@
 <template>
-  <el-dialog
+  <v-dialog
     :model-value="modelValue"
-    title="导入RSS源"
     width="min(1000px, max(750px, 70vw))"
     :fullscreen="isMobile"
     class="rss-source-import-dialog"
-    append-to-body
     @update:model-value="handleVisibleChange"
   >
-    <div class="rss-import-source-list">
-      <el-checkbox-group :model-value="selected" @update:model-value="$emit('update:selected', $event)">
-        <el-checkbox
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">导入RSS源</h2>
+      </header>
+      <div class="app-dialog-body rss-import-source-list">
+        <v-checkbox
           v-for="(source, index) in sources"
           :key="index"
-          :value="index"
+          :model-value="selected.includes(index)"
+          density="compact"
+          hide-details
           class="rss-source-checkbox"
+          @update:model-value="checked => toggleSelected(index, checked)"
         >
-          {{ source.sourceName }} {{ source.sourceUrl }} {{ riskText(source) }}
-        </el-checkbox>
-      </el-checkbox-group>
-    </div>
-    <template #footer>
-      <div class="rss-import-footer">
-        <el-checkbox
-          :model-value="checkAll"
-          :indeterminate="indeterminate"
-          border
-          @update:model-value="$emit('check-all', $event)"
-        >全选</el-checkbox>
-        <span class="rss-import-count">已选择 {{ selected.length }} 个</span>
-        <span class="rss-import-spacer" />
-        <el-button @click="$emit('cancel')">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="$emit('confirm')">确定</el-button>
+          <template #label>
+            <span class="rss-source-line">{{ source.sourceName }} {{ source.sourceUrl }} {{ riskText(source) }}</span>
+          </template>
+        </v-checkbox>
       </div>
-    </template>
-  </el-dialog>
+      <footer class="app-dialog-actions">
+        <div class="rss-import-footer">
+          <v-checkbox
+            :model-value="checkAll"
+            :indeterminate="indeterminate"
+            density="compact"
+            hide-details
+            label="全选"
+            @update:model-value="value => $emit('check-all', value)"
+          />
+          <span class="rss-import-count">已选择 {{ selected.length }} 个</span>
+          <span class="rss-import-spacer" />
+          <v-btn variant="text" @click="$emit('cancel')">取消</v-btn>
+          <v-btn color="primary" :loading="saving" @click="$emit('confirm')">确定</v-btn>
+        </div>
+      </footer>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
 import { rssSourceRiskTags } from '../../utils/rssSourceImport'
 
-defineProps({
+const props = defineProps({
   modelValue: Boolean,
   sources: {
     type: Array,
@@ -69,6 +77,13 @@ function handleVisibleChange(visible) {
   if (!visible) emit('cancel')
 }
 
+function toggleSelected(index, checked) {
+  const next = props.selected.filter(value => value !== index)
+  if (checked) next.push(index)
+  next.sort((a, b) => a - b)
+  emit('update:selected', next)
+}
+
 function riskText(source) {
   return rssSourceRiskTags(source).join('  ')
 }
@@ -87,8 +102,13 @@ function riskText(source) {
   white-space: normal;
 }
 
+.rss-source-line {
+  overflow-wrap: anywhere;
+}
+
 .rss-import-footer {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
   gap: 10px;
 }

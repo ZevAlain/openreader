@@ -1,22 +1,25 @@
 <template>
-  <el-dialog
+  <v-dialog
     :model-value="modelValue"
-    :title="title"
     width="500px"
     :fullscreen="isMobile"
     class="rss-article-content-dialog"
-    append-to-body
     @update:model-value="handleVisibleChange"
   >
-    <div class="rss-article-info-container">
-      <div
-        ref="contentRoot"
-        class="rss-article-content"
-        v-html="content"
-        @click="handleContentClick"
-      />
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">{{ title }}</h2>
+      </header>
+      <div class="app-dialog-body rss-article-info-container">
+        <div
+          ref="contentRoot"
+          class="rss-article-content"
+          v-html="content"
+          @click="handleContentClick"
+        />
+      </div>
     </div>
-  </el-dialog>
+  </v-dialog>
 </template>
 
 <script setup>

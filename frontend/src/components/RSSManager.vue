@@ -1,39 +1,42 @@
 <template>
   <section class="rss-manager">
-    <el-dialog
+    <v-dialog
       :model-value="visible"
       width="500px"
       :fullscreen="isMobile"
       class="global-rss-dialog"
-      destroy-on-close
       @update:model-value="handleRootVisibleChange"
     >
-      <template #header>
-        <div class="rss-dialog-title">
-          <span class="rss-dialog-title-text">RSS订阅({{ sources.length }})</span>
-          <span class="rss-title-actions">
-            <span class="rss-title-action" @click="openEditor()">新增</span>
-            <span class="rss-title-action" @click="triggerSourceImport">导入</span>
-            <span class="rss-title-action" @click="rssEditMode = !rssEditMode">{{ rssEditMode ? '取消' : '编辑' }}</span>
-          </span>
-        </div>
-      </template>
+      <div class="app-dialog-card">
+        <header class="app-dialog-head">
+          <div class="rss-dialog-title">
+            <span class="rss-dialog-title-text">RSS订阅({{ sources.length }})</span>
+            <span class="rss-title-actions">
+              <span class="rss-title-action" @click="openEditor()">新增</span>
+              <span class="rss-title-action" @click="triggerSourceImport">导入</span>
+              <span class="rss-title-action" @click="rssEditMode = !rssEditMode">{{ rssEditMode ? '取消' : '编辑' }}</span>
+            </span>
+          </div>
+        </header>
 
-      <input
-        ref="sourceImportInput"
-        class="rss-source-import-input"
-        type="file"
-        accept=".json,application/json"
-        @change="readRSSSourceFile"
-      />
-      <RSSSourceGrid
-        :sources="sources"
-        :edit-mode="rssEditMode"
-        @open="selectSource"
-        @edit="openEditor"
-        @remove="removeSource"
-      />
-    </el-dialog>
+        <div class="app-dialog-body">
+          <input
+            ref="sourceImportInput"
+            class="rss-source-import-input"
+            type="file"
+            accept=".json,application/json"
+            @change="readRSSSourceFile"
+          />
+          <RSSSourceGrid
+            :sources="sources"
+            :edit-mode="rssEditMode"
+            @open="selectSource"
+            @edit="openEditor"
+            @remove="removeSource"
+          />
+        </div>
+      </div>
+    </v-dialog>
 
     <RSSJsonEditorDialog
       v-model="editorVisible"
@@ -82,18 +85,34 @@
       @preview-images="openArticleImagePreview"
     />
 
-    <el-image-viewer
+    <div
       v-if="articleImagePreviewVisible"
-      :url-list="articlePreviewImages"
-      :initial-index="articlePreviewIndex"
-      @close="articleImagePreviewVisible = false"
-    />
+      class="rss-lightbox"
+      @click.self="articleImagePreviewVisible = false"
+    >
+      <img class="rss-lightbox-img" :src="articlePreviewImages[articlePreviewIndex]" alt="" @click.stop>
+      <button class="rss-lightbox-close" type="button" aria-label="关闭预览" @click="articleImagePreviewVisible = false">×</button>
+      <button
+        v-if="articlePreviewImages.length > 1"
+        class="rss-lightbox-nav prev"
+        type="button"
+        aria-label="上一张"
+        @click.stop="stepArticlePreview(-1)"
+      >‹</button>
+      <button
+        v-if="articlePreviewImages.length > 1"
+        class="rss-lightbox-nav next"
+        type="button"
+        aria-label="下一张"
+        @click.stop="stepArticlePreview(1)"
+      >›</button>
+    </div>
   </section>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { confirm, message } from '../composables/useAppFeedback.js'
 import {
   createRSSSource,
   deleteRSSSource,
@@ -230,7 +249,7 @@ async function loadSources(parentOperation = null) {
     if (response.fromCache) refreshRSSSourcesCache(operation).catch(() => {})
     return true
   } catch (error) {
-    if (operations.canCommit(operation)) ElMessage.error(readError(error, '加载 RSS 源失败'))
+    if (operations.canCommit(operation)) message.error(readError(error, '加载 RSS 源失败'))
     return false
   } finally {
     if (operations.canCommit(operation)) sourcesLoading.value = false
@@ -284,7 +303,7 @@ async function readRSSSourceFile(event) {
     selectedImportIndexes.value = []
     importDialogVisible.value = true
   } catch {
-    if (operations.canCommit(operation)) ElMessage.error('RSS源文件错误')
+    if (operations.canCommit(operation)) message.error('RSS源文件错误')
   }
 }
 
@@ -296,7 +315,7 @@ function handleImportCheckAll(checked) {
   const safeIndexes = safeRSSImportIndexes(importSources.value)
   selectedImportIndexes.value = safeIndexes
   if (safeIndexes.length < importSources.value.length) {
-    ElMessage.info('部分使用了Javascript和Webview的书源未勾选')
+    message.info('部分使用了Javascript和Webview的书源未勾选')
   }
 }
 
@@ -308,7 +327,7 @@ function closeImportDialog() {
 
 async function saveImportedSources() {
   if (!selectedImportIndexes.value.length) {
-    ElMessage.error('请选择需要导入的源')
+    message.error('请选择需要导入的源')
     return
   }
   const selectedSources = selectedImportIndexes.value.map(index => importSources.value[index])
@@ -317,12 +336,12 @@ async function saveImportedSources() {
   try {
     await importRSSSourcesBatch(selectedSources)
     if (!operations.canCommit(operation)) return
-    ElMessage.success('导入RSS源成功')
+    message.success('导入RSS源成功')
     closeImportDialog()
     await invalidateRSSSourcesCache()
     if (operations.canCommit(operation)) await loadSources(operation)
   } catch (error) {
-    if (operations.canCommit(operation)) ElMessage.error(readError(error, '导入RSS源失败'))
+    if (operations.canCommit(operation)) message.error(readError(error, '导入RSS源失败'))
   } finally {
     if (operations.canCommit(operation)) importingSources.value = false
   }
@@ -346,15 +365,15 @@ async function saveSource() {
   try {
     source = JSON.parse(editorContent.value)
   } catch {
-    ElMessage.error('RSS源必须是JSON格式')
+    message.error('RSS源必须是JSON格式')
     return
   }
   if (!source.sourceName) {
-    ElMessage.error('RSS源名称不能为空')
+    message.error('RSS源名称不能为空')
     return
   }
   if (!source.sourceUrl) {
-    ElMessage.error('RSS源链接不能为空')
+    message.error('RSS源链接不能为空')
     return
   }
   const sourceId = editingSourceId.value
@@ -365,11 +384,11 @@ async function saveSource() {
     else await createRSSSource(source)
     if (!operations.canCommit(operation)) return
     closeEditor()
-    ElMessage.success('保存RSS源成功')
+    message.success('保存RSS源成功')
     await invalidateRSSSourcesCache()
     if (operations.canCommit(operation)) await loadSources(operation)
   } catch (error) {
-    if (operations.canCommit(operation)) ElMessage.error(readError(error, '保存RSS源失败'))
+    if (operations.canCommit(operation)) message.error(readError(error, '保存RSS源失败'))
   } finally {
     if (operations.canCommit(operation)) savingSource.value = false
   }
@@ -378,21 +397,24 @@ async function saveSource() {
 async function removeSource(source) {
   const operation = operations.begin(`delete-rss-source:${source.id}`)
   try {
-    await ElMessageBox.confirm('确认要删除该RSS订阅源吗?', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
+    const action = await confirm({
+      title: '提示',
+      message: '确认要删除该RSS订阅源吗?',
+      confirmText: '确定',
+      cancelText: '取消',
+      tone: 'warning',
     })
+    if (action !== 'confirm') throw 'cancel'
     if (!operations.canCommit(operation)) return
     await deleteRSSSource(source.id)
     if (!operations.canCommit(operation)) return
     await invalidateRSSSourcesCache()
     if (!operations.canCommit(operation)) return
     await loadSources(operation)
-    if (operations.canCommit(operation)) ElMessage.success('删除成功')
+    if (operations.canCommit(operation)) message.success('删除成功')
   } catch (error) {
     if (!operations.canCommit(operation) || error === 'cancel' || error === 'close') return
-    ElMessage.error(readError(error, '删除失败'))
+    message.error(readError(error, '删除失败'))
   }
 }
 
@@ -455,7 +477,7 @@ async function loadArticlePage(page, append, parentOperation = null) {
     if (!operations.canCommit(operation) || !gate.isCurrent(request, articleRequestQuery(page)) || !isArticleRequestQueryCurrent(query)) return false
     const nextItems = Array.isArray(data?.items) ? data.items : []
     if (!nextItems.length) {
-      ElMessage.error('没有数据')
+      message.error('没有数据')
       hasMoreArticles.value = false
       if (!append) articles.value = []
       return true
@@ -466,7 +488,7 @@ async function loadArticlePage(page, append, parentOperation = null) {
     return true
   } catch (error) {
     if (operations.canCommit(operation) && gate.isCurrent(request, articleRequestQuery(page))) {
-      ElMessage.error(readError(error, '加载RSS文章列表失败'))
+      message.error(readError(error, '加载RSS文章列表失败'))
     }
     return false
   } finally {
@@ -491,7 +513,7 @@ async function openArticle(article) {
     selectedArticle.value = { ...article, ...data }
     articleDialogVisible.value = true
   } catch (error) {
-    if (operations.canCommit(operation)) ElMessage.error(readError(error, '加载RSS文章内容失败'))
+    if (operations.canCommit(operation)) message.error(readError(error, '加载RSS文章内容失败'))
   }
 }
 
@@ -511,6 +533,12 @@ function openArticleImagePreview({ images, index }) {
   articlePreviewImages.value = images
   articlePreviewIndex.value = index
   articleImagePreviewVisible.value = true
+}
+
+function stepArticlePreview(step) {
+  const total = articlePreviewImages.value.length
+  if (!total) return
+  articlePreviewIndex.value = (articlePreviewIndex.value + step + total) % total
 }
 
 function articleBodyHTML(article) {
@@ -609,4 +637,49 @@ function readError(error, fallback) {
     margin-right: 24px;
   }
 }
+
+.rss-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 3200;
+  display: grid;
+  place-items: center;
+  background: rgba(16, 18, 17, 0.86);
+}
+
+.rss-lightbox-img {
+  max-width: 92vw;
+  max-height: 88vh;
+  object-fit: contain;
+}
+
+.rss-lightbox-close,
+.rss-lightbox-nav {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: #fff;
+  font-size: 28px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.rss-lightbox-close {
+  top: calc(18px + env(safe-area-inset-top));
+  right: 18px;
+  font-size: 22px;
+}
+
+.rss-lightbox-nav.prev {
+  left: 14px;
+}
+
+.rss-lightbox-nav.next {
+  right: 14px;
+}
+
 </style>

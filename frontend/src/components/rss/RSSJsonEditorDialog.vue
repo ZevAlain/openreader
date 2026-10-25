@@ -1,26 +1,34 @@
 <template>
-  <el-dialog
+  <v-dialog
     :model-value="modelValue"
-    title="编辑RSS源"
     width="min(1000px, max(750px, 70vw))"
     :fullscreen="isMobile"
     class="rss-source-editor-dialog"
-    append-to-body
     @update:model-value="handleVisibleChange"
   >
-    <el-input
-      :model-value="content"
-      class="rss-json-editor"
-      type="textarea"
-      :autosize="{ minRows: 18, maxRows: 30 }"
-      spellcheck="false"
-      @update:model-value="$emit('update:content', $event)"
-    />
-    <template #footer>
-      <el-button @click="$emit('close')">取 消</el-button>
-      <el-button type="primary" :loading="saving" @click="$emit('save')">保 存</el-button>
-    </template>
-  </el-dialog>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">编辑RSS源</h2>
+      </header>
+      <div class="app-dialog-body">
+        <v-textarea
+          :model-value="content"
+          class="rss-json-editor"
+          :rows="18"
+          auto-grow
+          max-rows="30"
+          variant="outlined"
+          hide-details
+          spellcheck="false"
+          @update:model-value="$emit('update:content', $event)"
+        />
+      </div>
+      <footer class="app-dialog-actions">
+        <v-btn variant="text" @click="$emit('close')">取 消</v-btn>
+        <v-btn color="primary" :loading="saving" @click="$emit('save')">保 存</v-btn>
+      </footer>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
@@ -44,7 +52,7 @@ function handleVisibleChange(visible) {
 
 <style scoped>
 .rss-json-editor :deep(textarea) {
-  min-height: min(58vh, 620px) !important;
+  min-height: min(58vh, 620px);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   line-height: 1.55;
   tab-size: 4;

@@ -24,12 +24,12 @@
         aria-label="编辑 RSS 源"
         @click.stop="$emit('edit', source)"
       >✎</button>
-      <el-image
+      <img
         :src="source.sourceIcon || source.icon || ''"
         class="rss-icon"
-        fit="cover"
-        lazy
-      />
+        loading="lazy"
+        alt=""
+      >
       <div class="rss-title">{{ source.sourceName || source.title }}</div>
     </div>
   </div>
@@ -74,6 +74,7 @@ defineEmits(['open', 'edit', 'remove'])
   width: 50px;
   height: 50px;
   border-radius: 5px;
+  object-fit: cover;
 }
 
 .rss-title {

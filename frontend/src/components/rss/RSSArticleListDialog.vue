@@ -1,58 +1,64 @@
 <template>
-  <el-dialog
+  <v-dialog
     :model-value="modelValue"
-    :title="title"
     width="500px"
     :fullscreen="isMobile"
     class="rss-article-list-dialog"
-    append-to-body
     @update:model-value="handleVisibleChange"
   >
-    <el-tabs
-      v-if="sortOptions.length > 1"
-      :model-value="sortName"
-      @tab-change="$emit('sort-change', $event)"
-    >
-      <el-tab-pane
-        v-for="sort in sortOptions"
-        :key="sort.name"
-        :label="sort.name"
-        :name="sort.name"
-      />
-    </el-tabs>
-    <div class="rss-article-list-container">
-      <div
-        v-for="(article, index) in articles"
-        :key="article.id || `${article.link}-${index}`"
-        class="rss-article"
-        role="button"
-        tabindex="0"
-        @click="$emit('open-article', article)"
-        @keydown.enter.prevent="$emit('open-article', article)"
-      >
-        <div class="rss-article-info">
-          <div class="rss-article-title">{{ article.title }}</div>
-          <div class="rss-article-date">{{ article.pubDate }}</div>
-        </div>
-        <div v-if="article.image" class="rss-article-image" @click.stop>
-          <div class="image-wrapper">
-            <el-image
-              class="rss-article-img"
-              :src="article.image"
-              :preview-src-list="articleImages"
-              fit="cover"
-              lazy
-            />
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">{{ title }}</h2>
+      </header>
+      <div class="app-dialog-body">
+        <v-tabs
+          v-if="sortOptions.length > 1"
+          :model-value="sortName"
+          color="primary"
+          density="compact"
+          @update:model-value="$emit('sort-change', $event)"
+        >
+          <v-tab
+            v-for="sort in sortOptions"
+            :key="sort.name"
+            :value="sort.name"
+          >{{ sort.name }}</v-tab>
+        </v-tabs>
+        <div class="rss-article-list-container">
+          <div
+            v-for="(article, index) in articles"
+            :key="article.id || `${article.link}-${index}`"
+            class="rss-article"
+            role="button"
+            tabindex="0"
+            @click="$emit('open-article', article)"
+            @keydown.enter.prevent="$emit('open-article', article)"
+          >
+            <div class="rss-article-info">
+              <div class="rss-article-title">{{ article.title }}</div>
+              <div class="rss-article-date">{{ article.pubDate }}</div>
+            </div>
+            <div v-if="article.image" class="rss-article-image" @click.stop>
+              <div class="image-wrapper">
+                <img
+                  class="rss-article-img"
+                  :src="article.image"
+                  loading="lazy"
+                  alt=""
+                  @click="$emit('preview-images', { images: articleImages, index: articleImages.indexOf(article.image) })"
+                >
+              </div>
+            </div>
           </div>
+          <div
+            class="load-more-rss"
+            :class="{ disabled: loading || loadingMore || !hasMore }"
+            @click="handleLoadMore"
+          >{{ hasMore ? '加载更多' : '没有更多啦' }}</div>
         </div>
       </div>
-      <div
-        class="load-more-rss"
-        :class="{ disabled: loading || loadingMore || !hasMore }"
-        @click="handleLoadMore"
-      >{{ hasMore ? '加载更多' : '没有更多啦' }}</div>
     </div>
-  </el-dialog>
+  </v-dialog>
 </template>
 
 <script setup>
@@ -82,7 +88,7 @@ const props = defineProps({
   hasMore: Boolean,
 })
 
-const emit = defineEmits(['update:modelValue', 'close', 'sort-change', 'open-article', 'load-more'])
+const emit = defineEmits(['update:modelValue', 'close', 'sort-change', 'open-article', 'load-more', 'preview-images'])
 const articleImages = computed(() => props.articles.map(article => article.image).filter(Boolean))
 
 function handleVisibleChange(visible) {
@@ -140,11 +146,15 @@ function handleLoadMore() {
   height: 0;
   padding-bottom: 62.5%;
   overflow: hidden;
+  position: relative;
 }
 
 .rss-article-img {
-  width: 120px;
-  height: 75px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .load-more-rss {
@@ -168,11 +178,6 @@ function handleLoadMore() {
 
   .rss-article-image {
     width: 100px;
-  }
-
-  .rss-article-img {
-    width: 100px;
-    height: 62.5px;
   }
 }
 </style>
