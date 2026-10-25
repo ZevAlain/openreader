@@ -26,30 +26,38 @@
       >{{ group.label }}</button>
     </div>
 
-    <div ref="sourceList" v-loading="loadingSources || loadingEntry" class="explore-source-list">
-      <el-collapse v-model="expandedSources">
-        <el-collapse-item v-for="source in filteredSources" :key="source.id" :name="String(source.id)">
-          <template #title>
+    <div ref="sourceList" class="explore-source-list">
+      <v-progress-linear
+        v-if="loadingSources || loadingEntry"
+        indeterminate
+        color="primary"
+        class="explore-source-loading"
+      />
+      <v-expansion-panels v-model="expandedSources" multiple>
+        <v-expansion-panel v-for="source in filteredSources" :key="source.id" :value="String(source.id)">
+          <v-expansion-panel-title>
             <span class="explore-source-title">{{ source.name }}</span>
-          </template>
-          <div v-for="(group, groupIndex) in sourceExploreGroups(source)" :key="`${source.id}-${groupIndex}`" class="explore-entry-row">
-            <button
-              v-for="entry in group"
-              :key="entry.url"
-              type="button"
-              :class="{ active: isActiveEntry(source, entry) }"
-              @click="selectEntry(source, entry)"
-            >{{ entry.name }}</button>
-          </div>
-        </el-collapse-item>
-      </el-collapse>
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div v-for="(group, groupIndex) in sourceExploreGroups(source)" :key="`${source.id}-${groupIndex}`" class="explore-entry-row">
+              <button
+                v-for="entry in group"
+                :key="entry.url"
+                type="button"
+                :class="{ active: isActiveEntry(source, entry) }"
+                @click="selectEntry(source, entry)"
+              >{{ entry.name }}</button>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+      </v-expansion-panels>
     </div>
   </section>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { message } from '../../composables/useAppFeedback.js'
 import { exploreBooks, listExploreSources } from '../../api/explore'
 import { useIndexWorkspaceStore } from '../../stores/indexWorkspace'
 import { createAuthenticatedOperationGuard } from '../../utils/authenticatedOperation'
@@ -109,7 +117,7 @@ async function loadSources() {
     applyWorkspaceIntent()
   } catch (error) {
     if (exploreSessionOperations.canCommit(operation)) {
-      ElMessage.error(readError(error, '加载探索书源失败'))
+      message.error(readError(error, '加载探索书源失败'))
     }
   } finally {
     if (exploreSessionOperations.canCommit(operation)) loadingSources.value = false
@@ -164,7 +172,7 @@ async function selectEntry(source, entry) {
     emit('selected')
   } catch (error) {
     if (isActiveEntryRequest(requestToken, operation, workspaceStamp)) {
-      ElMessage.error(readError(error, '探索失败'))
+      message.error(readError(error, '探索失败'))
     }
   } finally {
     if (isActiveEntryRequest(requestToken, operation, workspaceStamp)) loadingEntry.value = false
@@ -292,6 +300,12 @@ function readError(error, fallback) {
 .explore-entry-row button:hover {
   color: #ed4259;
   border-color: #ed4259;
+}
+
+.explore-source-loading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .explore-source-list {
