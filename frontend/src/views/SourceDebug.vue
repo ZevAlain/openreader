@@ -6,12 +6,19 @@
         <span>保存当前配置后，按上游顺序自动执行完整链路</span>
       </div>
       <div class="source-debug-runbar">
-        <el-select v-model="selectedSourceId" filterable placeholder="选择书源" @change="loadSelectedSource">
-          <el-option v-for="item in sources" :key="item.id" :label="item.name" :value="item.id" />
-        </el-select>
-        <el-input v-model="debugKeyword" placeholder="输入关键词或快捷指令，格式见帮助" @keyup.enter="runDebug" />
-        <el-button type="primary" :loading="debugging" @click="runDebug">开始调试</el-button>
-        <el-button v-if="debugging" @click="stopDebug">停止</el-button>
+        <v-autocomplete
+          v-model="selectedSourceId"
+          :items="sourceItems"
+          density="compact"
+          variant="outlined"
+          hide-details
+          placeholder="选择书源"
+          class="source-debug-select"
+          @update:model-value="loadSelectedSource"
+        />
+        <v-text-field v-model="debugKeyword" density="compact" variant="outlined" hide-details placeholder="输入关键词或快捷指令，格式见帮助" class="source-debug-keyword" @keyup.enter="runDebug" />
+        <v-btn color="primary" :loading="debugging" @click="runDebug">开始调试</v-btn>
+        <v-btn v-if="debugging" variant="outlined" @click="stopDebug">停止</v-btn>
       </div>
     </header>
 
@@ -20,19 +27,19 @@
         <section class="source-debug-rule-group">
           <h2>基本</h2>
           <div class="source-debug-basic-grid">
-            <label><span>名称</span><el-input v-model="sourceForm.name" /></label>
-            <label><span>分组</span><el-input v-model="sourceForm.group" /></label>
-            <label class="wide"><span>书源地址</span><el-input v-model="sourceForm.baseUrl" /></label>
-            <label><span>字符集</span><el-input v-model="sourceForm.charset" /></label>
-            <label><span>并发率</span><el-input v-model="sourceForm.concurrentRate" /></label>
-            <label class="wide"><span>书籍 URL 正则</span><el-input v-model="sourceForm.bookUrlPattern" /></label>
-            <label class="wide"><span>请求头</span><el-input v-model="sourceForm.header" type="textarea" :rows="2" /></label>
-            <label class="wide"><span>登录地址</span><el-input v-model="sourceForm.loginUrl" /></label>
-            <label class="wide"><span>登录检测脚本</span><el-input v-model="sourceForm.loginCheckJs" type="textarea" :rows="2" /></label>
-            <label class="wide"><span>备注</span><el-input v-model="sourceForm.bookSourceComment" type="textarea" :rows="2" /></label>
+            <label><span>名称</span><v-text-field v-model="sourceForm.name" density="compact" variant="outlined" hide-details /></label>
+            <label><span>分组</span><v-text-field v-model="sourceForm.group" density="compact" variant="outlined" hide-details /></label>
+            <label class="wide"><span>书源地址</span><v-text-field v-model="sourceForm.baseUrl" density="compact" variant="outlined" hide-details /></label>
+            <label><span>字符集</span><v-text-field v-model="sourceForm.charset" density="compact" variant="outlined" hide-details /></label>
+            <label><span>并发率</span><v-text-field v-model="sourceForm.concurrentRate" density="compact" variant="outlined" hide-details /></label>
+            <label class="wide"><span>书籍 URL 正则</span><v-text-field v-model="sourceForm.bookUrlPattern" density="compact" variant="outlined" hide-details /></label>
+            <label class="wide"><span>请求头</span><v-textarea v-model="sourceForm.header" :rows="2" density="compact" variant="outlined" hide-details /></label>
+            <label class="wide"><span>登录地址</span><v-text-field v-model="sourceForm.loginUrl" density="compact" variant="outlined" hide-details /></label>
+            <label class="wide"><span>登录检测脚本</span><v-textarea v-model="sourceForm.loginCheckJs" :rows="2" density="compact" variant="outlined" hide-details /></label>
+            <label class="wide"><span>备注</span><v-textarea v-model="sourceForm.bookSourceComment" :rows="2" density="compact" variant="outlined" hide-details /></label>
             <div class="source-debug-switches wide">
-              <el-switch v-model="sourceForm.enabled" active-text="启用书源" />
-              <el-switch v-model="sourceForm.enabledExplore" active-text="启用探索功能" />
+              <v-switch v-model="sourceForm.enabled" label="启用书源" density="compact" color="primary" hide-details />
+              <v-switch v-model="sourceForm.enabledExplore" label="启用探索功能" density="compact" color="primary" hide-details />
             </div>
           </div>
         </section>
@@ -81,15 +88,21 @@
       </aside>
 
       <section class="source-debug-output-pane">
-        <el-tabs v-model="outputTab" stretch>
-          <el-tab-pane label="编辑源" name="editor">
-            <el-input v-model="sourceJSON" type="textarea" :rows="22" spellcheck="false" />
+        <v-tabs v-model="outputTab" color="primary" density="compact" grow>
+          <v-tab value="editor">编辑源</v-tab>
+          <v-tab value="debugger">调试源</v-tab>
+          <v-tab value="sources">源列表</v-tab>
+          <v-tab value="help">帮助信息</v-tab>
+        </v-tabs>
+        <v-window v-model="outputTab">
+          <v-window-item value="editor">
+            <v-textarea v-model="sourceJSON" :rows="22" variant="outlined" hide-details spellcheck="false" />
             <div class="source-debug-pane-actions">
-              <el-button @click="generateSourceJSON">从表单生成</el-button>
-              <el-button type="primary" @click="applySourceJSON">应用到表单</el-button>
+              <v-btn variant="outlined" @click="generateSourceJSON">从表单生成</v-btn>
+              <v-btn color="primary" @click="applySourceJSON">应用到表单</v-btn>
             </div>
-          </el-tab-pane>
-          <el-tab-pane label="调试源" name="debugger">
+          </v-window-item>
+          <v-window-item value="debugger">
             <p v-if="debugCompatibilityMessage" class="source-debug-compatibility-warning">{{ debugCompatibilityMessage }}</p>
             <div ref="debugConsoleElement" class="source-debug-console" role="log" aria-live="polite">
               <p v-if="!debugEvents.length">输入关键词后按回车，或点击“开始调试”。空关键词默认使用“我的”。</p>
@@ -100,14 +113,14 @@
                 <p>{{ event.data.message || '' }}<template v-if="event.data.count != null"> · {{ event.data.count }}</template></p>
               </article>
             </div>
-          </el-tab-pane>
-          <el-tab-pane label="源列表" name="sources">
+          </v-window-item>
+          <v-window-item value="sources">
             <div class="source-debug-list-actions">
-              <el-button size="small" @click="rememberCurrentSource">记录当前</el-button>
-              <el-button size="small" @click="openSourceListImport">导入</el-button>
-              <el-button size="small" :disabled="!localSources.length" @click="exportLocalSources">导出</el-button>
-              <el-button size="small" type="danger" plain :disabled="!selectedLocalKey" @click="deleteSelectedLocalSource">删除选中</el-button>
-              <el-button size="small" type="danger" plain :disabled="!localSources.length" @click="clearLocalSources">清空列表</el-button>
+              <v-btn size="small" variant="outlined" @click="rememberCurrentSource">记录当前</v-btn>
+              <v-btn size="small" variant="outlined" @click="openSourceListImport">导入</v-btn>
+              <v-btn size="small" variant="outlined" :disabled="!localSources.length" @click="exportLocalSources">导出</v-btn>
+              <v-btn size="small" color="error" variant="outlined" :disabled="!selectedLocalKey" @click="deleteSelectedLocalSource">删除选中</v-btn>
+              <v-btn size="small" color="error" variant="outlined" :disabled="!localSources.length" @click="clearLocalSources">清空列表</v-btn>
               <input ref="sourceListInput" class="source-debug-file-input" type="file" accept=".json,application/json" @change="importLocalSources" />
             </div>
             <div class="source-debug-source-list">
@@ -121,8 +134,8 @@
                 <strong>{{ item.name || '本地草稿' }}</strong><span>{{ item.baseUrl || item.searchUrl }}</span>
               </button>
             </div>
-          </el-tab-pane>
-          <el-tab-pane label="帮助信息" name="help">
+          </v-window-item>
+          <v-window-item value="help">
             <div class="source-debug-help">
               <p><code>普通关键词</code>：搜索 → 第一条详情 → 目录 → 第一章正文。</p>
               <p><code>详情 URL</code>：详情 → 目录 → 第一章正文。</p>
@@ -130,8 +143,8 @@
               <p><code>++URL</code>：从目录开始；<code>--URL</code>：只解析正文。</p>
               <p>服务端日志只返回阶段、数量和耗时，不返回请求头、Cookie、正文或变量值。</p>
             </div>
-          </el-tab-pane>
-        </el-tabs>
+          </v-window-item>
+        </v-window>
       </section>
     </main>
   </div>
@@ -139,7 +152,8 @@
 
 <script setup>
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { ElInput, ElMessage, ElMessageBox } from 'element-plus'
+import { VTextarea, VTextField } from 'vuetify/components'
+import { confirm, message } from '../composables/useAppFeedback.js'
 import { useRoute } from 'vue-router'
 import { createSource, debugSourceStream, deleteSource, importSources, listSources, updateSource } from '../api/sources'
 import { createSourceImportForm, parseImportSourceList } from '../composables/useSourceTransfer'
@@ -169,10 +183,12 @@ const RuleFields = defineComponent({
     return () => h('div', { class: 'source-debug-field-list' }, props.fields.map(field =>
       h('label', { key: field.key }, [
         h('span', field.label),
-        h(ElInput, {
+        h(field.rows > 1 ? VTextarea : VTextField, {
           modelValue: props.modelValue[field.key] || '',
-          type: field.rows > 1 ? 'textarea' : 'text',
           rows: field.rows || 1,
+          variant: 'outlined',
+          density: 'compact',
+          hideDetails: true,
           spellcheck: false,
           'onUpdate:modelValue': (value) => emit('update:modelValue', { ...props.modelValue, [field.key]: value }),
         }),
@@ -184,6 +200,7 @@ const RuleFields = defineComponent({
 const route = useRoute()
 const userStore = useUserStore()
 const sources = ref([])
+const sourceItems = computed(() => sources.value.map(source => ({ title: source.name, value: source.id })))
 const localSources = ref([])
 const selectedSourceId = ref(null)
 const sourceForm = reactive(createBookSourceForm())
@@ -294,7 +311,7 @@ onMounted(async () => {
     if (initial) loadSource(initial)
     else clearForm()
   } catch (error) {
-    ElMessage.error(readError(error, '加载书源失败'))
+    message.error(readError(error, '加载书源失败'))
   }
 })
 
@@ -372,11 +389,11 @@ function readerDevPayload() {
 
 async function saveCurrentSource(options = {}) {
   if (!String(sourceForm.name || '').trim()) {
-    ElMessage.warning('书源名称不能为空')
+    message.warning('书源名称不能为空')
     throw new Error('source name is required')
   }
   if (userStore.profile?.canEditSources === false) {
-    ElMessage.warning('当前账号没有书源编辑权限')
+    message.warning('当前账号没有书源编辑权限')
     throw new Error('source editing is disabled')
   }
   const creating = !sourceForm.id
@@ -388,7 +405,7 @@ async function saveCurrentSource(options = {}) {
     loadSource(response.data)
     rememberCurrentSource(false)
     await loadRemoteSources()
-    if (!options.quiet) ElMessage.success(creating ? '书源已创建' : '书源已保存')
+    if (!options.quiet) message.success(creating ? '书源已创建' : '书源已保存')
     return response.data
   } finally {
     saving.value = false
@@ -410,7 +427,7 @@ async function runDebug() {
     })
   } catch (error) {
     if (error?.name !== 'AbortError') {
-      ElMessage.error(readError(error, '调试失败'))
+      message.error(readError(error, '调试失败'))
     }
   } finally {
     if (runGeneration === debugRunGeneration) debugging.value = false
@@ -432,7 +449,7 @@ function rememberCurrentSource(notify = true) {
   const current = snapshot()
   const key = localSourceKey(current)
   if (!current.name && !current.baseUrl) {
-    if (notify) ElMessage.info('当前表单还是空的')
+    if (notify) message.info('当前表单还是空的')
     return null
   }
   const index = localSources.value.findIndex(item => localSourceKey(item) === key)
@@ -441,7 +458,7 @@ function rememberCurrentSource(notify = true) {
   localSources.value = localSources.value.slice(0, 50)
   saveSourceDebugSources(localStorage, scope, localSources.value)
   selectedLocalKey.value = key
-  if (notify) ElMessage.success('已记录当前书源')
+  if (notify) message.success('已记录当前书源')
   return current
 }
 
@@ -449,15 +466,15 @@ async function pushLocalSource() {
   try {
     rememberCurrentSource(false)
     if (!localSources.value.length) {
-      ElMessage.info('源列表为空')
+      message.info('源列表为空')
       return
     }
     const rows = localSources.value.map(item => buildReaderDevBookSource(item, item.rules || {}))
     const { data } = await importSources(createSourceImportForm(rows))
     await loadRemoteSources()
-    ElMessage.success(`已推送 ${Number(data.imported || 0) + Number(data.updated || 0)} 条书源`)
+    message.success(`已推送 ${Number(data.imported || 0) + Number(data.updated || 0)} 条书源`)
   } catch (error) {
-    ElMessage.error(readError(error, '推送书源失败'))
+    message.error(readError(error, '推送书源失败'))
   }
 }
 
@@ -468,9 +485,9 @@ async function pullLocalSource() {
     saveSourceDebugSources(localStorage, scope, localSources.value)
     selectedLocalKey.value = ''
     outputTab.value = 'sources'
-    ElMessage.success(`已拉取 ${localSources.value.length} 条书源`)
+    message.success(`已拉取 ${localSources.value.length} 条书源`)
   } catch (error) {
-    ElMessage.error(readError(error, '拉取书源失败'))
+    message.error(readError(error, '拉取书源失败'))
   }
 }
 
@@ -498,11 +515,14 @@ async function importLocalSources(event) {
     let replace = true
     if (localSources.value.length) {
       try {
-        await ElMessageBox.confirm('选择“覆盖”将替换当前调试列表；选择“追加”会按书源地址去重。', '导入源列表', {
-          confirmButtonText: '覆盖',
-          cancelButtonText: '追加',
+        const action = await confirm({
+          title: '导入源列表',
+          message: '选择“覆盖”将替换当前调试列表；选择“追加”会按书源地址去重。',
+          confirmText: '覆盖',
+          cancelText: '追加',
           distinguishCancelAndClose: true,
         })
+        if (action !== 'confirm') throw action
       } catch (action) {
         if (action === 'close') return
         replace = false
@@ -522,9 +542,9 @@ async function importLocalSources(event) {
       localSources.value = merged.slice(0, 5000)
     }
     saveSourceDebugSources(localStorage, scope, localSources.value)
-    ElMessage.success(`已导入 ${rows.length} 条书源`)
+    message.success(`已导入 ${rows.length} 条书源`)
   } catch (error) {
-    ElMessage.error(readError(error, '导入源文件失败'))
+    message.error(readError(error, '导入源文件失败'))
   } finally {
     if (input) input.value = ''
   }
@@ -545,23 +565,33 @@ async function deleteSelectedLocalSource() {
   const item = localSources.value.find(row => localSourceKey(row) === selectedLocalKey.value)
   if (!item) return
   try {
-    await ElMessageBox.confirm('确定删除选中的书源吗？已保存到应用的同一书源也会删除。', '删除书源', { type: 'warning' })
+    const action = await confirm({
+      title: '删除书源',
+      message: '确定删除选中的书源吗？已保存到应用的同一书源也会删除。',
+      tone: 'warning',
+    })
+    if (action !== 'confirm') throw 'cancel'
     if (item.id) await deleteSource(item.id)
     localSources.value = localSources.value.filter(row => localSourceKey(row) !== selectedLocalKey.value)
     saveSourceDebugSources(localStorage, scope, localSources.value)
     selectedLocalKey.value = ''
     await loadRemoteSources()
     if (Number(sourceForm.id) === Number(item.id)) clearForm()
-    ElMessage.success('书源已删除')
+    message.success('书源已删除')
   } catch (error) {
     if (error === 'cancel' || error === 'close') return
-    ElMessage.error(readError(error, '删除书源失败'))
+    message.error(readError(error, '删除书源失败'))
   }
 }
 
 async function clearLocalSources() {
   try {
-    await ElMessageBox.confirm('只清空当前账号的浏览器调试列表，不删除应用中的书源。', '清空源列表', { type: 'warning' })
+    const action = await confirm({
+      title: '清空源列表',
+      message: '只清空当前账号的浏览器调试列表，不删除应用中的书源。',
+      tone: 'warning',
+    })
+    if (action !== 'confirm') throw 'cancel'
     localSources.value = []
     selectedLocalKey.value = ''
     saveSourceDebugSources(localStorage, scope, [])
@@ -584,9 +614,9 @@ function applySourceJSON() {
   try {
     const value = JSON.parse(sourceJSON.value)
     applySnapshot(sourceSnapshot(value), true)
-    ElMessage.success('JSON 已应用到表单')
+    message.success('JSON 已应用到表单')
   } catch {
-    ElMessage.error('书源 JSON 格式不正确')
+    message.error('书源 JSON 格式不正确')
   }
 }
 
