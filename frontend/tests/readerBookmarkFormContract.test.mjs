@@ -48,14 +48,14 @@ test('bookmark manager restores the fixed-upstream dialog geometry, columns, and
   const bookmarks = read('../src/components/overlays/OverlayBookmarks.vue')
 
   assert.match(bookmarks, /width="min\(1000px, max\(750px, 70vw\)\)"/)
-  assert.match(bookmarks, /top="max\(15dvh, calc\(\(100dvh - 584px\) \/ 2\)\)"/)
   assert.match(
     bookmarks,
     /:height="isMobile \? 'calc\(100dvh - 184px\)' : 'min\(400px, calc\(70dvh - 184px\)\)'"/,
   )
-  assert.match(bookmarks, /type="selection"\s+width="25"\s+:fixed="isMobile"/)
-  assert.match(bookmarks, /label="书籍"[\s\S]*?:fixed="isMobile"[\s\S]*?\{\{ bookIdentity \}\}/)
-  assert.match(bookmarks, /label="操作"\s+width="100"/)
+  assert.match(bookmarks, /key: 'data-table-select', fixed: props\.isMobile \? 'start' : false/)
+  assert.match(bookmarks, /title: '书籍', key: 'book', fixed: props\.isMobile \? 'start' : false/)
+  assert.match(bookmarks, /\{\{ bookIdentity \}\}/)
+  assert.match(bookmarks, /title: '操作', key: 'actions'/)
   assert.doesNotMatch(bookmarks, /label="操作"[^>]*fixed="right"/)
   assert.doesNotMatch(bookmarks, /scope\.row\.(?:excerpt|note) \|\| '—'/)
   assert.doesNotMatch(bookmarks, /:disabled="!selectedRows\.length"/)

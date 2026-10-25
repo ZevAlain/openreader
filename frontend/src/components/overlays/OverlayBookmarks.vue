@@ -1,88 +1,83 @@
 <template>
-  <el-dialog
+  <v-dialog
     v-model="overlay.bookmarkVisible"
     width="min(1000px, max(750px, 70vw))"
-    top="max(15dvh, calc((100dvh - 584px) / 2))"
     :fullscreen="isMobile"
     class="global-bookmark-dialog"
-    @closed="handleClosed"
+    @after-leave="handleClosed"
   >
-    <template #header>
-      <div class="reader-dialog-title">
-        <span>{{ bookTitle }} 书签管理</span>
-        <div class="reader-dialog-title-actions">
-          <el-button v-if="canAddCurrentParagraph" link type="primary" @click="addCurrentParagraph">添加当前段落</el-button>
-          <el-button link type="primary" @click="pickImportFile">导入</el-button>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <div class="reader-dialog-title">
+          <span class="reader-dialog-title-text">{{ bookTitle }} 书签管理</span>
+          <div class="reader-dialog-title-actions">
+            <v-btn v-if="canAddCurrentParagraph" variant="text" color="primary" size="small" @click="addCurrentParagraph">添加当前段落</v-btn>
+            <v-btn variant="text" color="primary" size="small" @click="pickImportFile">导入</v-btn>
+          </div>
         </div>
-      </div>
-    </template>
+      </header>
 
-    <input
-      ref="fileRef"
-      class="bookmark-file-input"
-      type="file"
-      accept=".json,application/json"
-      @change="onImportFileChange"
-    />
+      <input
+        ref="fileRef"
+        class="bookmark-file-input"
+        type="file"
+        accept=".json,application/json"
+        @change="onImportFileChange"
+      />
 
-    <div v-loading="loading" class="reader-dialog-table">
-      <el-table
-        :data="items"
-        :height="isMobile ? 'calc(100dvh - 184px)' : 'min(400px, calc(70dvh - 184px))'"
-        @selection-change="selectedRows = $event"
-      >
-        <el-table-column type="selection" width="25" :fixed="isMobile" />
-        <el-table-column label="书籍" min-width="150" :fixed="isMobile">
-          <template #default>
+      <div class="app-dialog-body reader-dialog-table">
+        <v-data-table
+          v-model="selectedIds"
+          :headers="tableHeaders"
+          :items="items"
+          item-value="id"
+          show-select
+          density="compact"
+          :items-per-page="-1"
+          no-data-text="暂无数据"
+          :loading="loading"
+          :height="isMobile ? 'calc(100dvh - 184px)' : 'min(400px, calc(70dvh - 184px))'"
+        >
+          <template #item.book="{ }">
             {{ bookIdentity }}
           </template>
-        </el-table-column>
-        <el-table-column prop="title" label="章节" min-width="160" />
-        <el-table-column label="内容" min-width="200">
-          <template #default="scope">
-            {{ scope.row.excerpt }}
+          <template #item.excerpt="{ item }">
+            {{ item.excerpt }}
           </template>
-        </el-table-column>
-        <el-table-column label="备注" min-width="160">
-          <template #default="scope">
-            {{ scope.row.note }}
+          <template #item.note="{ item }">
+            {{ item.note }}
           </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100">
-          <template #default="scope">
-            <el-button link type="primary" @click="jump(scope.row)">跳转</el-button>
-            <el-button link type="primary" @click="openEditor(scope.row)">编辑</el-button>
+          <template #item.actions="{ item }">
+            <v-btn variant="text" color="primary" size="small" @click="jump(item)">跳转</v-btn>
+            <v-btn variant="text" color="primary" size="small" @click="openEditor(item)">编辑</v-btn>
           </template>
-        </el-table-column>
-      </el-table>
-    </div>
-
-    <template #footer>
-      <div class="reader-dialog-footer">
-        <el-button
-          type="primary"
-          @click="removeMany(selectedRows)"
-        >
-          批量删除
-        </el-button>
-        <span>已选择 {{ selectedRows.length }} 个</span>
-        <el-button @click="overlay.bookmarkVisible = false">取消</el-button>
+        </v-data-table>
       </div>
-    </template>
-  </el-dialog>
+
+      <footer class="app-dialog-actions">
+        <div class="reader-dialog-footer">
+          <v-btn color="primary" @click="removeMany(selectedRows)">
+            批量删除
+          </v-btn>
+          <span>已选择 {{ selectedRows.length }} 个</span>
+          <v-btn variant="text" @click="overlay.bookmarkVisible = false">取消</v-btn>
+        </div>
+      </footer>
+    </div>
+  </v-dialog>
 
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { confirm, message } from '../../composables/useAppFeedback.js'
 import { useAuthenticatedOperationGuard } from '../../composables/useAuthenticatedOperationGuard'
 import { useBookBookmarks } from '../../composables/useBookBookmarks'
 import { useOverlayBookmarkActions } from '../../composables/useOverlayBookmarkActions'
 import { useOverlayStore } from '../../stores/overlay'
 
-defineProps({
+const props = defineProps({
   isMobile: {
     type: Boolean,
     default: false,
@@ -93,6 +88,7 @@ const router = useRouter()
 const overlay = useOverlayStore()
 const operations = useAuthenticatedOperationGuard()
 const fileRef = ref(null)
+const selectedIds = ref([])
 const selectedRows = ref([])
 const bookId = computed(() => overlay.bookmarkBook?.id)
 const bookTitle = computed(() => (
@@ -116,7 +112,7 @@ const {
   operationGuard: operations,
   bookId,
   isActive: () => overlay.bookmarkVisible,
-  onLoadError: error => ElMessage.error(readError(error, '加载书签失败')),
+  onLoadError: error => message.error(readError(error, '加载书签失败')),
 })
 
 const {
@@ -132,17 +128,35 @@ const {
   navigate: routeLocation => router.push(routeLocation),
   removeMany: removeManyData,
   importPayloads,
-  confirm: (...args) => ElMessageBox.confirm(...args),
-  onSuccess: message => ElMessage.success(message),
-  onInvalidSelection: message => ElMessage.error(message),
-  onInvalidImport: message => ElMessage.error(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  confirm: (text, title, config = {}) =>
+    confirm({ message: text, title, tone: config.type === 'warning' ? 'warning' : 'primary' }).then(action => {
+      if (action !== 'confirm') return Promise.reject('cancel')
+    }),
+  onSuccess: text => message.success(text),
+  onInvalidSelection: text => message.error(text),
+  onInvalidImport: text => message.error(text),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
+
+const tableHeaders = computed(() => [
+  { key: 'data-table-select', fixed: props.isMobile ? 'start' : false, width: 44 },
+  { title: '书籍', key: 'book', fixed: props.isMobile ? 'start' : false, minWidth: 150 },
+  { title: '章节', key: 'title', minWidth: 160 },
+  { title: '内容', key: 'excerpt', sortable: false, minWidth: 200 },
+  { title: '备注', key: 'note', sortable: false, minWidth: 160 },
+  { title: '操作', key: 'actions', sortable: false, width: 150 },
+])
+
+// v-model holds selected row ids; the batch actions consume row objects.
+watch(selectedIds, ids => {
+  selectedRows.value = items.value.filter(bookmark => ids.includes(Number(bookmark.id)))
+}, { deep: true })
 
 watch(
   () => overlay.bookmarkVisible,
   async (visible) => {
     if (!visible) {
+      selectedIds.value = []
       selectedRows.value = []
       reset()
       return
@@ -173,6 +187,7 @@ function addCurrentParagraph() {
 }
 
 function handleClosed() {
+  selectedIds.value = []
   selectedRows.value = []
   overlay.clearBookmark()
 }
@@ -190,15 +205,15 @@ function onImportFileChange(event) {
     try {
       const rows = JSON.parse(String(reader.result || '[]'))
       if (!Array.isArray(rows)) {
-        ElMessage.error('书签文件错误')
+        message.error('书签文件错误')
         return
       }
       importRows(rows)
     } catch {
-      ElMessage.error('书签文件错误')
+      message.error('书签文件错误')
     }
   }
-  reader.onerror = () => ElMessage.error('读取书签文件失败')
+  reader.onerror = () => message.error('读取书签文件失败')
   reader.readAsText(file)
 }
 
@@ -218,14 +233,17 @@ function readError(error, fallback) {
 }
 
 .reader-dialog-title {
+  flex: 1 1 auto;
   justify-content: space-between;
   min-width: 0;
 }
 
-.reader-dialog-title span {
+.reader-dialog-title-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .reader-dialog-title-actions {
@@ -239,9 +257,13 @@ function readError(error, fallback) {
   min-height: 180px;
 }
 
+.reader-dialog-footer {
+  flex: 1 1 auto;
+}
+
 .reader-dialog-footer span {
   flex: 1;
-  color: var(--el-text-color-secondary);
+  color: var(--app-text-muted);
   text-align: left;
 }
 

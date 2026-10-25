@@ -28,7 +28,7 @@ test('shared bookmarks and content search use upstream-style dialogs, including 
   const search = read('../src/components/overlays/OverlayBookContentSearch.vue')
   const host = read('../src/components/GlobalOverlayHost.vue')
 
-  assert.match(bookmarks, /<el-dialog/)
+  assert.match(bookmarks, /<v-dialog/)
   assert.match(bookmarks, /:fullscreen="isMobile"/)
   assert.doesNotMatch(bookmarks, /<el-drawer/)
   assert.match(search, /<v-dialog/)
