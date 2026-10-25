@@ -1,17 +1,19 @@
 <template>
-  <el-input
+  <v-text-field
     :model-value="modelValue"
     placeholder="搜索书名或作者"
     clearable
-    size="small"
+    density="compact"
+    variant="outlined"
+    hide-details
     class="search-input"
-    :prefix-icon="Search"
+    :prepend-inner-icon="mdiMagnify"
     @update:model-value="value => emit('update:modelValue', value)"
   />
 </template>
 
 <script setup>
-import { Search } from '@element-plus/icons-vue'
+import { mdiMagnify } from '@mdi/js'
 
 defineProps({
   modelValue: {

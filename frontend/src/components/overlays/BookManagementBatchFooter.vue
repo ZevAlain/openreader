@@ -1,54 +1,51 @@
 <template>
   <div class="manage-footer">
     <div class="manage-footer-left">
-      <el-button
-        type="primary"
-        size="default"
+      <v-btn
+        color="primary"
         :loading="busy"
         @click="emit('delete-selected')"
       >
         批量删除
-      </el-button>
-      <el-dropdown @command="category => emit('add-category', category)">
-        <el-button type="primary" size="default" :loading="busy">
-          批量添加分组<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-        </el-button>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item
-              v-for="category in categories"
-              :key="category.id"
-              :command="category"
-            >
-              {{ category.name }}
-            </el-dropdown-item>
-          </el-dropdown-menu>
+      </v-btn>
+      <v-menu>
+        <template #activator="{ props: menuProps }">
+          <v-btn v-bind="menuProps" color="primary" :loading="busy">
+            批量添加分组<v-icon :icon="mdiChevronDown" size="xs" end />
+          </v-btn>
         </template>
-      </el-dropdown>
-      <el-dropdown @command="category => emit('remove-category', category)">
-        <el-button type="primary" size="default" :loading="busy">
-          批量移除分组<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-        </el-button>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item
-              v-for="category in categories"
-              :key="category.id"
-              :command="category"
-            >
-              {{ category.name }}
-            </el-dropdown-item>
-          </el-dropdown-menu>
+        <v-list density="compact">
+          <v-list-item
+            v-for="category in categories"
+            :key="category.id"
+            :title="category.name"
+            @click="emit('add-category', category)"
+          />
+        </v-list>
+      </v-menu>
+      <v-menu>
+        <template #activator="{ props: menuProps }">
+          <v-btn v-bind="menuProps" color="primary" :loading="busy">
+            批量移除分组<v-icon :icon="mdiChevronDown" size="xs" end />
+          </v-btn>
         </template>
-      </el-dropdown>
+        <v-list density="compact">
+          <v-list-item
+            v-for="category in categories"
+            :key="category.id"
+            :title="category.name"
+            @click="emit('remove-category', category)"
+          />
+        </v-list>
+      </v-menu>
       <span class="check-tip">已选择 {{ selectedCount }} 个</span>
     </div>
-    <el-button size="default" @click="emit('close')">取消</el-button>
+    <v-btn variant="text" @click="emit('close')">取消</v-btn>
   </div>
 </template>
 
 <script setup>
-import { ArrowDown } from '@element-plus/icons-vue'
+import { mdiChevronDown } from '@mdi/js'
 
 defineProps({
   categories: {
@@ -90,10 +87,6 @@ const emit = defineEmits([
   min-width: 0;
   flex-wrap: wrap;
   gap: 5px;
-}
-
-.manage-footer-left :deep(.el-button) {
-  margin-left: 0;
 }
 
 .check-tip {

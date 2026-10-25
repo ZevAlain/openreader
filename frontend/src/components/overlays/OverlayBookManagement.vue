@@ -1,56 +1,58 @@
 <template>
-  <el-dialog
+  <v-dialog
     v-if="isNormalPage"
     v-model="overlay.bookManageVisible"
-    title="书架管理"
     width="min(1000px, max(750px, 70vw))"
-    top="max(15dvh, calc((100dvh - 584px) / 2))"
     :fullscreen="isMobile"
     class="global-book-manage-dialog"
   >
-    <template #header>
-      <span class="book-manage-title">
-        <span>书架管理</span>
-        <span class="book-manage-cache-tip">❗️只能缓存文本内容</span>
-      </span>
-    </template>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <span class="book-manage-title">
+          <h2 class="app-dialog-title">书架管理</h2>
+          <span class="book-manage-cache-tip">❗️只能缓存文本内容</span>
+        </span>
+      </header>
 
-    <section class="book-manage-dialog-body">
-      <BookManagementToolbar v-model="manageKeyword" />
-      <BookManagementTable
-        ref="bookTableRef"
-        :books="filteredManagedBooks"
-        :is-mobile="isMobile"
-        :is-caching-book="isCachingBook"
-        :category-name="categoryName"
-        :server-cache-count="serverCacheCount"
-        :local-cache-count="localCacheCount"
-        @selection-change="onManageSelectionChange"
-        @open-info="overlay.openBookInfo"
-        @open-edit="overlay.openBookEdit"
-        @set-group="setBookGroup"
-        @cache="cacheBook"
-        @export="exportBook"
-      />
-    </section>
+      <div class="app-dialog-body">
+        <section class="book-manage-dialog-body">
+          <BookManagementToolbar v-model="manageKeyword" />
+          <BookManagementTable
+            ref="bookTableRef"
+            :books="filteredManagedBooks"
+            :is-mobile="isMobile"
+            :is-caching-book="isCachingBook"
+            :category-name="categoryName"
+            :server-cache-count="serverCacheCount"
+            :local-cache-count="localCacheCount"
+            @selection-change="onManageSelectionChange"
+            @open-info="overlay.openBookInfo"
+            @open-edit="overlay.openBookEdit"
+            @set-group="setBookGroup"
+            @cache="cacheBook"
+            @export="exportBook"
+          />
+        </section>
+      </div>
 
-    <template #footer>
-      <BookManagementBatchFooter
-        :categories="bookshelf.categories"
-        :selected-count="selectedBookIds.length"
-        :busy="batchBusy"
-        @delete-selected="batchDeleteBooks"
-        @add-category="batchAddCategory"
-        @remove-category="batchRemoveCategory"
-        @close="overlay.bookManageVisible = false"
-      />
-    </template>
-  </el-dialog>
+      <footer class="app-dialog-actions">
+        <BookManagementBatchFooter
+          :categories="bookshelf.categories"
+          :selected-count="selectedBookIds.length"
+          :busy="batchBusy"
+          @delete-selected="batchDeleteBooks"
+          @add-category="batchAddCategory"
+          @remove-category="batchRemoveCategory"
+          @close="overlay.bookManageVisible = false"
+        />
+      </footer>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { confirm, message } from '../../composables/useAppFeedback.js'
 import { cacheBookContent, cacheBookContentStream, listChapters } from '../../api/books'
 import { useAuthenticatedOperationGuard } from '../../composables/useAuthenticatedOperationGuard'
 import { useOverlayBookCacheState } from '../../composables/useOverlayBookCacheState'
@@ -130,12 +132,15 @@ const {
   refreshManagedBrowserCacheCounts,
   reloadManagedBooks: () => reloadManagedBooks(),
   saveBlob: downloadBlob,
-  confirm: (...args) => ElMessageBox.confirm(...args),
+  confirm: (text, title, config = {}) =>
+    confirm({ message: text, title, tone: config.type === 'warning' ? 'warning' : 'primary' }).then(action => {
+      if (action !== 'confirm') return Promise.reject('cancel')
+    }),
   now: () => Date.now(),
-  onSuccess: message => ElMessage.success(message),
-  onInfo: message => ElMessage.info(message),
-  onValidationError: message => ElMessage.error(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onSuccess: text => message.success(text),
+  onInfo: text => message.info(text),
+  onValidationError: text => message.error(text),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
 
 watch(
@@ -170,11 +175,11 @@ async function reloadManagedBooks({ categories = false } = {}) {
   ])
   if (!operations.canCommit(operation)) return false
   if (booksResult.status === 'rejected') {
-    ElMessage.error(readError(booksResult.reason, '获取书架信息失败'))
+    message.error(readError(booksResult.reason, '获取书架信息失败'))
     return false
   }
   if (categoryResult.status === 'rejected') {
-    ElMessage.warning(
+    message.warning(
       readError(categoryResult.reason, '分组加载失败，书架管理仍可使用'),
     )
   }

@@ -1,71 +1,46 @@
 <template>
-  <el-table
-    ref="tableRef"
-    :data="books"
-    row-key="id"
+  <v-data-table
+    v-model="selected"
+    :headers="tableHeaders"
+    :items="books"
+    item-value="id"
+    show-select
+    density="compact"
+    :items-per-page="-1"
+    no-data-text="暂无数据"
     :height="isMobile ? 'calc(100dvh - 226px)' : 'min(358px, calc(70dvh - 226px))'"
     class="book-manage-table"
-    @selection-change="rows => emit('selection-change', rows)"
   >
-    <el-table-column
-      type="selection"
-      width="25"
-      :fixed="isMobile"
-      reserve-selection
-    />
-    <el-table-column
-      prop="title"
-      label="书名名"
-      min-width="100"
-      :fixed="isMobile"
-    >
-      <template #default="{ row }">
-        <el-button
-          text
-          class="text-button"
-          @click="emit('open-info', row)"
-        >
-          {{ row.title }}
-        </el-button>
+    <template #item.title="{ item }">
+      <v-btn variant="text" size="small" class="text-button" @click="emit('open-info', item)">
+        {{ item.title }}
+      </v-btn>
+    </template>
+    <template #item.chapters="{ item }">
+      <span>共 {{ item.chapterCount || 0 }} 章</span><br>
+      <template v-if="Number(item.sourceId || 0) > 0">
+        <span>服务器缓存： {{ serverCacheCount(item) }} 章</span><br>
       </template>
-    </el-table-column>
-    <el-table-column
-      prop="author"
-      label="作者"
-      min-width="100"
-    />
-    <el-table-column label="分组" min-width="120">
-      <template #default="{ row }">{{ categoryName(row) }}</template>
-    </el-table-column>
-    <el-table-column label="章节" min-width="120">
-      <template #default="{ row }">
-        <span>共 {{ row.chapterCount || 0 }} 章</span><br>
-        <template v-if="Number(row.sourceId || 0) > 0">
-          <span>服务器缓存： {{ serverCacheCount(row) }} 章</span><br>
-        </template>
-        <span>浏览器缓存： {{ localCacheCount(row) }} 章</span>
-      </template>
-    </el-table-column>
-    <el-table-column label="操作" width="100px">
-      <template #default="{ row }">
-        <BookManagementActions
-          :book="row"
-          :caching="isCachingBook(row)"
-          @edit="emit('open-edit', row)"
-          @group="emit('set-group', row)"
-          @cache="command => emit('cache', row, command)"
-          @export="format => emit('export', row, format)"
-        />
-      </template>
-    </el-table-column>
-  </el-table>
+      <span>浏览器缓存： {{ localCacheCount(item) }} 章</span>
+    </template>
+    <template #item.actions="{ item }">
+      <BookManagementActions
+        :book="item"
+        :caching="isCachingBook(item)"
+        @edit="emit('open-edit', item)"
+        @group="emit('set-group', item)"
+        @cache="command => emit('cache', item, command)"
+        @export="format => emit('export', item, format)"
+      />
+    </template>
+  </v-data-table>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import BookManagementActions from './BookManagementActions.vue'
 
-defineProps({
+const props = defineProps({
   books: {
     type: Array,
     default: () => [],
@@ -100,10 +75,24 @@ const emit = defineEmits([
   'cache',
   'export',
 ])
-const tableRef = ref(null)
+const selected = ref([])
+
+const tableHeaders = computed(() => [
+  { key: 'data-table-select', fixed: props.isMobile ? 'start' : false, width: 44 },
+  { title: '书名名', key: 'title', fixed: props.isMobile ? 'start' : false, minWidth: 100 },
+  { title: '作者', key: 'author', minWidth: 100 },
+  { title: '分组', key: 'groupName', value: item => props.categoryName(item), minWidth: 120 },
+  { title: '章节', key: 'chapters', sortable: false, minWidth: 120 },
+  { title: '操作', key: 'actions', sortable: false, width: 240 },
+])
+
+// v-model holds the selected row ids (item-value); re-emit the parent's row-object contract.
+watch(selected, ids => {
+  emit('selection-change', props.books.filter(book => ids.includes(Number(book.id))))
+}, { deep: true })
 
 function clearSelection() {
-  tableRef.value?.clearSelection()
+  selected.value = []
 }
 
 defineExpose({ clearSelection })
