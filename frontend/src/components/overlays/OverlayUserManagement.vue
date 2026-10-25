@@ -1,132 +1,142 @@
 <template>
-  <el-dialog
+  <v-dialog
     v-model="overlay.userManageVisible"
     width="min(1120px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     class="global-user-dialog"
-    destroy-on-close
-    @open="loadUsers"
-    @closed="resetManager"
+    @after-leave="resetManager"
   >
-    <template #header>
-      <div class="user-dialog-title">
-        <span class="el-dialog__title">用户管理</span>
-        <el-button text type="primary" @click="openCreateUserDialog">新增</el-button>
-      </div>
-    </template>
-    <section class="user-overlay">
-      <el-table
-        :data="users"
-        :height="isMobile ? 'calc(100dvh - 160px)' : 'min(620px, calc(100vh - 250px))'"
-        v-loading="usersLoading"
-        class="user-manage-table"
-        @selection-change="onUserSelectionChange"
-      >
-        <el-table-column type="selection" width="44" :selectable="isUserSelectable" :fixed="isMobile" />
-        <el-table-column prop="username" label="用户名" min-width="120" :fixed="isMobile" />
-        <el-table-column prop="lastLoginAt" label="上次登录" min-width="150">
-          <template #default="{ row }">
-            {{ formatUserTime(row.lastLoginAt) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="注册时间" min-width="150">
-          <template #default="{ row }">
-            {{ formatUserTime(row.createdAt, '—') }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="canAccessStore" label="书仓" min-width="80">
-          <template #default="{ row }">
-            <el-switch
-              v-if="isUserMutable(row)"
-              v-model="row.canAccessStore"
-              size="small"
-              active-text="书仓"
-              :loading="isPermissionUpdating(row, 'canAccessStore')"
-              @change="value => updateUserPermission(row, 'canAccessStore', value)"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column prop="canEditSources" label="书源编辑" min-width="100">
-          <template #default="{ row }">
-            <el-switch
-              v-if="isUserMutable(row)"
-              v-model="row.canEditSources"
-              size="small"
-              active-text="书源"
-              :loading="isPermissionUpdating(row, 'canEditSources')"
-              @change="value => updateUserPermission(row, 'canEditSources', value)"
-            />
-            <span v-else class="protected-user-label">受保护账号</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="170">
-          <template #default="{ row }">
-            <el-button v-if="isUserMutable(row)" text @click="resetPassword(row)">重置密码</el-button>
-            <el-button
-              text
-              :loading="defaultingSourceUserId === row.id"
-              @click="setDefaultSources(row)"
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <div class="user-dialog-title">
+          <h2 class="app-dialog-title">用户管理</h2>
+          <v-btn variant="text" color="primary" @click="openCreateUserDialog">新增</v-btn>
+        </div>
+      </header>
+      <div class="app-dialog-body">
+        <section class="user-overlay">
+          <v-data-table
+            v-model="selectedUserKeys"
+            :headers="tableHeaders"
+            :items="users"
+            item-value="id"
+            show-select
+            density="compact"
+            :items-per-page="-1"
+            no-data-text="暂无用户，或当前账号无管理员权限"
+            :loading="usersLoading"
+            class="user-manage-table"
+            :height="isMobile ? 'calc(100dvh - 160px)' : 'min(620px, calc(100vh - 250px))'"
+            @update:model-value="onTableSelectionChange"
+          >
+            <template #item.data-table-select="{ item }">
+              <v-checkbox-btn
+                v-if="isUserSelectable(item)"
+                :model-value="selectedUserKeys.includes(item.id)"
+                @update:model-value="checked => onToggleSelection(item, checked)"
+              />
+            </template>
+            <template #item.lastLoginAt="{ item }">
+              {{ formatUserTime(item.lastLoginAt) }}
+            </template>
+            <template #item.createdAt="{ item }">
+              {{ formatUserTime(item.createdAt, '—') }}
+            </template>
+            <template #item.canAccessStore="{ item }">
+              <v-switch
+                v-if="isUserMutable(item)"
+                v-model="item.canAccessStore"
+                density="compact"
+                color="primary"
+                hide-details
+                :loading="isPermissionUpdating(item, 'canAccessStore')"
+                @update:model-value="value => updateUserPermission(item, 'canAccessStore', value)"
+              />
+            </template>
+            <template #item.canEditSources="{ item }">
+              <v-switch
+                v-if="isUserMutable(item)"
+                v-model="item.canEditSources"
+                density="compact"
+                color="primary"
+                hide-details
+                :loading="isPermissionUpdating(item, 'canEditSources')"
+                @update:model-value="value => updateUserPermission(item, 'canEditSources', value)"
+              />
+              <span v-else class="protected-user-label">受保护账号</span>
+            </template>
+            <template #item.actions="{ item }">
+              <v-btn v-if="isUserMutable(item)" variant="text" size="small" @click="resetPassword(item)">重置密码</v-btn>
+              <v-btn
+                variant="text"
+                size="small"
+                :loading="defaultingSourceUserId === item.id"
+                @click="setDefaultSources(item)"
+              >
+                设为默认书源
+              </v-btn>
+            </template>
+          </v-data-table>
+
+          <footer v-if="users.length" class="user-manage-footer">
+            <v-btn
+              color="primary"
+              :loading="deletingUsers"
+              @click="deleteSelectedUsers"
             >
-              设为默认书源
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+              批量删除
+            </v-btn>
+            <v-btn
+              color="primary"
+              :loading="resettingSources"
+              @click="resetSelectedSources"
+            >
+              删除用户书源
+            </v-btn>
+            <span class="check-tip">已选择 {{ selectedUserIds.length }} 个</span>
+            <v-btn class="cancel-button" variant="text" @click="closeUserManager">取消</v-btn>
+          </footer>
+        </section>
+      </div>
+    </div>
+  </v-dialog>
 
-      <footer v-if="users.length" class="user-manage-footer">
-        <el-button
-          size="medium"
-          type="primary"
-          :loading="deletingUsers"
-          @click="deleteSelectedUsers"
-        >
-          批量删除
-        </el-button>
-        <el-button
-          size="medium"
-          type="primary"
-          :loading="resettingSources"
-          @click="resetSelectedSources"
-        >
-          删除用户书源
-        </el-button>
-        <span class="check-tip">已选择 {{ selectedUserIds.length }} 个</span>
-        <el-button class="cancel-button" size="medium" @click="closeUserManager">取消</el-button>
-      </footer>
-      <el-empty v-if="!usersLoading && !users.length" description="暂无用户，或当前账号无管理员权限" />
-    </section>
-  </el-dialog>
-
-  <el-dialog
+  <v-dialog
     v-model="userCreateDialog"
-    title="新增用户"
     width="420px"
     :fullscreen="isMobile"
   >
-    <el-form label-position="top">
-      <el-form-item label="用户名">
-        <el-input v-model="userDraft.username" autocomplete="on" />
-      </el-form-item>
-      <el-form-item label="密码">
-        <el-input v-model="userDraft.password" type="password" show-password autocomplete="new-password" />
-      </el-form-item>
-      <el-form-item label="权限">
-        <div class="permission-row">
-          <el-switch v-model="userDraft.canEditSources" active-text="书源" />
-          <el-switch v-model="userDraft.canAccessStore" active-text="书仓" />
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">新增用户</h2>
+      </header>
+      <div class="app-dialog-body">
+        <div class="user-create-form">
+          <v-text-field v-model="userDraft.username" label="用户名" autocomplete="on" variant="outlined" density="compact" hide-details />
+          <v-text-field v-model="userDraft.password" label="密码" type="password" variant="outlined" density="compact" hide-details />
+          <div class="permission-row">
+            <label class="permission-switch">
+              <v-switch v-model="userDraft.canEditSources" density="compact" color="primary" hide-details />
+              书源
+            </label>
+            <label class="permission-switch">
+              <v-switch v-model="userDraft.canAccessStore" density="compact" color="primary" hide-details />
+              书仓
+            </label>
+          </div>
         </div>
-      </el-form-item>
-    </el-form>
-    <template #footer>
-      <el-button @click="userCreateDialog = false">取消</el-button>
-      <el-button type="primary" :loading="creatingUser" @click="createManagedUser">确定</el-button>
-    </template>
-  </el-dialog>
+      </div>
+      <footer class="app-dialog-actions">
+        <v-btn variant="text" @click="userCreateDialog = false">取消</v-btn>
+        <v-btn color="primary" :loading="creatingUser" @click="createManagedUser">确定</v-btn>
+      </footer>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { confirm, message, prompt } from '../../composables/useAppFeedback.js'
 import * as adminApi from '../../api/admin'
 import { useOverlayUserManagement } from '../../composables/useOverlayUserManagement'
 import { useAuthenticatedOperationGuard } from '../../composables/useAuthenticatedOperationGuard'
@@ -143,6 +153,7 @@ defineProps({
 const overlay = useOverlayStore()
 const userStore = useUserStore()
 const operations = useAuthenticatedOperationGuard()
+const selectedUserKeys = ref([])
 
 const {
   users,
@@ -176,12 +187,58 @@ const {
   getCurrentUserId: () => userStore.profile?.id || null,
   isActive: () => overlay.userManageVisible,
   ...adminApi,
-  prompt: (...args) => ElMessageBox.prompt(...args),
-  confirm: (...args) => ElMessageBox.confirm(...args),
-  onSuccess: message => ElMessage.success(message),
-  onWarning: message => ElMessage.warning(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  prompt: (text, title, config = {}) => prompt({
+    title,
+    message: text,
+    type: config.inputType === 'password' ? 'password' : 'text',
+    validator: config.inputValidator,
+    confirmText: config.confirmButtonText,
+    cancelText: config.cancelButtonText,
+  }),
+  confirm: (text, title, config = {}) =>
+    confirm({
+      message: text,
+      title,
+      confirmText: config.confirmButtonText,
+      cancelText: config.cancelButtonText,
+      tone: config.type === 'warning' ? 'warning' : 'primary',
+    }).then(action => {
+      if (action !== 'confirm') return Promise.reject('cancel')
+    }),
+  onSuccess: text => message.success(text),
+  onWarning: text => message.warning(text),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
+
+const tableHeaders = computed(() => [
+  { key: 'data-table-select', fixed: false, width: 44 },
+  { title: '用户名', key: 'username', fixed: false, minWidth: 120 },
+  { title: '上次登录', key: 'lastLoginAt', minWidth: 150 },
+  { title: '注册时间', key: 'createdAt', minWidth: 150 },
+  { title: '书仓', key: 'canAccessStore', sortable: false, minWidth: 80 },
+  { title: '书源编辑', key: 'canEditSources', sortable: false, minWidth: 100 },
+  { title: '操作', key: 'actions', sortable: false, width: 190 },
+])
+
+function onToggleSelection(user, checked) {
+  const current = new Set(selectedUserKeys.value)
+  if (checked) current.add(user.id)
+  else current.delete(user.id)
+  selectedUserKeys.value = [...current]
+  onUserSelectionChange(users.value.filter(item => selectedUserKeys.value.includes(item.id)))
+}
+
+function onTableSelectionChange(ids) {
+  selectedUserKeys.value = ids
+  onUserSelectionChange(users.value.filter(item => ids.includes(item.id)))
+}
+
+watch(
+  () => overlay.userManageVisible,
+  visible => {
+    if (visible) loadUsers()
+  },
+)
 
 onMounted(() => {
   window.addEventListener('openreader:users-updated', handleUsersUpdated)
@@ -218,27 +275,22 @@ function formatUserTime(value, emptyLabel = '') {
 </script>
 
 <style scoped>
-/* Sticky fixed columns need an opaque background, otherwise horizontally
-   scrolled rows bleed their text underneath the pinned username cells. */
-:deep(.el-table .el-table-fixed-column--left),
-:deep(.el-table .el-table-fixed-column--right) {
-  background: var(--app-surface);
-}
-
-:deep(.el-table th.el-table-fixed-column--left),
-:deep(.el-table th.el-table-fixed-column--right) {
-  background: var(--app-surface-muted);
-}
-
 .user-overlay {
+  display: grid;
+  gap: 12px;
+}
+
+.user-create-form {
   display: grid;
   gap: 12px;
 }
 
 .user-dialog-title {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .check-tip,
@@ -257,6 +309,12 @@ function formatUserTime(value, emptyLabel = '') {
 
 .permission-row {
   gap: 12px;
+}
+
+.permission-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .cancel-button {

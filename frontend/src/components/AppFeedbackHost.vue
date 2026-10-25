@@ -25,7 +25,7 @@
           v-if="item.kind === 'prompt'"
           v-model="item.inputValue"
           class="app-confirm-input"
-          type="text"
+          :type="item.type || 'text'"
           :placeholder="item.placeholder"
           @keydown.enter.prevent="submitItem(item)"
         >

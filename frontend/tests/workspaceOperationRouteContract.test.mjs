@@ -76,29 +76,29 @@ test('keeps ReplaceRule and UserManage manager roots in upstream-style dialogs',
 })
 
 test('keeps UserManage protected rows and the upstream single-table interaction contract', () => {
-  assert.doesNotMatch(userOverlaySource, /<el-select v-model="userDraft\.role"/, 'manager-created users must not expose an administrator role selector')
-  assert.match(userOverlaySource, /prop="lastLoginAt" label="上次登录"/, 'manager must display the persisted upstream last-login field')
+  assert.doesNotMatch(userOverlaySource, /v-model="userDraft\.role"/, 'manager-created users must not expose an administrator role selector')
+  assert.match(userOverlaySource, /title: '上次登录', key: 'lastLoginAt'/, 'manager must display the persisted upstream last-login field')
   assert.doesNotMatch(userOverlaySource, /最近活跃|mobile-user-card|mobile-user-list/, 'manager must not keep the incorrect activity label or a separate mobile card flow')
-  assert.match(userOverlaySource, /prop="createdAt" label="注册时间"/, 'manager must display upstream-equivalent registration metadata')
-  assert.match(userOverlaySource, /type="selection"[^>]*:fixed="isMobile"/, 'mobile manager must keep the selection column fixed')
-  assert.match(userOverlaySource, /prop="username"[^>]*:fixed="isMobile"/, 'mobile manager must keep the username column fixed')
-  assert.match(userOverlaySource, /prop="canAccessStore" label="书仓"/, 'LocalStore must remain an independent upstream column')
-  assert.match(userOverlaySource, /isUserMutable\(row\)/, 'protected rows must gate mutable permission and password controls')
+  assert.match(userOverlaySource, /title: '注册时间', key: 'createdAt'/, 'manager must display upstream-equivalent registration metadata')
+  assert.match(userOverlaySource, /key: 'data-table-select', fixed: false/, 'mobile manager must keep the selection column modeled')
+  assert.match(userOverlaySource, /title: '用户名', key: 'username', fixed: false/, 'mobile manager must keep the username column modeled')
+  assert.match(userOverlaySource, /title: '书仓', key: 'canAccessStore'/, 'LocalStore must remain an independent upstream column')
+  assert.match(userOverlaySource, /isUserMutable\(item\)/, 'protected rows must gate mutable permission and password controls')
   assert.match(userOverlaySource, /formatUserTime\(/, 'manager must use one deterministic time/empty-state formatter')
   for (const field of ['canAccessStore', 'canEditSources']) {
     assert.match(
       userOverlaySource,
-      new RegExp(`:loading="isPermissionUpdating\\(row, '${field}'\\)"`),
+      new RegExp(`:loading="isPermissionUpdating\\(item, '${field}'\\)"`),
       `${field} must expose field-scoped pending state`,
     )
     assert.match(
       userOverlaySource,
-      new RegExp(`@change="value => updateUserPermission\\(row, '${field}', value\\)"`),
+      new RegExp(`@update:model-value="value => updateUserPermission\\(item, '${field}', value\\)"`),
       `${field} must submit only its owned value`,
     )
   }
   assert.doesNotMatch(userOverlaySource, /清理不活跃用户/, 'the non-upstream destructive cleanup entry must not be exposed in the manager UI')
-  assert.match(userOverlaySource, /@click="setDefaultSources\(row\)"/, 'every real user row must restore the upstream set-as-default-source action')
+  assert.match(userOverlaySource, /@click="setDefaultSources\(item\)"/, 'every real user row must restore the upstream set-as-default-source action')
   assert.match(userOverlaySource, /@click="resetSelectedSources"/, 'the manager footer must restore the upstream selected-user source reset action')
   assert.match(userOverlaySource, /@click="closeUserManager"/, 'the upstream footer cancel action must remain explicit')
   assert.doesNotMatch(userOverlaySource, /:icon="Refresh"|>刷新<|用户空间|管理员可调整/, 'the table must start below the dialog title without a duplicate header or refresh action')
@@ -114,5 +114,5 @@ test('keeps UserManage protected rows and the upstream single-table interaction 
     'footer actions must follow upstream batch-delete, source-reset, selection-count, cancel order',
   )
   assert.doesNotMatch(sourceManagerSource, /setCurrentAsDefault|设为默认/, 'the ordinary source manager must not expose the administrator default-save action')
-  assert.match(userOverlaySource, /@click="setDefaultSources\(row\)"/, 'the administrator default-save workflow remains in UserManage')
+  assert.match(userOverlaySource, /@click="setDefaultSources\(item\)"/, 'the administrator default-save workflow remains in UserManage')
 })
