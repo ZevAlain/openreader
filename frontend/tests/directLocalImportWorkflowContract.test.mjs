@@ -35,7 +35,7 @@ test('the shared confirmation keeps every non-empty TXT rule manually selectable
   assert.match(sharedOverlaySource, /listTXTTocRules/)
   assert.match(sharedOverlaySource, /filter\(rule => rule\?\.rule\)/, 'only structurally broken rules may be hidden')
   assert.doesNotMatch(sharedOverlaySource, /filter\(rule => rule\?\.enable/, 'disabled auto-detection rules must remain manually selectable')
-  assert.match(sharedOverlaySource, /allow-create/, 'custom TXT rules must remain editable')
+  assert.match(sharedOverlaySource, /<v-combobox[\s\S]*?TXT 目录规则/, 'custom TXT rules must remain editable')
 })
 
 test('direct previews upload one file at a time and preserve parser failures in selection order', async () => {

@@ -1,140 +1,195 @@
 <template>
-  <el-dialog
+  <v-dialog
     :model-value="phase === 'preflight'"
-    :title="`${sourceLabel}导入预检`"
     width="760px"
     :fullscreen="isMobile"
     class="storage-import-preflight-dialog"
     @update:model-value="handlePreflightVisible"
   >
-    <p class="storage-import-tip">
-      已先冻结所选文件的字节。修正规则后可在同一份暂存数据上重新解析，不会重新读取书仓原文件。
-    </p>
-    <div class="storage-import-preflight-list">
-      <article v-for="row in rows" :key="row.key" :class="['storage-import-preflight-row', { failed: row.error }]">
-        <el-tag :type="row.valid ? 'success' : 'danger'" effect="plain">{{ row.valid ? '可导入' : '待修复' }}</el-tag>
-        <div>
-          <strong>{{ row.path }}</strong>
-          <p v-if="row.error">{{ row.error }}</p>
-          <span v-else-if="row.chapterCount === 0">未匹配到目录；可调整规则后重新解析，或保留空目录继续导入。</span>
-          <span v-else>已解析 {{ row.chapterCount }} 章</span>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">{{ sourceLabel }}导入预检</h2>
+      </header>
+      <div class="app-dialog-body">
+        <p class="storage-import-tip">
+          已先冻结所选文件的字节。修正规则后可在同一份暂存数据上重新解析，不会重新读取书仓原文件。
+        </p>
+        <div class="storage-import-preflight-list">
+          <article v-for="row in rows" :key="row.key" :class="['storage-import-preflight-row', { failed: row.error }]">
+            <v-chip size="small" :color="row.valid ? 'success' : 'error'" variant="tonal">{{ row.valid ? '可导入' : '待修复' }}</v-chip>
+            <div>
+              <strong>{{ row.path }}</strong>
+              <p v-if="row.error">{{ row.error }}</p>
+              <span v-else-if="row.chapterCount === 0">未匹配到目录；可调整规则后重新解析，或保留空目录继续导入。</span>
+              <span v-else>已解析 {{ row.chapterCount }} 章</span>
+            </div>
+            <div v-if="isRuleConfigurable(row.path)" class="storage-import-rule-row">
+              <v-combobox
+                v-if="isTextLocalPath(row.path)"
+                :model-value="row.tocRule"
+                :items="txtTocRuleItems"
+                clearable
+                variant="outlined"
+                density="compact"
+                hide-details
+                placeholder="TXT 目录规则（可选）"
+                @update:model-value="value => row.tocRule = value || ''"
+              />
+              <v-select
+                v-else
+                v-model="row.tocRule"
+                :items="epubTocRuleOptions"
+                item-title="label"
+                item-value="value"
+                variant="outlined"
+                density="compact"
+                hide-details
+                placeholder="EPUB 目录规则"
+              />
+              <v-btn :loading="row.reparsing" :disabled="!row.importToken" @click="reparse(row)">重新解析</v-btn>
+            </div>
+          </article>
         </div>
-        <div v-if="isRuleConfigurable(row.path)" class="storage-import-rule-row">
-          <el-select
-            v-if="isTextLocalPath(row.path)"
-            v-model="row.tocRule"
-            allow-create
-            clearable
-            default-first-option
-            filterable
-            placeholder="TXT 目录规则（可选）"
-          >
-            <el-option v-for="rule in txtTocRuleOptions" :key="rule.id" :label="rule.name" :value="rule.rule" />
-          </el-select>
-          <el-select v-else v-model="row.tocRule" placeholder="EPUB 目录规则">
-            <el-option v-for="rule in epubTocRuleOptions" :key="rule.value" :label="rule.label" :value="rule.value" />
-          </el-select>
-          <el-button :loading="row.reparsing" :disabled="!row.importToken" @click="reparse(row)">重新解析</el-button>
-        </div>
-      </article>
+      </div>
+      <footer class="app-dialog-actions">
+        <v-btn variant="text" @click="workflow.cancelAll">取消</v-btn>
+        <v-btn color="primary" :disabled="!validRows.length" @click="workflow.continueAfterPreflight">
+          继续导入 {{ validRows.length || '' }} 本
+        </v-btn>
+      </footer>
     </div>
-    <template #footer>
-      <el-button @click="workflow.cancelAll">取消</el-button>
-      <el-button type="primary" :disabled="!validRows.length" @click="workflow.continueAfterPreflight">
-        继续导入 {{ validRows.length || '' }} 本
-      </el-button>
-    </template>
-  </el-dialog>
+  </v-dialog>
 
-  <el-dialog
+  <v-dialog
     :model-value="phase === 'choose-mode'"
-    title="提示"
     width="440px"
     :fullscreen="isMobile"
+    persistent
     class="storage-import-mode-dialog"
-    :close-on-click-modal="false"
-    :close-on-press-escape="false"
     @update:model-value="handleModeVisible"
   >
-    <p class="storage-import-tip">你选择导入多本书籍，请选择导入方式？</p>
-    <template #footer>
-      <el-button type="primary" @click="workflow.chooseBatch">批量导入</el-button>
-      <el-button @click="workflow.chooseSequential">逐一确认导入</el-button>
-    </template>
-  </el-dialog>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">提示</h2>
+      </header>
+      <div class="app-dialog-body">
+        <p class="storage-import-tip">你选择导入多本书籍，请选择导入方式？</p>
+      </div>
+      <footer class="app-dialog-actions">
+        <v-btn color="primary" @click="workflow.chooseBatch">批量导入</v-btn>
+        <v-btn variant="text" @click="workflow.chooseSequential">逐一确认导入</v-btn>
+      </footer>
+    </div>
+  </v-dialog>
 
-  <el-dialog
+  <v-dialog
     :model-value="phase === 'batch-groups'"
-    title="统一设置分组"
     width="440px"
     :fullscreen="isMobile"
     class="storage-import-groups-dialog"
     @update:model-value="handleBatchGroupsVisible"
   >
-    <div class="storage-import-groups-body">
-      <span>请选择分组：</span>
-      <el-select v-model="batchCategoryIds" multiple clearable filterable placeholder="未分组">
-        <el-option v-for="category in bookshelf.categories" :key="category.id" :label="category.name" :value="Number(category.id)" />
-      </el-select>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">统一设置分组</h2>
+      </header>
+      <div class="app-dialog-body">
+        <div class="storage-import-groups-body">
+          <span>请选择分组：</span>
+          <v-select
+            v-model="batchCategoryIds"
+            :items="categoryItems"
+            multiple
+            clearable
+            chips
+            variant="outlined"
+            density="compact"
+            hide-details
+            placeholder="未分组"
+          />
+        </div>
+      </div>
+      <footer class="app-dialog-actions">
+        <v-btn variant="text" @click="workflow.cancelBatchGroups">取消导入</v-btn>
+        <v-btn color="primary" :loading="busy" @click="workflow.confirmBatch">确定</v-btn>
+      </footer>
     </div>
-    <template #footer>
-      <el-button @click="workflow.cancelBatchGroups">取消导入</el-button>
-      <el-button type="primary" :loading="busy" @click="workflow.confirmBatch">确定</el-button>
-    </template>
-  </el-dialog>
+  </v-dialog>
 
-  <el-dialog
+  <v-dialog
     :model-value="phase === 'single'"
-    :title="`导入本地书籍${currentLabel}`"
     width="min(760px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     class="storage-import-single-dialog"
     @update:model-value="handleSingleVisible"
   >
-    <template v-if="currentRow">
-      <div class="storage-import-single-form">
-        <el-input v-model="currentRow.title" placeholder="书名" />
-        <el-input v-model="currentRow.author" placeholder="作者（可选）" />
-        <el-select v-model="currentRow.categoryIds" multiple clearable filterable placeholder="未分组">
-          <el-option v-for="category in bookshelf.categories" :key="category.id" :label="category.name" :value="Number(category.id)" />
-        </el-select>
-        <div v-if="isRuleConfigurable(currentRow.path)" class="storage-import-rule-row">
-          <el-select
-            v-if="isTextLocalPath(currentRow.path)"
-            v-model="currentRow.tocRule"
-            allow-create
-            clearable
-            default-first-option
-            filterable
-            placeholder="TXT 目录规则（可选）"
-          >
-            <el-option v-for="rule in txtTocRuleOptions" :key="rule.id" :label="rule.name" :value="rule.rule" />
-          </el-select>
-          <el-select v-else v-model="currentRow.tocRule" placeholder="EPUB 目录规则">
-            <el-option v-for="rule in epubTocRuleOptions" :key="rule.value" :label="rule.label" :value="rule.value" />
-          </el-select>
-          <el-button :loading="currentRow.reparsing" :disabled="!currentRow.importToken" @click="reparse(currentRow)">刷新目录</el-button>
-        </div>
-        <p v-if="currentRow.chapterCount === 0" class="storage-import-empty-catalog">
-          未匹配到目录；可调整规则后刷新目录，或保留空目录继续导入。
-        </p>
-        <p v-if="currentRow.lastError" class="storage-import-error">{{ currentRow.lastError }}</p>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">导入本地书籍{{ currentLabel }}</h2>
+      </header>
+      <div class="app-dialog-body">
+        <template v-if="currentRow">
+          <div class="storage-import-single-form">
+            <v-text-field v-model="currentRow.title" placeholder="书名" variant="outlined" density="compact" hide-details />
+            <v-text-field v-model="currentRow.author" placeholder="作者（可选）" variant="outlined" density="compact" hide-details />
+            <v-select
+              v-model="currentRow.categoryIds"
+              :items="categoryItems"
+              multiple
+              clearable
+              chips
+              variant="outlined"
+              density="compact"
+              hide-details
+              placeholder="未分组"
+            />
+            <div v-if="isRuleConfigurable(currentRow.path)" class="storage-import-rule-row">
+              <v-combobox
+                v-if="isTextLocalPath(currentRow.path)"
+                :model-value="currentRow.tocRule"
+                :items="txtTocRuleItems"
+                clearable
+                variant="outlined"
+                density="compact"
+                hide-details
+                placeholder="TXT 目录规则（可选）"
+                @update:model-value="value => currentRow.tocRule = value || ''"
+              />
+              <v-select
+                v-else
+                v-model="currentRow.tocRule"
+                :items="epubTocRuleOptions"
+                item-title="label"
+                item-value="value"
+                variant="outlined"
+                density="compact"
+                hide-details
+                placeholder="EPUB 目录规则"
+              />
+              <v-btn :loading="currentRow.reparsing" :disabled="!currentRow.importToken" @click="reparse(currentRow)">刷新目录</v-btn>
+            </div>
+            <p v-if="currentRow.chapterCount === 0" class="storage-import-empty-catalog">
+              未匹配到目录；可调整规则后刷新目录，或保留空目录继续导入。
+            </p>
+            <p v-if="currentRow.lastError" class="storage-import-error">{{ currentRow.lastError }}</p>
+          </div>
+          <div class="storage-import-chapter-title">章节列表（{{ currentRow.chapters.length }}）</div>
+          <div class="storage-import-chapter-list">
+            <p v-for="chapter in currentRow.chapters" :key="chapter.index">{{ Number(chapter.index) + 1 }}. {{ chapter.title }}</p>
+          </div>
+        </template>
       </div>
-      <div class="storage-import-chapter-title">章节列表（{{ currentRow.chapters.length }}）</div>
-      <div class="storage-import-chapter-list">
-        <p v-for="chapter in currentRow.chapters" :key="chapter.index">{{ Number(chapter.index) + 1 }}. {{ chapter.title }}</p>
-      </div>
-    </template>
-    <template #footer>
-      <el-button @click="workflow.skipCurrent">取消</el-button>
-      <el-button type="primary" :loading="busy" :disabled="!currentRow?.valid" @click="workflow.confirmCurrent">确定导入</el-button>
-    </template>
-  </el-dialog>
+      <footer class="app-dialog-actions">
+        <v-btn variant="text" @click="workflow.skipCurrent">取消</v-btn>
+        <v-btn color="primary" :loading="busy" :disabled="!currentRow?.valid" @click="workflow.confirmCurrent">确定导入</v-btn>
+      </footer>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { message } from '../../composables/useAppFeedback.js'
 import { listTXTTocRules, previewDirectLocalBooks } from '../../api/books'
 import { importFromLocalStore, previewLocalStoreImport } from '../../api/localStore'
 import { useStorageImportWorkflow } from '../../composables/useStorageImportWorkflow'
@@ -175,12 +230,12 @@ const workflow = useStorageImportWorkflow({
     return response.data
   },
   onImported: book => bookshelf.upsertBook(book),
-  onError: message => ElMessage.error(message),
+  onError: text => message.error(text),
   onComplete: summary => {
     if (summary.succeeded) {
-      ElMessage.success(`导入 ${summary.succeeded} 本${summary.failed ? `，${summary.failed} 本失败` : ''}`)
+      message.success(`导入 ${summary.succeeded} 本${summary.failed ? `，${summary.failed} 本失败` : ''}`)
     } else if (summary.failed) {
-      ElMessage.warning(`导入失败 ${summary.failed} 本`)
+      message.warning(`导入失败 ${summary.failed} 本`)
     }
     overlay.closeStorageImport()
   },
@@ -202,6 +257,8 @@ const sourceLabel = computed(() => {
   if (source.value === 'direct') return '本地文件'
   return '本地书仓'
 })
+const txtTocRuleItems = computed(() => txtTocRuleOptions.value.map(rule => ({ title: rule.name, value: rule.rule })))
+const categoryItems = computed(() => bookshelf.categories.map(category => ({ title: category.name, value: Number(category.id) })))
 
 watch(
   () => overlay.storageImportRequest?.requestId,
@@ -263,7 +320,7 @@ async function loadImportOptions() {
       ? tocRulesResponse.data.filter(rule => rule?.rule)
       : []
   }
-  if (tocRulesError) ElMessage.error(readError(tocRulesError, '加载目录规则失败'))
+  if (tocRulesError) message.error(readError(tocRulesError, '加载目录规则失败'))
 }
 
 function stripClientKeys(items) {
@@ -316,7 +373,7 @@ function readError(error, fallback) {
 }
 
 .storage-import-preflight-row.failed {
-  background: var(--el-color-danger-light-9);
+  background: rgba(196, 69, 58, 0.08);
 }
 
 .storage-import-preflight-row strong,
@@ -361,7 +418,7 @@ function readError(error, fallback) {
 }
 
 .storage-import-error {
-  color: var(--el-color-danger);
+  color: var(--app-danger);
 }
 
 @media (max-width: 750px) {
