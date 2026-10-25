@@ -1,112 +1,104 @@
 <template>
-  <el-dialog
+  <v-dialog
     v-if="isNormalPage"
     v-model="overlay.bookGroupVisible"
-    :title="overlay.bookGroupMode === 'set' ? '设置分组' : '分组管理'"
     width="min(1000px, max(750px, 70vw))"
-    top="max(15dvh, calc((100dvh - 584px) / 2))"
     :fullscreen="isMobile"
-    destroy-on-close
     class="global-book-group-dialog"
-    @opened="handleOpened"
-    @closed="handleClosed"
+    @after-enter="handleOpened"
+    @after-leave="handleClosed"
   >
-    <section class="book-group-dialog-body">
-      <el-table
-        ref="groupTableRef"
-        :key="isSetMode"
-        :data="groupRows"
-        :height="isMobile ? 'calc(100dvh - 184px)' : 'min(400px, calc(70dvh - 184px))'"
-        class="book-group-table"
-        @selection-change="handleSelectionChange"
-      >
-        <el-table-column
-          type="selection"
-          width="25"
-          v-if="isSetMode"
-        />
-        <el-table-column
-          prop="name"
-          label="分组名"
-          min-width="100"
-        >
-          <template #default="{ row }">
-            <span class="group-name-cell">
-              <span class="group-drag-icon" aria-hidden="true">
-                <el-icon><Rank /></el-icon>
-              </span>
-              <span>{{ displayBookGroupName(row) }}</span>
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column
-          prop="show"
-          label="显示"
-          min-width="80"
-          v-if="!isSetMode"
-        >
-          <template #default="{ row }">
-            <el-switch
-              :model-value="row.show !== false"
-              :loading="visibilitySavingId === (row.key || row.id)"
-              @change="value => toggleVisibility(row, value)"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100px">
-          <template #default="{ row }">
-            <el-button text @click="renameGroup(row)">编辑</el-button>
-            <el-button
-              v-if="!isSetMode && row.kind === 'category' && groupBookCount(row) === 0"
-              text
-              type="danger"
-              @click="deleteGroup(row)"
-            >
-              删除
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </section>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">{{ overlay.bookGroupMode === 'set' ? '设置分组' : '分组管理' }}</h2>
+      </header>
 
-    <template #footer>
-      <div class="dialog-footer">
-        <el-button
-          size="default"
-          @click="createCategory"
-        >
-          添加分组
-        </el-button>
-        <el-button
-          v-if="isGroupOrderDirty"
-          size="default"
-          :loading="groupOrderSaving"
-          @click="saveOrder"
-        >
-          保存排序
-        </el-button>
-        <el-button
-          v-if="isSetMode"
-          type="primary"
-          size="default"
-          :loading="settingCategorySaving"
-          @click="saveSetting"
-        >
-          确认
-        </el-button>
-        <el-button size="default" @click="overlay.bookGroupVisible = false">
-          取消
-        </el-button>
+      <div class="app-dialog-body">
+        <section class="book-group-dialog-body">
+          <v-data-table
+            ref="groupTableEl"
+            v-model="selectedGroupIds"
+            :key="isSetMode"
+            :headers="tableHeaders"
+            :items="groupRows"
+            item-value="id"
+            show-select
+            density="compact"
+            :items-per-page="-1"
+            no-data-text="暂无数据"
+            :class="{ 'book-group-table': true, 'hide-select': !isSetMode }"
+            :height="isMobile ? 'calc(100dvh - 184px)' : 'min(400px, calc(70dvh - 184px))'"
+            @update:model-value="onTableSelectionChange"
+          >
+            <template #item.name="{ item }">
+              <span class="group-name-cell">
+                <span class="group-drag-icon" aria-hidden="true">
+                  <v-icon :icon="mdiDragVertical" />
+                </span>
+                <span>{{ displayBookGroupName(item) }}</span>
+              </span>
+            </template>
+            <template #item.show="{ item }">
+              <v-switch
+                :model-value="item.show !== false"
+                :loading="visibilitySavingId === (item.key || item.id)"
+                color="primary"
+                density="compact"
+                hide-details
+                @update:model-value="value => toggleVisibility(item, value)"
+              />
+            </template>
+            <template #item.actions="{ item }">
+              <v-btn variant="text" size="small" @click="renameGroup(item)">编辑</v-btn>
+              <v-btn
+                v-if="!isSetMode && item.kind === 'category' && groupBookCount(item) === 0"
+                variant="text"
+                size="small"
+                color="error"
+                @click="deleteGroup(item)"
+              >
+                删除
+              </v-btn>
+            </template>
+          </v-data-table>
+        </section>
       </div>
-    </template>
-  </el-dialog>
+
+      <footer class="app-dialog-actions">
+        <div class="dialog-footer">
+          <v-btn variant="outlined" @click="createCategory">
+            添加分组
+          </v-btn>
+          <v-btn
+            v-if="isGroupOrderDirty"
+            variant="outlined"
+            :loading="groupOrderSaving"
+            @click="saveOrder"
+          >
+            保存排序
+          </v-btn>
+          <v-btn
+            v-if="isSetMode"
+            color="primary"
+            :loading="settingCategorySaving"
+            @click="saveSetting"
+          >
+            确认
+          </v-btn>
+          <v-btn variant="text" @click="overlay.bookGroupVisible = false">
+            取消
+          </v-btn>
+        </div>
+      </footer>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import Sortable from 'sortablejs'
-import { Rank } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { mdiDragVertical } from '@mdi/js'
+import { confirm, message, prompt } from '../../composables/useAppFeedback.js'
 import { updateBookCategory } from '../../api/books'
 import { useAuthenticatedOperationGuard } from '../../composables/useAuthenticatedOperationGuard'
 import { useOverlayBookGroups } from '../../composables/useOverlayBookGroups'
@@ -116,7 +108,7 @@ import { useReaderStore } from '../../stores/reader'
 import { createBookCategoryNameResolver } from '../../utils/bookCategory'
 import { newestBookProgress, sortByShelfOrder } from '../../utils/bookOrder'
 
-defineProps({
+const props = defineProps({
   isMobile: {
     type: Boolean,
     default: false,
@@ -127,6 +119,8 @@ const bookshelf = useBookshelfStore()
 const overlay = useOverlayStore()
 const reader = useReaderStore()
 const operations = useAuthenticatedOperationGuard()
+const groupTableEl = ref(null)
+const selectedGroupIds = ref([])
 const categoryName = createBookCategoryNameResolver(() => bookshelf.categories)
 const managedBooks = computed(() => (
   sortByShelfOrder(bookshelf.books, reader.progressByBook)
@@ -140,11 +134,26 @@ const categoryProjectionRevision = computed(() => JSON.stringify(
   bookshelf.categories.map(category => [category.id, category.name, category.show, category.sortOrder]),
 ))
 
+const tableHeaders = computed(() => {
+  const headers = [
+    { key: 'data-table-select', width: 44 },
+    { title: '分组名', key: 'name', minWidth: 100 },
+  ]
+  if (!isSetMode.value) headers.push({ title: '显示', key: 'show', sortable: false, minWidth: 80 })
+  headers.push({ title: '操作', key: 'actions', sortable: false, width: 130 })
+  return headers
+})
+
+function onTableSelectionChange(ids) {
+  const rows = groupRows.value.filter(row => ids.includes(String(row.id)))
+  handleSelectionChange(rows)
+}
+
 const {
+  setGroupTableAdapter,
   settingCategorySaving,
   visibilitySavingId,
   groupOrderSaving,
-  groupTableRef,
   groupRows,
   isGroupOrderDirty,
   groupBookCount,
@@ -173,14 +182,45 @@ const {
       detail: { book: data },
     }))
   },
-  prompt: (...args) => ElMessageBox.prompt(...args),
-  confirm: (...args) => ElMessageBox.confirm(...args),
+  prompt: (text, title, config = {}) => prompt({
+    title,
+    message: text,
+    value: config.inputValue ?? '',
+    validator: config.inputValidator,
+    confirmText: config.confirmButtonText,
+    cancelText: config.cancelButtonText,
+  }),
+  confirm: (text, title, config = {}) =>
+    confirm({ message: text, title, tone: config.type === 'warning' ? 'warning' : 'primary' }).then(action => {
+      if (action !== 'confirm') return Promise.reject('cancel')
+    }),
   createSortable: (...args) => Sortable.create(...args),
   nextFrame: nextTick,
-  onSuccess: message => ElMessage.success(message),
-  onWarning: message => ElMessage.warning(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onSuccess: text => message.success(text),
+  onWarning: text => message.warning(text),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
+
+watch(groupTableEl, (el) => {
+  if (!el) {
+    setGroupTableAdapter(null)
+    return
+  }
+  setGroupTableAdapter({
+    $el: el.$el,
+    doLayout: () => {},
+    clearSelection: () => {
+      selectedGroupIds.value = []
+    },
+    toggleRowSelection: (row, selected) => {
+      const key = row.key ?? row.id
+      const current = new Set(selectedGroupIds.value)
+      if (selected) current.add(key)
+      else current.delete(key)
+      selectedGroupIds.value = [...current]
+    },
+  })
+}, { immediate: true })
 
 watch(
   () => overlay.bookGroupVisible,
@@ -197,7 +237,7 @@ watch(
       ])
     } catch (error) {
       if (!operations.canCommit(operation)) return
-      ElMessage.error(readError(error, '加载分组失败'))
+      message.error(readError(error, '加载分组失败'))
       return
     }
     if (!operations.canCommit(operation)) return
@@ -220,7 +260,7 @@ watch(categoryProjectionRevision, async (revision, previous) => {
   if (!previous || revision === previous || !overlay.bookGroupVisible || !isSetMode.value) return
   handleSelectionChange([])
   await nextTick()
-  groupTableRef.value?.clearSelection?.()
+  selectedGroupIds.value = []
   await handleOpened()
 })
 
@@ -271,8 +311,18 @@ function readError(error, fallback) {
 }
 
 .dialog-footer {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
   min-height: 32px;
-  text-align: right;
 }
 
+/* manage mode hides the checkbox column that only exists for set-book groups */
+.book-group-table.hide-select :deep(th:first-child),
+.book-group-table.hide-select :deep(td:first-child) {
+  display: none;
+}
 </style>

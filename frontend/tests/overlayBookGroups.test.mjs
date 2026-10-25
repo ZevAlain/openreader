@@ -271,7 +271,7 @@ test('owns sortable lifecycle and persists the drafted group order', async () =>
   fixture.controller.groupTableRef.value = {
     $el: {
       querySelector: selector => {
-        assert.equal(selector, '.el-table__body-wrapper tbody')
+        assert.equal(selector, '.el-table__body-wrapper tbody, .v-table__wrapper tbody')
         return tableBody
       },
     },

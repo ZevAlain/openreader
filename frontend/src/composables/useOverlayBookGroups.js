@@ -17,6 +17,10 @@ export function useOverlayBookGroups(options) {
   const groupOrderDraftKeys = ref([])
   const groupOrderSaving = ref(false)
   const groupTableRef = ref(null)
+  // v-data-table hosts inject an EP-table-shaped adapter; el-table hosts keep
+  // binding the returned groupTableRef directly.
+  const groupTableAdapter = ref(null)
+  const resolveGroupTable = () => groupTableAdapter.value || groupTableRef.value
   let sortable
   let syncingTableSelection = false
 
@@ -63,7 +67,7 @@ export function useOverlayBookGroups(options) {
   }
 
   async function syncBookGroupTableSelection() {
-    const table = groupTableRef.value
+    const table = resolveGroupTable()
     if (!table) return
     await options.nextFrame()
     syncingTableSelection = true
@@ -180,7 +184,7 @@ export function useOverlayBookGroups(options) {
   async function clearSetModeSelectionAfterGroupMutation() {
     if (options.overlay.bookGroupMode !== 'set') return
     selectedCategoryIds.value = []
-    const table = groupTableRef.value
+    const table = resolveGroupTable()
     if (!table) return
     await options.nextFrame()
     syncingTableSelection = true
@@ -275,9 +279,9 @@ export function useOverlayBookGroups(options) {
     await options.nextFrame()
     if (!operations.canCommit(operation)) return
     destroyGroupSortable()
-    groupTableRef.value?.doLayout?.()
-    const tableBody = groupTableRef.value?.$el
-      ?.querySelector('.el-table__body-wrapper tbody')
+    resolveGroupTable()?.doLayout?.()
+    const tableBody = resolveGroupTable()?.$el
+      ?.querySelector('.el-table__body-wrapper tbody, .v-table__wrapper tbody')
     if (!tableBody) return
     sortable = options.createSortable(tableBody, {
       handle: '.group-drag-icon',
@@ -293,7 +297,7 @@ export function useOverlayBookGroups(options) {
   }
 
   async function refreshVisibleGroupTable() {
-    if (!options.overlay.bookGroupVisible || !groupTableRef.value) return
+    if (!options.overlay.bookGroupVisible || !resolveGroupTable()) return
     await handleBookGroupOpened()
   }
 

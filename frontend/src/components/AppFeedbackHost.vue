@@ -8,15 +8,24 @@
     </TransitionGroup>
 
     <div v-for="item in confirmState.queue" :key="item.id" class="app-confirm-scrim">
-      <div class="app-confirm" role="alertdialog" :aria-label="item.title">
+      <div class="app-confirm" role="alertdialog" :aria-label="item.title" @keydown.enter="submitItem(item)">
         <div class="app-confirm-sheet">
           <span class="app-confirm-grabber" />
         </div>
         <h2 class="app-confirm-title">{{ item.title }}</h2>
         <p v-if="item.message" class="app-confirm-message">{{ item.message }}</p>
+        <input
+          v-if="item.kind === 'prompt'"
+          v-model="item.inputValue"
+          class="app-confirm-input"
+          type="text"
+          :placeholder="item.placeholder"
+          @keydown.enter.prevent="submitItem(item)"
+        >
+        <p v-if="item.error" class="app-confirm-error">{{ item.error }}</p>
         <div class="app-confirm-actions">
-          <button class="app-confirm-btn cancel" type="button" @click="resolveConfirm(item.id, 'cancel')">{{ item.cancelText }}</button>
-          <button class="app-confirm-btn ok" :class="item.tone" type="button" @click="resolveConfirm(item.id, 'confirm')">{{ item.confirmText }}</button>
+          <button class="app-confirm-btn cancel" type="button" @click="resolveConfirm(item.id, item.kind === 'prompt' ? null : 'cancel')">{{ item.cancelText }}</button>
+          <button class="app-confirm-btn ok" :class="item.tone" type="button" @click="item.kind === 'prompt' ? submitItem(item) : resolveConfirm(item.id, 'confirm')">{{ item.confirmText }}</button>
         </div>
       </div>
     </div>
@@ -27,6 +36,16 @@
 import { useAppFeedback } from '../composables/useAppFeedback.js'
 
 const { toastState, confirmState, dismiss, resolveConfirm } = useAppFeedback()
+
+function submitItem(item) {
+  const error = item.validator?.(item.inputValue)
+  if (error !== true && error !== undefined) {
+    item.error = String(error || '输入无效')
+    return
+  }
+  item.error = ''
+  resolveConfirm(item.id, item.inputValue)
+}
 </script>
 
 <style scoped>
@@ -144,6 +163,27 @@ const { toastState, confirmState, dismiss, resolveConfirm } = useAppFeedback()
   font-size: 14px;
   line-height: 1.6;
   white-space: pre-line;
+}
+
+.app-confirm-input {
+  width: 100%;
+  padding: 10px 12px;
+  color: var(--app-text);
+  font-size: 15px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  outline: none;
+}
+
+.app-confirm-input:focus {
+  border-color: var(--app-primary);
+}
+
+.app-confirm-error {
+  margin: 0;
+  color: var(--app-danger);
+  font-size: 13px;
 }
 
 .app-confirm-actions {

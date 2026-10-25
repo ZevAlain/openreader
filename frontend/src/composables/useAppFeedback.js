@@ -1,8 +1,8 @@
 import { reactive } from 'vue'
 
-// Framework-agnostic toast + confirm services (the EP-free replacement for
-// ElMessage/ElMessageBox). One global host in App.vue renders them; call
-// sites use message.success/error/warning/info and confirm({...}).
+// Framework-agnostic toast + confirm/prompt services (the EP-free replacement
+// for ElMessage/ElMessageBox). One global host in App.vue renders them; call
+// sites use message.success/error/warning/info, confirm({...}) and prompt({...}).
 
 let seed = 0
 
@@ -40,8 +40,7 @@ function resolveConfirm(id, action) {
 /**
  * confirm({ title, message, confirmText, cancelText, tone }) →
  * Promise<'confirm' | 'cancel'>. tone 'warning'|'danger' styles the confirm
- * button; distinguishing cancel vs dialog-close lets call sites treat the X as
- * a true abort (matching EP's distinguishCancelAndClose semantics).
+ * button.
  */
 export function confirm(options = {}) {
   return new Promise(resolve => {
@@ -54,6 +53,37 @@ export function confirm(options = {}) {
       cancelText: options.cancelText || '取消',
       tone: options.tone || 'primary',
       resolve,
+    })
+  })
+}
+
+/**
+ * prompt({ title, message, value, placeholder, validator, confirmText,
+ * cancelText }) → Promise<{ value }>. Matches ElMessageBox.prompt semantics:
+ * resolves with the entered value, rejects with 'cancel' when dismissed.
+ * validator(value) returns true or a string error message.
+ */
+export function prompt(options = {}) {
+  return new Promise((resolve, reject) => {
+    const id = ++seed
+    confirmState.queue.push({
+      id,
+      title: options.title || '请输入',
+      message: options.message || '',
+      kind: 'prompt',
+      inputValue: options.value ?? '',
+      placeholder: options.placeholder || '',
+      validator: options.validator,
+      confirmText: options.confirmText || '确定',
+      cancelText: options.cancelText || '取消',
+      error: '',
+      resolve: action => {
+        if (action === null) {
+          reject('cancel')
+          return undefined
+        }
+        return resolve({ value: action })
+      },
     })
   })
 }
