@@ -10,16 +10,16 @@
     />
     <button class="progress-box" type="button" title="缓存章节" @click="$emit('cache-toggle')">{{ bookProgressLabel }}</button>
     <button class="page-step chapter-step" type="button" title="上一章" :disabled="previousDisabled" @click="$emit('previous')">
-      <el-icon :size="24"><ArrowLeft /></el-icon>
+      <v-icon :icon="mdiArrowLeft" size="24" />
     </button>
     <button class="page-step chapter-step" type="button" title="下一章" :disabled="nextDisabled" @click="$emit('next')">
-      <el-icon :size="24"><ArrowRight /></el-icon>
+      <v-icon :icon="mdiArrowRight" size="24" />
     </button>
   </footer>
 </template>
 
 <script setup>
-import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import { mdiArrowLeft, mdiArrowRight } from '@mdi/js'
 import ReaderCachePanel from './ReaderCachePanel.vue'
 
 defineProps({

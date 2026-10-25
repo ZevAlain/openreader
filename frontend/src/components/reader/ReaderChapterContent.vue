@@ -58,7 +58,18 @@
         <h3 data-pos="0">{{ block.title || '正文' }}</h3>
         <p data-pos="0" data-reader-block>{{ block.error }}</p>
         <button type="button" @click.stop="emit('retry-block', block.index)" @touchstart.stop @touchend.stop>重新加载</button>
-      </div>
+      
+    <div
+      v-if="imagePreview.visible"
+      class="reader-image-lightbox"
+      @click.self="closeImagePreview"
+    >
+      <img class="reader-lightbox-img" :src="imagePreview.images[imagePreview.index]" alt="" @click.stop>
+      <button class="reader-lightbox-close" type="button" aria-label="关闭预览" @click="closeImagePreview">×</button>
+      <button v-if="imagePreview.images.length > 1" class="reader-lightbox-nav prev" type="button" aria-label="上一张" @click.stop="stepImagePreview(-1)">‹</button>
+      <button v-if="imagePreview.images.length > 1" class="reader-lightbox-nav next" type="button" aria-label="下一张" @click.stop="stepImagePreview(1)">›</button>
+    </div>
+  </div>
       <template v-else>
         <h3 v-if="!block.hideTitle" data-pos="0">{{ block.title || '正文' }}</h3>
         <template v-for="(line, index) in block.paragraphs" :key="`${block.index}-${index}`">
@@ -70,14 +81,11 @@
           data-reader-block
           @click.stop
         >
-          <el-image
+          <img
             :src="displayImageSource(line)"
             :alt="line.alt"
-            :preview-src-list="previewImageURLs(block)"
-            :initial-index="Math.max(0, previewImageURLs(block).indexOf(displayImageSource(line)))"
-            fit="contain"
-            lazy
-            preview-teleported
+            loading="lazy"
+            @click="openImagePreview(block, line)"
             @load="emit('image-load', { blockIndex: block.index, pos: line.pos, src: line.src })"
             @error="handleImageError(line)"
           />
@@ -90,7 +98,18 @@
       </template>
     </section>
   </template>
-</template>
+
+    <div
+      v-if="imagePreview.visible"
+      class="reader-image-lightbox"
+      @click.self="closeImagePreview"
+    >
+      <img class="reader-lightbox-img" :src="imagePreview.images[imagePreview.index]" alt="" @click.stop>
+      <button class="reader-lightbox-close" type="button" aria-label="关闭预览" @click="closeImagePreview">×</button>
+      <button v-if="imagePreview.images.length > 1" class="reader-lightbox-nav prev" type="button" aria-label="上一张" @click.stop="stepImagePreview(-1)">‹</button>
+      <button v-if="imagePreview.images.length > 1" class="reader-lightbox-nav next" type="button" aria-label="下一张" @click.stop="stepImagePreview(1)">›</button>
+    </div>
+  </template>
 
 <script setup>
 import { reactive } from 'vue'
@@ -199,6 +218,26 @@ function previewImageURLs(block) {
     .filter(line => line?.type === 'image')
     .map(displayImageSource)
     .filter(Boolean)
+}
+
+const imagePreview = reactive({ visible: false, images: [], index: 0 })
+
+function openImagePreview(block, line) {
+  const images = previewImageURLs(block)
+  if (!images.length) return
+  imagePreview.images = images
+  imagePreview.index = Math.max(0, images.indexOf(displayImageSource(line)))
+  imagePreview.visible = true
+}
+
+function closeImagePreview() {
+  imagePreview.visible = false
+}
+
+function stepImagePreview(step) {
+  const total = imagePreview.images.length
+  if (!total) return
+  imagePreview.index = (imagePreview.index + step + total) % total
 }
 
 function handleImageError(line) {
@@ -371,4 +410,49 @@ p.reader-search-active {
     text-align: justify;
   }
 }
+
+.reader-image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 3200;
+  display: grid;
+  place-items: center;
+  background: rgba(16, 18, 17, 0.86);
+}
+
+.reader-lightbox-img {
+  max-width: 92vw;
+  max-height: 88vh;
+  object-fit: contain;
+}
+
+.reader-lightbox-close,
+.reader-lightbox-nav {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: #fff;
+  font-size: 28px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.reader-lightbox-close {
+  top: calc(18px + env(safe-area-inset-top));
+  right: 18px;
+  font-size: 22px;
+}
+
+.reader-lightbox-nav.prev {
+  left: 14px;
+}
+
+.reader-lightbox-nav.next {
+  right: 14px;
+}
+
 </style>

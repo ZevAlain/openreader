@@ -2,18 +2,20 @@
   <div class="title-zone">
     <div class="title">来源({{ sources.length }})</div>
     <div class="title-actions" :class="{ loading }">
-      <el-select
-        :model-value="group"
-        size="small"
-        placeholder="全部分组"
+      <v-select
+        :model-value="group || undefined"
+        :items="groupItems"
+        item-title="label"
+        item-value="value"
+        density="compact"
+        variant="outlined"
+        hide-details
         clearable
-        filterable
+        placeholder="全部分组"
         class="source-group-select"
         :disabled="opening"
-        @update:model-value="$emit('groupChange', $event || '')"
-      >
-        <el-option v-for="item in normalizedGroups" :key="item.value" :label="item.label" :value="item.value" />
-      </el-select>
+        @update:model-value="value => $emit('groupChange', value || '')"
+      />
       <button type="button" :disabled="opening || refreshing || loadingMore" @click="$emit('refresh')">{{ refreshing ? '刷新中...' : '刷新' }}</button>
       <button type="button" :disabled="opening || refreshing || loadingMore || !hasMore" @click="$emit('loadMore')">{{ loadingMore ? '加载中...' : (hasMore ? '加载更多' : '没有更多') }}</button>
     </div>
@@ -37,7 +39,7 @@
       <div class="source-latest-chapter">{{ latestChapter(source) || '无最新章节' }}</div>
       <small v-if="changingSource === sourceId(source)" class="source-status">切换中...</small>
     </button>
-    <el-empty v-if="!loading && !sources.length" description="没有找到可用来源" />
+    <p v-if="!loading && !sources.length" class="reader-empty-tip">没有找到可用来源</p>
   </div>
 </template>
 
@@ -102,6 +104,7 @@ defineEmits(['refresh', 'loadMore', 'groupChange', 'change'])
 const sourceList = ref(null)
 const sourceItemRefs = ref([])
 
+const groupItems = computed(() => normalizedGroups.value.map(item => ({ title: item.label, value: item.value })))
 const normalizedGroups = computed(() => props.groups.map((item) => {
   if (typeof item === 'string') {
     return { value: item, label: item }
@@ -321,4 +324,12 @@ function jumpToActive() {
     font-size: 15px;
   }
 }
+
+.reader-empty-tip {
+  margin: 18px 0;
+  color: var(--reader-text-muted, var(--app-text-muted));
+  font-size: 13px;
+  text-align: center;
+}
+
 </style>

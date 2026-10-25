@@ -15,7 +15,7 @@
       </span>
       <span class="reader-shelf-chapter">{{ readChapterTitle(item) || '尚未阅读' }}</span>
     </button>
-    <el-empty v-if="!loading && !books.length" description="书架暂无书籍" />
+    <p v-if="!loading && !books.length" class="reader-empty-tip">书架暂无书籍</p>
   </div>
 </template>
 
@@ -176,4 +176,12 @@ onBeforeUnmount(() => {
     grid-column: 1 / -1;
   }
 }
+
+.reader-empty-tip {
+  margin: 18px 0;
+  color: var(--reader-text-muted, var(--app-text-muted));
+  font-size: 13px;
+  text-align: center;
+}
+
 </style>

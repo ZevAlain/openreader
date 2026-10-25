@@ -1,5 +1,5 @@
 <template>
-  <el-input v-if="searchable" v-model="keyword" placeholder="搜索章节..." clearable size="small" class="toc-search" />
+  <v-text-field v-if="searchable" v-model="keyword" placeholder="搜索章节..." clearable density="compact" variant="outlined" hide-details class="toc-search" />
   <div ref="tocListRef" class="toc-list" :class="{ 'desktop-grid': desktopGrid }">
     <button
       v-for="item in filteredChapters"
@@ -14,9 +14,9 @@
         <span>{{ item.title }}</span>
         <small v-if="!desktopGrid">第 {{ item.index + 1 }} 章<template v-if="showMeta"> · {{ isCached(item) ? '已缓存' : '未缓存' }}</template></small>
       </span>
-      <el-tag v-if="!showMeta && isCached(item)" size="small" type="success" effect="plain">{{ browserCachedMap[item.index] ? '本地' : '已缓存' }}</el-tag>
+      <v-chip v-if="!showMeta && isCached(item)" size="x-small" color="success" variant="tonal" class="toc-cache-chip">{{ browserCachedMap[item.index] ? '本地' : '已缓存' }}</v-chip>
     </button>
-    <el-empty v-if="searchable && keyword && !filteredChapters.length" description="没有匹配章节" />
+    <p v-if="searchable && keyword && !filteredChapters.length" class="reader-empty-tip">没有匹配章节</p>
   </div>
 </template>
 
@@ -228,4 +228,12 @@ function scrollToBottom() {
     padding: 8px 2px;
   }
 }
+
+.reader-empty-tip {
+  margin: 18px 0;
+  color: var(--reader-text-muted, var(--app-text-muted));
+  font-size: 13px;
+  text-align: center;
+}
+
 </style>

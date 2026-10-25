@@ -4,7 +4,7 @@
     <div v-if="caching" class="reader-cache-status">
       <span>{{ statusText }}</span>
       <button class="reader-cache-cancel" type="button" title="取消缓存" aria-label="取消缓存" @click="$emit('cancel')">
-        <el-icon :size="16"><Close /></el-icon>
+        <v-icon :icon="mdiClose" size="16" />
       </button>
     </div>
     <div v-else class="reader-cache-actions">
@@ -16,7 +16,7 @@
 </template>
 
 <script setup>
-import { Close } from '@element-plus/icons-vue'
+import { mdiClose } from '@mdi/js'
 
 defineProps({
   visible: {
