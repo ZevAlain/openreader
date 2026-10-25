@@ -22,8 +22,8 @@ test('sidebar exposes the upstream single/multi search surface while preserving 
   const sidebarSearch = read('src/composables/useAppSidebarSearch.js')
   const presentation = read('src/utils/indexSearchPresentation.js')
 
-  assert.match(layout, /label="单源搜索" value="single"/)
-  assert.match(layout, /label="多源搜索\(过滤书名\/作者名\)" value="multi"/)
+  assert.match(layout, /title: '单源搜索', value: 'single'/)
+  assert.match(layout, /title: '多源搜索\(过滤书名\/作者名\)', value: 'multi'/)
   assert.doesNotMatch(layout, /label="分组搜索"/)
   assert.match(layout, /v-if="sidebarSearchType === 'multi'"[\s\S]*v-model="sidebarSearchGroup"/)
   assert.match(layout, /v-if="sidebarSearchType === 'single'"[\s\S]*v-model="sidebarSourceId"/)

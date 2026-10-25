@@ -23,47 +23,58 @@
       </div>
 
       <div class="app-shell-search">
-        <el-input
+        <v-text-field
           v-model="quickSearch"
           placeholder="搜索书籍"
+          :prepend-inner-icon="mdiMagnify"
           clearable
+          density="compact"
+          variant="outlined"
+          hide-details
           @keyup.enter="goSearch"
-          @clear="clearSearchQuery"
-        >
-          <template #prefix>
-            <el-icon><Search /></el-icon>
-          </template>
-        </el-input>
+          @click:clear="clearSearchQuery"
+        />
       </div>
 
       <section class="app-search-setting">
         <p class="app-nav-title">搜索设置</p>
-        <el-select v-model="sidebarSearchType" size="small" class="setting-select">
-          <el-option label="单源搜索" value="single" />
-          <el-option label="多源搜索(过滤书名/作者名)" value="multi" />
-        </el-select>
-        <el-select
+        <v-select
+          v-model="sidebarSearchType"
+          :items="sidebarSearchTypeItems"
+          class="setting-select"
+          density="compact"
+          variant="outlined"
+          hide-details
+        />
+        <v-select
           v-if="sidebarSearchType === 'multi'"
           v-model="sidebarSearchGroup"
-          size="small"
+          :items="sidebarGroupItems"
           class="setting-select"
+          density="compact"
+          variant="outlined"
+          hide-details
           placeholder="全部分组"
-        >
-          <el-option v-for="group in sidebarSourceGroups" :key="group.value" :label="`${group.label} (${group.count})`" :value="group.value" />
-        </el-select>
-        <el-select
+        />
+        <v-autocomplete
           v-if="sidebarSearchType === 'single'"
           v-model="sidebarSourceId"
-          size="small"
+          :items="sidebarSourceItems"
           class="setting-select"
-          filterable
+          density="compact"
+          variant="outlined"
+          hide-details
           placeholder="选择书源"
-        >
-          <el-option v-for="source in sidebarEnabledSources" :key="source.id" :label="source.name" :value="source.id" />
-        </el-select>
-        <el-select v-if="sidebarSearchType === 'multi'" v-model="sidebarConcurrent" size="small" class="setting-select">
-          <el-option v-for="count in concurrentOptions" :key="count" :label="concurrentLabel(count)" :value="count" />
-        </el-select>
+        />
+        <v-select
+          v-if="sidebarSearchType === 'multi'"
+          v-model="sidebarConcurrent"
+          :items="sidebarConcurrentItems"
+          class="setting-select"
+          density="compact"
+          variant="outlined"
+          hide-details
+        />
       </section>
 
       <section class="sidebar-recent">
@@ -124,8 +135,8 @@
           </svg>
         </a>
         <button class="sidebar-bottom-icon theme-toggle" type="button" :class="{ night: isNightTheme }" :aria-label="isNightTheme ? '切换日间主题' : '切换夜间主题'" @click="toggleNightTheme">
-          <el-icon v-if="isNightTheme"><Sunny /></el-icon>
-          <el-icon v-else><Moon /></el-icon>
+          <v-icon v-if="isNightTheme" :icon="mdiWeatherSunny" />
+          <v-icon v-else :icon="mdiWeatherNight" />
         </button>
       </div>
     </aside>
@@ -153,7 +164,7 @@
         type="button"
         @click="handleMobileTab(tab)"
       >
-        <el-icon><component :is="tab.icon" /></el-icon>
+        <v-icon :icon="tab.icon" />
         <span>{{ tab.label }}</span>
       </button>
     </nav>
@@ -178,14 +189,14 @@
             type="button"
             aria-label="切换日间主题"
             @click="toggleNightTheme"
-          ><el-icon><Sunny /></el-icon></button>
+          ><v-icon :icon="mdiWeatherSunny" /></button>
           <button
             v-else
             class="profile-theme-toggle"
             type="button"
             aria-label="切换夜间主题"
             @click="toggleNightTheme"
-          ><el-icon><Moon /></el-icon></button>
+          ><v-icon :icon="mdiWeatherNight" /></button>
         </div>
         <div class="profile-page-scroll">
           <section
@@ -207,7 +218,7 @@
                 @click="runNavAction(item); closeProfileSheet()"
               >
                 <span>{{ item.label }}</span>
-                <el-icon><ArrowRight /></el-icon>
+                <v-icon :icon="mdiChevronRight" />
               </button>
             </template>
           </section>
@@ -219,7 +230,7 @@
             </div>
             <a class="profile-group-item" href="https://github.com/ZevAlain/openreader" target="_blank" rel="noopener noreferrer">
               <span>GitHub 仓库</span>
-              <el-icon><ArrowRight /></el-icon>
+              <v-icon :icon="mdiChevronRight" />
             </a>
           </section>
         </div>
@@ -230,8 +241,8 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowRight, Moon, Notebook, Search, Sunny, User } from '@element-plus/icons-vue'
+import { confirm, message } from '../composables/useAppFeedback.js'
+import { mdiAccountOutline, mdiBookOpenOutline, mdiChevronRight, mdiMagnify, mdiWeatherNight, mdiWeatherSunny } from '@mdi/js'
 import { useUserStore } from '../stores/user'
 import { useOverlayStore } from '../stores/overlay'
 import { useBookshelfStore } from '../stores/bookshelf'
@@ -304,10 +315,13 @@ const {
   getBrowserStats: currentBrowserLocalCacheStats,
   clearServerCache: clearCache,
   clearBrowserGroup: clearBrowserLocalCacheGroup,
-  confirm: (...args) => ElMessageBox.confirm(...args),
-  onSuccess: message => ElMessage.success(message),
-  onInfo: message => ElMessage.info(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  confirm: (text, title, config = {}) =>
+    confirm({ message: text, title, tone: config.type === 'warning' ? 'warning' : 'primary' }).then(action => {
+      if (action !== 'confirm') return Promise.reject('cancel')
+    }),
+  onSuccess: text => message.success(text),
+  onInfo: text => message.info(text),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
 const {
   recentBook,
@@ -328,9 +342,9 @@ const canAccessLocalStore = computed(() => userStore.profile?.canAccessStore !==
 const profilePageVisible = ref(false)
 const { updateReady: shellUpdateReady, applyUpdate: applyShellUpdate } = useShellUpdate()
 const mobileTabs = [
-  { key: 'shelf', label: '书架', icon: Notebook, workspace: '' },
-  { key: 'search', label: '搜索', icon: Search, workspace: 'search' },
-  { key: 'profile', label: '我的', icon: User, workspace: null },
+  { key: 'shelf', label: '书架', icon: mdiBookOpenOutline, workspace: '' },
+  { key: 'search', label: '搜索', icon: mdiMagnify, workspace: 'search' },
+  { key: 'profile', label: '我的', icon: mdiAccountOutline, workspace: null },
 ]
 const activeMobileTab = computed(() => {
   if (profilePageVisible.value) return 'profile'
@@ -430,7 +444,7 @@ const {
   networkFirstRequest,
   removeBrowserCache,
   getUserScope: currentUserScope,
-  onWarning: message => ElMessage.warning(message),
+  onWarning: text => message.warning(text),
   onWorkspaceSearch: beginWorkspaceSearch,
   onSearchConfigChange: handleSidebarSearchConfigChange,
   afterNavigate: () => {
@@ -449,10 +463,17 @@ const {
   refreshReaderSettings: refreshWorkspaceReaderSettings,
   refreshOverlays: refreshWorkspaceOverlays,
   refreshCacheStats: loadCacheStats,
-  onSuccess: message => ElMessage.success(message),
-  onWarning: message => ElMessage.warning(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onSuccess: text => message.success(text),
+  onWarning: text => message.warning(text),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
+const sidebarSearchTypeItems = [
+  { title: '单源搜索', value: 'single' },
+  { title: '多源搜索(过滤书名/作者名)', value: 'multi' },
+]
+const sidebarGroupItems = computed(() => sidebarSourceGroups.value.map(group => ({ title: `${group.label} (${group.count})`, value: group.value })))
+const sidebarSourceItems = computed(() => sidebarEnabledSources.value.map(source => ({ title: source.name, value: source.id })))
+const sidebarConcurrentItems = computed(() => concurrentOptions.value.map(count => ({ title: concurrentLabel(count), value: count })))
 const isNightTheme = computed(() => reader.themeType === 'night')
 const appVersionLabel = computed(() => {
   const version = String(healthInfo.value?.version || '').trim()
@@ -612,11 +633,11 @@ async function refreshHealthInfo(showMessage = false) {
     if (showMessage) {
       const commit = shortCommit(data?.commit) || '-'
       const buildText = data?.buildDate && data.buildDate !== 'unknown' ? `构建 ${data.buildDate}` : '开发构建'
-      ElMessage.success(`${buildText} · ${commit}`)
+      message.success(`${buildText} · ${commit}`)
     }
   } catch (err) {
     healthInfo.value = null
-    if (showMessage) ElMessage.error(readError(err, '读取版本信息失败'))
+    if (showMessage) message.error(readError(err, '读取版本信息失败'))
   }
 }
 
@@ -690,7 +711,7 @@ async function openRouteBookInfoOverlay() {
     routeBookInfoOpenedKey.value = key
   } catch (error) {
     if (!routeBookInfoOperations.canCommit(operation)) return
-    ElMessage.error(readError(error, '加载书籍信息失败'))
+    message.error(readError(error, '加载书籍信息失败'))
     if ([403, 404].includes(Number(error?.response?.status))) {
       clearRouteBookInfoOverlayIntent()
     }
@@ -765,7 +786,7 @@ function consumeWorkspaceFocusIntent() {
 
 function consumeWorkspaceNoticeIntent() {
   if (route.name === 'reader' || String(route.query.workspaceNotice || '') !== 'reader-settings') return
-  ElMessage.info('阅读设置已迁移至书籍阅读页，请打开书籍后使用阅读器中的设置。')
+  message.info('阅读设置已迁移至书籍阅读页，请打开书籍后使用阅读器中的设置。')
   const { workspaceNotice: _workspaceNotice, ...query } = route.query
   router.replace({ name: 'home', query })
 }
@@ -1102,10 +1123,23 @@ function readError(err, fallback) {
   margin: 24px 0 28px;
 }
 
-.app-shell-search :deep(.el-input__wrapper) {
-  min-height: 28px;
+.app-shell-search :deep(.v-field) {
   border-radius: 14px;
-  box-shadow: 0 0 0 1px var(--app-border) inset;
+  background: var(--app-surface);
+}
+
+.app-shell-search :deep(.v-field__outline__start),
+.app-shell-search :deep(.v-field__outline__end) {
+  border-color: var(--app-border);
+}
+
+.app-shell-search :deep(.v-field--focused) .v-field__outline__start,
+.app-shell-search :deep(.v-field--focused) .v-field__outline__end {
+  border-color: var(--app-primary);
+}
+
+.app-shell-search :deep(.v-field__input) {
+  font-size: 14px;
 }
 
 .app-search-setting {
@@ -1118,11 +1152,24 @@ function readError(err, fallback) {
   width: 100%;
 }
 
-.setting-select :deep(.el-select__wrapper) {
-  min-height: 28px;
-  background: var(--app-surface);
+.setting-select :deep(.v-field) {
   border-radius: 10px;
-  box-shadow: 0 0 0 1px var(--app-border) inset;
+  background: var(--app-surface);
+}
+
+.setting-select :deep(.v-field__outline__start),
+.setting-select :deep(.v-field__outline__end) {
+  border-color: var(--app-border);
+}
+
+.setting-select :deep(.v-field--focused) .v-field__outline__start,
+.setting-select :deep(.v-field--focused) .v-field__outline__end {
+  border-color: var(--app-primary);
+}
+
+.setting-select :deep(.v-field__input),
+.setting-select :deep(.v-select__selection-text) {
+  font-size: 13px;
 }
 
 .sidebar-recent {
@@ -1575,7 +1622,7 @@ function readError(err, fallback) {
   transform: scale(0.92);
 }
 
-.mobile-tab .el-icon {
+.mobile-tab .v-icon {
   font-size: 22px;
   transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -1585,7 +1632,7 @@ function readError(err, fallback) {
   background: var(--app-primary-soft);
 }
 
-.mobile-tab.active .el-icon {
+.mobile-tab.active .v-icon {
   transform: scale(1.06);
 }
 
@@ -1711,7 +1758,7 @@ function readError(err, fallback) {
   border-bottom-right-radius: 14px;
 }
 
-.profile-group-item .el-icon {
+.profile-group-item .v-icon {
   color: var(--app-text-subtle);
   font-size: 14px;
 }

@@ -56,8 +56,8 @@ test('the mobile shell replaces the drawer with a floating glass tab bar', () =>
 test('the tab bar keeps exactly shelf, search, and profile', () => {
   const source = readFileSync(new URL('../src/layouts/AppLayout.vue', import.meta.url), 'utf8')
   assert.match(source, /\{ key: 'shelf', label: '书架'/, 'shelf tab exists')
-  assert.match(source, /\{ key: 'search', label: '搜索', icon: Search, workspace: 'search' \}/, 'search tab drives the Home workspace query')
-  assert.match(source, /\{ key: 'profile', label: '我的', icon: User, workspace: null \}/, 'profile tab exists')
+  assert.match(source, /\{ key: 'search', label: '搜索', icon: mdiMagnify, workspace: 'search' \}/, 'search tab drives the Home workspace query')
+  assert.match(source, /\{ key: 'profile', label: '我的', icon: mdiAccountOutline, workspace: null \}/, 'profile tab exists')
   assert.doesNotMatch(source, /key: 'explore', label: '发现'/, 'the explore tab is retired from the bar')
   const tabsArray = source.match(/const mobileTabs = \[([\s\S]*?)\]/)
   assert.ok(tabsArray, 'mobileTabs must be a literal array')

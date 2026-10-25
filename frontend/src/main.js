@@ -10,6 +10,7 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { createVuetify } from 'vuetify'
 import * as vuetifyComponents from 'vuetify/components'
 import * as vuetifyDirectives from 'vuetify/directives'
+import { aliases as mdiSvgAliases } from 'vuetify/iconsets/mdi-svg'
 import 'vuetify/styles'
 
 import App from './App.vue'
@@ -21,7 +22,13 @@ const pinia = createPinia()
 pinia.use(persistedState)
 
 app.use(pinia)
-app.use(createVuetify({ components: vuetifyComponents, directives: vuetifyDirectives }))
+// defaultSet 'svg' renders raw @mdi/js path strings as inline SVG (the font
+// class default has no @mdi/font installed and renders nothing).
+app.use(createVuetify({
+  components: vuetifyComponents,
+  directives: vuetifyDirectives,
+  icons: { defaultSet: 'svg', aliases: mdiSvgAliases },
+}))
 app.use(router)
 app.use(ElementPlus, { locale: zhCn })
 

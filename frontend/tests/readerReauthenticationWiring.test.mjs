@@ -32,9 +32,7 @@ test('the active Reader suspends persistence synchronously when its session is i
 
 test('session reauthentication is resolved without a hard reload or a dismissible invalid-session dialog', () => {
   assert.doesNotMatch(authDialog, /window\.location\.reload/)
-  assert.match(authDialog, /:close-on-click-modal="user\.authReason !== 'session'"/)
-  assert.match(authDialog, /:close-on-press-escape="user\.authReason !== 'session'"/)
-  assert.match(authDialog, /:show-close="user\.authReason !== 'session'"/)
+  assert.match(authDialog, /:persistent="user\.authReason === 'session'"/)
   assert.match(authDialog, /sameAuthenticatedScope/)
   assert.doesNotMatch(authDialog, /result\.previousScope[\s\S]*?!result\.sameAuthenticatedScope/)
   assert.match(authDialog, /completeReauthentication/)
