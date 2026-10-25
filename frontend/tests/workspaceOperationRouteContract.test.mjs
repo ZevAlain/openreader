@@ -35,7 +35,7 @@ test('keeps configuration in the workspace sidebar and reader settings in Reader
   assert.doesNotMatch(hostSource, /<OverlayWorkspaceSettings/, 'the shared overlay host must not mount a generic settings drawer')
   assert.doesNotMatch(hostSource, /OverlayWorkspaceSettings/, 'the retired generic settings overlay must have no host import')
   assert.match(layoutSource, /key:\s*'account'/, 'the persistent user-space section must remain addressable')
-  assert.match(layoutSource, /key:\s*'cache'/, 'the persistent cache section must remain addressable')
+  assert.match(layoutSource, /cacheManageVisible/, 'the cache manager dialog must remain reachable')
   assert.doesNotMatch(layoutSource, /global-workspace-settings-drawer/, 'AppLayout must not retain Drawer-specific ownership')
 })
 

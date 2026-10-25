@@ -13,6 +13,8 @@
         <div class="source-dialog-title">
           <h2 class="app-dialog-title">{{ isFailureMode ? '失效书源管理' : '书源管理' }}</h2>
           <div v-if="!isFailureMode" class="source-title-actions">
+            <v-btn variant="text" color="primary" size="small" @click="openTransfer('import')">导入</v-btn>
+            <v-btn variant="text" color="primary" size="small" @click="openTransfer('remote')">远程</v-btn>
             <v-btn variant="text" color="primary" size="small" @click="openEditor()">新增</v-btn>
             <v-btn variant="text" color="primary" size="small" @click="exportAllSources">导出</v-btn>
             <v-btn variant="text" color="primary" size="small" :loading="restoring" @click="restoreDefaults">恢复默认</v-btn>
@@ -183,6 +185,7 @@ import {
 } from '../../api/sources'
 import { useAuthenticatedOperationGuard } from '../../composables/useAuthenticatedOperationGuard'
 import { useReaderStore } from '../../stores/reader'
+import { useOverlayStore } from '../../stores/overlay'
 import {
   analyzeSourceCompatibility,
   sourceCompatibilityMessage,
@@ -201,7 +204,13 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const reader = useReaderStore()
+const overlay = useOverlayStore()
 const operations = useAuthenticatedOperationGuard()
+
+// 导入/远程 live in the transfer overlay; switching the intent swaps it in.
+function openTransfer(intent) {
+  overlay.openSourceManage(intent)
+}
 const sources = ref([])
 const failureSources = ref([])
 const listLoading = ref(false)

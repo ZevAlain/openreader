@@ -149,6 +149,36 @@
       @selected="handleExploreSelected"
     />
 
+    <v-dialog
+      v-model="cacheManageVisible"
+      :fullscreen="isMobileShell"
+      max-width="min(480px, calc(100vw - 48px))"
+      @update:model-value="value => value && loadCacheStats()"
+    >
+      <div class="app-dialog-card">
+        <header class="app-dialog-head">
+          <h2 class="app-dialog-title">缓存管理</h2>
+        </header>
+        <div class="app-dialog-body">
+          <div class="cache-stat-list">
+            <div class="cache-stat-row">
+              <span>服务器缓存</span>
+              <strong>{{ cacheServerSizeLabel }}</strong>
+            </div>
+            <div v-for="row in cacheBrowserRows" :key="row.group" class="cache-stat-row">
+              <span>{{ row.label }}</span>
+              <strong>{{ row.size }}</strong>
+            </div>
+          </div>
+          <p class="cache-manage-hint">一键清理会删除服务器章节缓存与当前浏览器的四类本地缓存;书籍、书源与阅读进度不受影响。</p>
+        </div>
+        <footer class="app-dialog-actions">
+          <v-btn variant="text" @click="cacheManageVisible = false">关闭</v-btn>
+          <v-btn color="error" :loading="cacheClearingAll || cacheClearing" @click="clearAllCaches">一键清理</v-btn>
+        </footer>
+      </div>
+    </v-dialog>
+
     <div class="app-workspace" @click="handleWorkspaceBackgroundClick">
       <main class="app-content">
         <slot />
@@ -249,7 +279,7 @@ import { useBookshelfStore } from '../stores/bookshelf'
 import { useReaderStore } from '../stores/reader'
 import { usePreferencesStore } from '../stores/preferences'
 import { useIndexWorkspaceStore } from '../stores/indexWorkspace'
-import { useAppCacheManagement } from '../composables/useAppCacheManagement'
+import { CACHE_BROWSER_GROUPS, useAppCacheManagement } from '../composables/useAppCacheManagement'
 import { useAppMobileNavigation } from '../composables/useAppMobileNavigation'
 import { useAppRecentReading } from '../composables/useAppRecentReading'
 import { useShellUpdate } from '../composables/useShellUpdate'
@@ -305,11 +335,12 @@ const {
 const {
   clearingServer: cacheClearing,
   sectionTitle: cacheSectionTitle,
-  clearServerLabel: clearServerChapterCacheLabel,
-  browserNavItems: browserCacheNavItems,
+  serverStats: cacheServerStats,
+  browserStats: cacheBrowserStats,
   loadStats: loadCacheStats,
   clearServer: clearSystemCache,
   resetScope: resetCacheScope,
+  formatSize: formatCacheSize,
 } = useAppCacheManagement({
   getServerStats: getCacheStats,
   getBrowserStats: currentBrowserLocalCacheStats,
@@ -368,26 +399,8 @@ function closeProfileSheet() {
 }
 const navSections = computed(() => [
   {
-    key: 'backend',
-    title: '后端设定',
-    items: [
-      { key: 'backendStatus', label: '后端状态', info: backendConnected.value ? '在线' : '未连接' },
-    ],
-  },
-  {
-    key: 'sources',
-    title: '书源设置',
-    items: [
-      { key: 'sources', label: '书源管理', action: () => overlay.openSourceManage('manage') },
-      { key: 'importSources', label: '导入书源', action: () => overlay.openSourceManage('import') },
-      { key: 'remoteSources', label: '远程书源', action: () => overlay.openSourceManage('remote') },
-      { key: 'sourceHealth', label: '失效书源', action: () => overlay.openSourceManage('health') },
-      { key: 'sourceDebug', label: '调试书源', action: openSourceDebugWorkspace },
-    ],
-  },
-  {
-    key: 'bookshelf',
-    title: '书架设置',
+    key: 'library',
+    title: '书库',
     items: [
       { key: 'bookManage', label: '书籍管理', action: () => overlay.openBookManage() },
       { key: 'bookGroup', label: '分组管理', action: () => overlay.openBookGroup('manage') },
@@ -395,12 +408,28 @@ const navSections = computed(() => [
       ...(canAccessLocalStore.value
         ? [{ key: 'localStore', label: '浏览书仓', action: () => overlay.openLocalStore() }]
         : []),
-      { key: 'refreshWorkspace', label: workspaceRefreshLoading.value ? '刷新中...' : '刷新缓存', action: refreshWorkspaceData },
+    ],
+  },
+  {
+    key: 'sources',
+    title: '书源',
+    items: [
+      { key: 'sources', label: '书源管理', action: () => overlay.openSourceManage('manage') },
+      { key: 'sourceHealth', label: '失效书源', action: () => overlay.openSourceManage('health') },
+      { key: 'sourceDebug', label: '调试书源', action: openSourceDebugWorkspace },
+    ],
+  },
+  {
+    key: 'system',
+    title: '系统',
+    items: [
+      { key: 'cacheManage', label: cacheSectionTitle.value, action: () => { cacheManageVisible.value = true } },
+      { key: 'backendStatus', label: '后端状态', info: backendConnected.value ? '在线' : '未连接' },
     ],
   },
   {
     key: 'account',
-    title: userStore.profile?.username ? `用户空间 · ${userStore.profile.username}` : '用户空间',
+    title: userStore.profile?.username ? `用户空间 · ${userStore.profile?.username}` : '用户空间',
     headingAction: userStore.profile ? { label: '注销', action: logoutUser } : null,
     items: [
       ...(userStore.profile?.role === 'admin'
@@ -408,16 +437,45 @@ const navSections = computed(() => [
         : []),
     ],
   },
-  {
-    key: 'cache',
-    title: cacheSectionTitle.value,
-    items: [
-      { key: 'cacheStats', label: '刷新缓存统计', action: loadCacheStats },
-      { key: 'clearCache', label: cacheClearing.value ? '清理中' : clearServerChapterCacheLabel.value, action: clearSystemCache },
-      ...browserCacheNavItems.value,
-    ],
-  },
 ])
+
+const cacheManageVisible = ref(false)
+const cacheClearingAll = ref(false)
+const cacheServerSizeLabel = computed(() => formatCacheSize(Number(cacheServerStats.value?.size || 0)))
+const cacheBrowserRows = computed(() => CACHE_BROWSER_GROUPS.map(row => {
+  const stats = cacheBrowserStats.value?.groups?.[row.group]
+  return {
+    ...row,
+    size: formatCacheSize(Number(stats?.size || 0)),
+  }
+}))
+
+// One click clears the server chapter cache plus every browser cache group;
+// books and sources are untouched.
+async function clearAllCaches() {
+  const action = await confirm({
+    title: '清理缓存',
+    message: '将清理服务器章节缓存与当前浏览器的全部本地缓存,书籍与书源数据不受影响。',
+    tone: 'warning',
+  })
+  if (action !== 'confirm') return
+  const operation = operations.begin('clear-all-caches')
+  cacheClearingAll.value = true
+  let failed = 0
+  try {
+    const jobs = [
+      clearCache().catch(() => { failed += 1 }),
+      ...CACHE_BROWSER_GROUPS.map(row => clearBrowserLocalCacheGroup(row.group, operation.scope).catch(() => { failed += 1 })),
+    ]
+    await Promise.all(jobs)
+    if (!operations.canCommit(operation)) return
+    await loadCacheStats()
+    if (failed) message.warning(`清理完成,${failed} 项失败`)
+    else message.success('缓存已清理')
+  } finally {
+    if (operations.canCommit(operation)) cacheClearingAll.value = false
+  }
+}
 
 const {
   quickSearch,
@@ -779,7 +837,10 @@ function consumeWorkspaceFocusIntent() {
   if (route.name === 'reader') return
   const sectionKey = String(route.query.workspaceFocus || '')
   if (!['account', 'cache'].includes(sectionKey)) return
-  focusSidebarSection(sectionKey)
+  // The old cache sidebar section became the cache dialog; account keeps
+  // focusing its persistent sidebar section.
+  if (sectionKey === 'cache') cacheManageVisible.value = true
+  else focusSidebarSection(sectionKey)
   const { workspaceFocus: _workspaceFocus, ...query } = route.query
   router.replace({ name: 'home', query })
 }
@@ -1121,6 +1182,36 @@ function readError(err, fallback) {
 
 .app-shell-search {
   margin: 24px 0 28px;
+}
+
+.cache-stat-list {
+  display: grid;
+  gap: 2px;
+  padding: 4px 0 10px;
+}
+
+.cache-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 12px;
+  border-radius: var(--app-radius-md, 14px);
+  background: var(--app-surface-muted);
+  color: var(--app-text-muted);
+  font-size: 13px;
+}
+
+.cache-stat-row strong {
+  color: var(--app-text);
+  font-size: 13px;
+}
+
+.cache-manage-hint {
+  margin: 0;
+  color: var(--app-text-subtle);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .app-shell-search :deep(.v-field) {

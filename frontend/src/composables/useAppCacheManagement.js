@@ -8,7 +8,9 @@ const EMPTY_BROWSER_STATS = {
   total: { files: 0, size: 0 },
   groups: {},
 }
-const GROUPS = [
+// Shared with the sidebar cache dialog so labels/keys stay in sync.
+export const CACHE_BROWSER_GROUPS = [
+
   { group: 'bookSourceList', label: '书源缓存' },
   { group: 'rssSources', label: 'RSS源缓存' },
   { group: 'chapterList', label: '章节列表缓存' },
@@ -41,7 +43,7 @@ export function useAppCacheManagement(options) {
       : '清空服务器缓存'
   })
   const browserNavItems = computed(() => (
-    GROUPS
+    CACHE_BROWSER_GROUPS
       .map(row => ({
         key: `clear-${row.group}`,
         label: clearingBrowserGroup.value === row.group
@@ -154,7 +156,7 @@ export function useAppCacheManagement(options) {
   }
 
   function groupLabel(groupName) {
-    return GROUPS.find(row => row.group === groupName)?.label || '缓存'
+    return CACHE_BROWSER_GROUPS.find(row => row.group === groupName)?.label || '缓存'
   }
 
   return {

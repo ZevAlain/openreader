@@ -24,8 +24,8 @@ test('opens ordinary Index source actions in the shared overlay and debugger in 
   const layout = readFileSync(layoutPath, 'utf8')
 
   assert.match(layout, /\{ key: 'sources',[\s\S]*?action:\s*\(\) => overlay\.openSourceManage\('manage'\)/)
-  assert.match(layout, /\{ key: 'importSources',[\s\S]*?action:\s*\(\) => overlay\.openSourceManage\('import'\)/)
-  assert.match(layout, /\{ key: 'remoteSources',[\s\S]*?action:\s*\(\) => overlay\.openSourceManage\('remote'\)/)
+  // import/remote moved into the source manager header (MoviePilot-style nav).
+  // 导入/远程 moved into the source manager header (MoviePilot-style nav).
   assert.match(layout, /\{ key: 'sourceHealth',[\s\S]*?action:\s*\(\) => overlay\.openSourceManage\('health'\)/)
   assert.match(layout, /\{ key: 'sourceDebug',[\s\S]*?action:\s*openSourceDebugWorkspace/)
   assert.match(layout, /window\.open\([^)]*'_target'/s)

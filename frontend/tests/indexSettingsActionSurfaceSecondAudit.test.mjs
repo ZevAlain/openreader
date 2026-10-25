@@ -52,35 +52,34 @@ function assertLabelsInOrder(source, labels) {
 }
 
 test('Index sidebar keeps the fixed-upstream action ownership and order', () => {
-  const backendSection = layout.slice(
-    layout.indexOf("key: 'backend'"),
-    layout.indexOf("key: 'sources'"),
+  const systemSection = layout.slice(
+    layout.indexOf("key: 'system'"),
+    layout.indexOf("key: 'account'"),
   )
-  assert.match(backendSection, /label: '后端状态', info: backendConnected\.value \? '在线' : '未连接'/, 'backend status is an informational row, not a second-level entry')
+  assert.match(systemSection, /key: 'cacheManage'.*cacheManageVisible\.value = true/s, 'cache management is one dialog entry, not a tree of clears')
+  assert.match(systemSection, /label: '后端状态', info: backendConnected\.value \? '在线' : '未连接'/, 'backend status is an informational row, not a second-level entry')
   const profileHost = layout
   assert.match(profileHost, /v-if="item\.info"[\s\S]*?profile-group-static/, 'info rows render as static rows without click handlers or chevrons')
-  assert.doesNotMatch(backendSection, /action:/)
-  assert.doesNotMatch(backendSection, /refreshShelfData/)
 
   const sourceSection = layout.slice(
     layout.indexOf("key: 'sources'"),
-    layout.indexOf("key: 'bookshelf'"),
+    layout.indexOf("key: 'system'"),
   )
-  const sourceLabels = ['书源管理', '导入书源', '远程书源', '失效书源', '调试书源']
+  // 导入/远程 moved into the source manager header actions (MoviePilot-style nav).
+  const sourceLabels = ['书源管理', '失效书源', '调试书源']
   assertLabelsInOrder(sourceSection, sourceLabels.map(label => `label: '${label}'`))
 
-  const shelfSection = layout.slice(
-    layout.indexOf("key: 'bookshelf'"),
-    layout.indexOf("key: 'account'"),
+  const librarySection = layout.slice(
+    layout.indexOf("key: 'library'"),
+    layout.indexOf("key: 'sources'"),
   )
-  const shelfLabels = ['书籍管理', '分组管理', '导入书籍', '浏览书仓', '刷新缓存']
-  assertLabelsInOrder(shelfSection, shelfLabels)
-  assert.doesNotMatch(shelfSection, /key:\s*'home'|label:\s*'书架'/)
-  assert.match(shelfSection, /key:\s*'refreshWorkspace'.*action:\s*refreshWorkspaceData/s)
+  const libraryLabels = ['书籍管理', '分组管理', '导入书籍', '浏览书仓']
+  assertLabelsInOrder(librarySection, libraryLabels)
+  assert.doesNotMatch(librarySection, /key:\s*'home'|label:\s*'书架'/)
 
   const navSource = layout.slice(layout.indexOf('const navSections'), layout.indexOf('const {\n  quickSearch'))
   assert.doesNotMatch(navSource, /key:\s*'other'|label:\s*'RSS'|label:\s*'替换规则'/)
-  assert(navSource.indexOf("key: 'webdav'") < navSource.indexOf("key: 'cache'"))
+  assert.match(navSource, /key:\s*'cacheManage'/, 'cache stays a first-class system entry')
 })
 
 test('Home preserves the upstream ordinary-shelf title action sequence', () => {
