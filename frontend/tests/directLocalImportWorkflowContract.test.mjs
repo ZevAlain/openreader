@@ -23,7 +23,7 @@ function directPreviewRow(key, path, token) {
 }
 
 test('the direct chooser is multiple and delegates confirmation to the shared import workflow', () => {
-  assert.match(directOverlaySource, /<el-upload[^>]*\bmultiple\b[^>]*>/, 'the direct browser chooser must accept multiple files')
+  assert.match(directOverlaySource, /<input[^>]*\bmultiple\b[^>]*>/, 'the direct browser chooser must accept multiple files')
   assert.match(directOverlaySource, /openStorageImport\('direct', files\)/, 'the chooser must hand the ordered File list to the root import controller')
   assert.match(sharedOverlaySource, /useStorageImportWorkflow/, 'direct import must reuse the storage confirmation state machine')
   assert.match(sharedOverlaySource, /source === 'direct'/, 'the shared controller must provide a direct-file adapter')
