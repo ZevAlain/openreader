@@ -1,81 +1,79 @@
 <template>
   <aside class="reader-left-rail">
     <button class="rail-item" :class="{ active: activePanel === 'shelf' }" type="button" title="书架" @click="$emit('action', 'shelf')">
-      <el-icon :size="18"><Notebook /></el-icon>
+      <v-icon :icon="mdiBookOpenOutline" size="18" />
       <span>书架</span>
     </button>
     <button class="rail-item" :class="{ active: activePanel === 'source' }" type="button" title="书源" @click="$emit('action', 'source')">
-      <el-icon :size="18"><Grid /></el-icon>
+      <v-icon :icon="mdiViewGridOutline" size="18" />
       <span>书源</span>
     </button>
     <button class="rail-item" :class="{ active: activePanel === 'toc' }" type="button" title="目录" @click="$emit('action', 'toc')">
-      <el-icon :size="18"><List /></el-icon>
+      <v-icon :icon="mdiTableOfContents" size="18" />
       <span>目录</span>
     </button>
     <button class="rail-item" :class="{ active: activePanel === 'settings' }" type="button" title="设置" @click="$emit('action', 'settings')">
-      <el-icon :size="18"><Setting /></el-icon>
+      <v-icon :icon="mdiCogOutline" size="18" />
       <span>设置</span>
     </button>
     <button class="rail-item rail-home" type="button" title="返回首页" @click="$emit('action', 'home')">
-      <el-icon :size="18"><ArrowLeft /></el-icon>
+      <v-icon :icon="mdiArrowLeft" size="18" />
       <span>首页</span>
     </button>
     <button class="rail-item" type="button" title="回到顶部" @click="$emit('action', 'top')">
-      <el-icon :size="18"><ArrowUpBold /></el-icon>
+      <v-icon :icon="mdiArrowUp" size="18" />
       <span>顶部</span>
     </button>
     <button class="rail-item" type="button" title="跳到底部" @click="$emit('action', 'bottom')">
-      <el-icon :size="18"><ArrowDownBold /></el-icon>
+      <v-icon :icon="mdiArrowDown" size="18" />
       <span>底部</span>
     </button>
   </aside>
 
   <aside class="reader-right-rail">
     <button class="round-tool" type="button" title="书签" @click="$emit('action', 'bookmarks')">
-      <el-icon :size="18"><CollectionTag /></el-icon>
+      <v-icon :icon="mdiBookmarkOutline" size="18" />
     </button>
     <button class="round-tool" type="button" title="搜索正文" @click="$emit('action', 'search')">
-      <el-icon :size="18"><Search /></el-icon>
+      <v-icon :icon="mdiMagnify" size="18" />
     </button>
     <button class="round-tool" type="button" title="书籍信息" @click="$emit('action', 'info')">
-      <el-icon :size="18"><InfoFilled /></el-icon>
+      <v-icon :icon="mdiInformationOutline" size="18" />
     </button>
     <button class="round-tool" type="button" title="重新载入章节" @click="$emit('action', 'reload')">
-      <el-icon :size="18"><RefreshRight /></el-icon>
+      <v-icon :icon="mdiRefresh" size="18" />
     </button>
     <button v-if="autoReadingSupported" class="round-tool" type="button" :class="{ active: autoReading }" title="自动阅读" @click="$emit('action', 'auto-read')">
-      <el-icon :size="18"><View /></el-icon>
+      <v-icon :icon="mdiEyeOutline" size="18" />
     </button>
     <button v-if="ttsSupported" class="round-tool" type="button" :class="{ active: ttsPlaying }" title="朗读" @click="$emit('action', 'tts')">
-      <el-icon :size="18"><Headset /></el-icon>
+      <v-icon :icon="mdiHeadphones" size="18" />
     </button>
     <button class="round-tool" type="button" :title="isNight ? '日间模式' : '夜间模式'" @click="$emit('action', 'night')">
-      <el-icon :size="18">
-        <Sunny v-if="isNight" />
-        <Moon v-else />
-      </el-icon>
+      <v-icon v-if="isNight" :icon="mdiWeatherSunny" size="18" />
+      <v-icon v-else :icon="mdiWeatherNight" size="18" />
     </button>
   </aside>
 </template>
 
 <script setup>
 import {
-  ArrowDownBold,
-  ArrowLeft,
-  ArrowUpBold,
-  CollectionTag,
-  Grid,
-  Headset,
-  InfoFilled,
-  List,
-  Moon,
-  Notebook,
-  RefreshRight,
-  Search,
-  Setting,
-  Sunny,
-  View,
-} from '@element-plus/icons-vue'
+  mdiArrowDown,
+  mdiArrowLeft,
+  mdiArrowUp,
+  mdiBookOpenOutline,
+  mdiBookmarkOutline,
+  mdiCogOutline,
+  mdiEyeOutline,
+  mdiHeadphones,
+  mdiInformationOutline,
+  mdiMagnify,
+  mdiRefresh,
+  mdiTableOfContents,
+  mdiViewGridOutline,
+  mdiWeatherNight,
+  mdiWeatherSunny,
+} from '@mdi/js'
 
 defineProps({
   autoReading: {

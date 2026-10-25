@@ -1,51 +1,51 @@
 <template>
   <header class="reader-mobile-top" :class="{ visible }">
     <button class="mobile-tool-button" type="button" @click="$emit('action', 'home')">
-      <el-icon :size="19"><ArrowLeft /></el-icon>
+      <v-icon :icon="mdiArrowLeft" size="19" />
       <span>首页</span>
     </button>
     <button class="mobile-tool-button" type="button" @click="$emit('action', 'shelf')">
-      <el-icon :size="19"><Notebook /></el-icon>
+      <v-icon :icon="mdiBookOpenOutline" size="19" />
       <span>书架</span>
     </button>
     <button class="mobile-tool-button" type="button" @click="$emit('action', 'source')">
-      <el-icon :size="19"><Grid /></el-icon>
+      <v-icon :icon="mdiViewGridOutline" size="19" />
       <span>书源</span>
     </button>
     <button class="mobile-tool-button" type="button" @click="$emit('action', 'toc')">
-      <el-icon :size="19"><List /></el-icon>
+      <v-icon :icon="mdiTableOfContents" size="19" />
       <span>目录</span>
     </button>
     <button class="mobile-tool-button" type="button" @click="$emit('action', 'settings')">
-      <el-icon :size="19"><Setting /></el-icon>
+      <v-icon :icon="mdiCogOutline" size="19" />
       <span>设置</span>
     </button>
   </header>
 
   <aside class="reader-mobile-float-tools reader-mobile-float-left" :class="{ visible, 'cache-zone-visible': cacheVisible }">
     <button type="button" title="书签" @click="$emit('action', 'bookmarks')">
-      <el-icon :size="18"><CollectionTag /></el-icon>
+      <v-icon :icon="mdiBookmarkOutline" size="18" />
     </button>
     <button type="button" title="搜索正文" @click="$emit('action', 'search')">
-      <el-icon :size="18"><Search /></el-icon>
+      <v-icon :icon="mdiMagnify" size="18" />
     </button>
     <button type="button" title="书籍信息" @click="$emit('action', 'info')">
-      <el-icon :size="18"><InfoFilled /></el-icon>
+      <v-icon :icon="mdiInformationOutline" size="18" />
     </button>
     <button type="button" title="顶部" @click="$emit('action', 'top')">
-      <el-icon :size="18"><ArrowUpBold /></el-icon>
+      <v-icon :icon="mdiArrowUp" size="18" />
     </button>
     <button type="button" title="底部" @click="$emit('action', 'bottom')">
-      <el-icon :size="18"><ArrowDownBold /></el-icon>
+      <v-icon :icon="mdiArrowDown" size="18" />
     </button>
   </aside>
 
   <aside class="reader-mobile-float-tools reader-mobile-float-right" :class="{ visible, 'cache-zone-visible': cacheVisible }">
     <button type="button" title="重新载入章节" @click="$emit('action', 'reload')">
-      <el-icon :size="18"><RefreshRight /></el-icon>
+      <v-icon :icon="mdiRefresh" size="18" />
     </button>
     <button v-if="autoReadingSupported" type="button" :class="{ active: autoReading }" title="自动阅读" @click="$emit('action', 'auto-read')">
-      <el-icon :size="18"><View /></el-icon>
+      <v-icon :icon="mdiEyeOutline" size="18" />
     </button>
     <button
       v-if="ttsSupported"
@@ -54,13 +54,11 @@
       title="朗读"
       @click="$emit('action', 'tts')"
     >
-      <el-icon :size="18"><Headset /></el-icon>
+      <v-icon :icon="mdiHeadphones" size="18" />
     </button>
     <button type="button" :title="isNight ? '日间模式' : '夜间模式'" @click="$emit('action', 'night')">
-      <el-icon :size="18">
-        <Sunny v-if="isNight" />
-        <Moon v-else />
-      </el-icon>
+      <v-icon v-if="isNight" :icon="mdiWeatherSunny" size="18" />
+      <v-icon v-else :icon="mdiWeatherNight" size="18" />
     </button>
   </aside>
 
@@ -88,7 +86,7 @@
       @cancel="$emit('cache-cancel')"
     />
     <button class="mobile-chapter-step" type="button" :disabled="previousDisabled" @click="$emit('action', 'previous')">
-      <el-icon :size="18"><ArrowLeft /></el-icon>
+      <v-icon :icon="mdiArrowLeft" size="18" />
       <span>上一章</span>
     </button>
     <button class="mobile-chapter-progress" type="button" title="缓存章节" @click="$emit('action', 'cache')">
@@ -96,30 +94,30 @@
     </button>
     <button class="mobile-chapter-step" type="button" :disabled="nextDisabled" @click="$emit('action', 'next')">
       <span>下一章</span>
-      <el-icon :size="18"><ArrowRight /></el-icon>
+      <v-icon :icon="mdiArrowRight" size="18" />
     </button>
   </footer>
 </template>
 
 <script setup>
 import {
-  ArrowDownBold,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUpBold,
-  CollectionTag,
-  Grid,
-  Headset,
-  InfoFilled,
-  List,
-  Moon,
-  Notebook,
-  RefreshRight,
-  Search,
-  Setting,
-  Sunny,
-  View,
-} from '@element-plus/icons-vue'
+  mdiArrowDown,
+  mdiArrowLeft,
+  mdiArrowRight,
+  mdiArrowUp,
+  mdiBookOpenOutline,
+  mdiBookmarkOutline,
+  mdiCogOutline,
+  mdiEyeOutline,
+  mdiHeadphones,
+  mdiInformationOutline,
+  mdiMagnify,
+  mdiRefresh,
+  mdiTableOfContents,
+  mdiViewGridOutline,
+  mdiWeatherNight,
+  mdiWeatherSunny,
+} from '@mdi/js'
 import ReaderCachePanel from './ReaderCachePanel.vue'
 
 defineProps({
