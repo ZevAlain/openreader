@@ -94,6 +94,59 @@ a {
   background: rgba(16, 18, 17, 0.4);
 }
 
+/* Shared glass card chrome for every v-dialog overlay root. */
+.app-dialog-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: calc(100dvh - 48px);
+  overflow: hidden;
+  border-radius: var(--app-radius-xl, 24px);
+  background: var(--glass-panel-bg);
+  backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-panel-border);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  color: var(--app-text);
+}
+
+.app-dialog-head {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px 12px;
+}
+
+.app-dialog-title {
+  flex: 1;
+  margin: 0;
+  min-width: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.app-dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 22px 22px;
+}
+
+.v-dialog--fullscreen .app-dialog-card {
+  max-height: 100dvh;
+  border-radius: 0;
+  border: 0;
+}
+
+.v-dialog--fullscreen .app-dialog-head {
+  padding-top: calc(18px + env(safe-area-inset-top));
+}
+
+.v-dialog--fullscreen .app-dialog-body {
+  padding-bottom: calc(22px + env(safe-area-inset-bottom));
+}
+
 .v-overlay__content .v-list {
   background: var(--glass-panel-bg);
   backdrop-filter: blur(var(--glass-blur-panel)) saturate(var(--glass-saturate));

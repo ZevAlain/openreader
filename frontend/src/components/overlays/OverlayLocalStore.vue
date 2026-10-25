@@ -1,14 +1,18 @@
 <template>
-  <el-dialog
+  <v-dialog
     v-model="overlay.localStoreVisible"
-    title="书仓文件管理"
-    width="min(1120px, calc(100vw - 48px))"
     :fullscreen="isMobile"
-    class="global-local-store-dialog"
-    destroy-on-close
+    max-width="min(1120px, calc(100vw - 48px))"
   >
-    <LocalStoreManager />
-  </el-dialog>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">书仓文件管理</h2>
+      </header>
+      <div class="app-dialog-body">
+        <LocalStoreManager />
+      </div>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>

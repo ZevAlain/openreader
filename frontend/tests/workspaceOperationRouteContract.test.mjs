@@ -48,11 +48,11 @@ test('keeps upstream-style file operations in one root manager instead of a dupl
   for (const [name, source, state] of [
     ['LocalStore', localStoreOverlaySource, 'localStoreVisible'],
   ]) {
-    assert.match(source, /<el-dialog/, `${name} must use the upstream workspace dialog shell`)
-    assert.doesNotMatch(source, /<el-drawer/, `${name} must not retain a side/bottom drawer shell`)
+    assert.match(source, /<v-dialog/, `${name} must use the upstream workspace dialog shell`)
+    assert.doesNotMatch(source, /<el-drawer|<v-navigation-drawer/, `${name} must not retain a side/bottom drawer shell`)
     assert.match(source, new RegExp(`v-model="overlay\\.${state}"`), `${name} must retain the shared overlay state`)
     assert.match(source, /:fullscreen="isMobile"/, `${name} must be fullscreen on the compact/mobile interface`)
-    assert.match(source, /destroy-on-close/, `${name} must recreate its root state after close`)
+    assert.doesNotMatch(source, /\beager\b/, `${name} must recreate its root state after close`)
   }
   assert.match(hostSource, /<OverlayLocalStore\s+:is-mobile="isMobileOverlay"/, 'LocalStore must receive the shared compact-interface state')
   assert.doesNotMatch(hostSource, /OverlayBackups/, 'the shared host must not mount a second backup manager')
