@@ -213,6 +213,10 @@
           </section>
           <section class="profile-group">
             <p class="profile-group-title">关于</p>
+            <div class="profile-group-item profile-group-static">
+              <span>版本</span>
+              <span class="profile-static-value">{{ appVersionLabel }}</span>
+            </div>
             <a class="profile-group-item" href="https://github.com/ZevAlain/openreader" target="_blank" rel="noopener noreferrer">
               <span>GitHub 仓库</span>
               <el-icon><ArrowRight /></el-icon>
