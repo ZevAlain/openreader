@@ -1,34 +1,39 @@
 <template>
-  <el-dialog
+  <v-dialog
     :model-value="modelValue"
-    title="书籍信息"
-    width="500px"
-    class="book-info-dialog"
     :fullscreen="isMiniInterface"
+    max-width="500px"
     @update:model-value="$emit('update:modelValue', $event)"
   >
-    <BookInfoPanel
-      v-if="book"
-      :book="book"
-      :source-name="sourceName"
-      :category-name="categoryName"
-      :cover-editable="coverEditable"
-      :cover-uploading="coverUploading"
-      :can-update="canUpdate"
-      :update-switch-loading="updateSwitchLoading"
-      :in-shelf="inShelf"
-      :show-local-refresh-action="showLocalRefreshAction"
-      :local-refresh-loading="localRefreshLoading"
-      :show-add-action="showAddAction"
-      :add-loading="addLoading"
-      :is-night="isNight"
-      @cover-upload="$emit('coverUpload', $event)"
-      @can-update-change="$emit('canUpdateChange', $event)"
-      @category-action="$emit('categoryAction')"
-      @local-refresh="$emit('localRefresh')"
-      @add="$emit('add')"
-    />
-  </el-dialog>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">书籍信息</h2>
+      </header>
+      <div class="app-dialog-body">
+        <BookInfoPanel
+          v-if="book"
+          :book="book"
+          :source-name="sourceName"
+          :category-name="categoryName"
+          :cover-editable="coverEditable"
+          :cover-uploading="coverUploading"
+          :can-update="canUpdate"
+          :update-switch-loading="updateSwitchLoading"
+          :in-shelf="inShelf"
+          :show-local-refresh-action="showLocalRefreshAction"
+          :local-refresh-loading="localRefreshLoading"
+          :show-add-action="showAddAction"
+          :add-loading="addLoading"
+          :is-night="isNight"
+          @cover-upload="$emit('coverUpload', $event)"
+          @can-update-change="$emit('canUpdateChange', $event)"
+          @category-action="$emit('categoryAction')"
+          @local-refresh="$emit('localRefresh')"
+          @add="$emit('add')"
+        />
+      </div>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
