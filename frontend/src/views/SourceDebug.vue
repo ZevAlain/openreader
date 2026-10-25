@@ -711,9 +711,9 @@ function readError(error, fallback) {
   min-width: 0;
   overflow: auto;
   padding: 14px;
-  background: var(--app-panel);
+  background: var(--app-surface);
   border: 1px solid var(--app-border);
-  border-radius: var(--app-radius);
+  border-radius: var(--app-radius-lg);
 }
 
 .source-debug-rule-pane {
@@ -768,9 +768,9 @@ function readError(error, fallback) {
   align-self: start;
   display: grid;
   overflow: hidden;
-  background: var(--app-panel);
+  background: var(--app-surface);
   border: 1px solid var(--app-border);
-  border-radius: var(--app-radius);
+  border-radius: var(--app-radius-lg);
 }
 
 .source-debug-command-rail button {
@@ -843,15 +843,15 @@ function readError(error, fallback) {
 }
 
 .source-debug-console .event-error {
-  color: var(--el-color-danger);
-  border-color: color-mix(in srgb, var(--el-color-danger) 40%, var(--app-border));
+  color: var(--app-danger);
+  border-color: color-mix(in srgb, var(--app-danger) 40%, var(--app-border));
 }
 
 .source-debug-compatibility-warning {
   padding: 10px;
-  color: var(--el-color-warning-dark-2);
-  background: var(--el-color-warning-light-9);
-  border: 1px solid var(--el-color-warning-light-5);
+  color: var(--app-warning);
+  background: color-mix(in srgb, var(--app-warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--app-warning) 38%, transparent);
   border-radius: var(--app-radius-sm);
 }
 

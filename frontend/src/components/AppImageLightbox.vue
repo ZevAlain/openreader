@@ -29,7 +29,7 @@ function step(delta) {
   z-index: 3200;
   display: grid;
   place-items: center;
-  background: rgba(16, 18, 17, 0.86);
+  background: var(--app-scrim);
 }
 
 .app-lightbox-img {

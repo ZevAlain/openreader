@@ -127,8 +127,8 @@ watch(
   (themeType) => {
     if (typeof document === 'undefined') return
     const dark = themeType === 'night'
-    // dark-reader drives the app shell palette; dark additionally switches
-    // Element Plus to its official dark variable set.
+    // dark-reader drives the app shell palette; dark additionally flips the
+    // Vuetify theme (main.js syncs appDark/appLight off this class).
     document.documentElement.classList.toggle('dark-reader', dark)
     document.documentElement.classList.toggle('dark', dark)
   },

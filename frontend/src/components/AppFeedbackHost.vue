@@ -143,7 +143,7 @@ function submitItem(item) {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(16, 18, 17, 0.4);
+  background: var(--app-scrim);
   pointer-events: auto;
 }
 

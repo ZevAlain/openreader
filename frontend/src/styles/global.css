@@ -88,10 +88,9 @@ a {
   color: var(--app-text-subtle);
 }
 
-/* Vuetify overlay surfaces share the glass panel skin (EP popper rules below
-   stay until the remaining Element Plus surfaces are migrated). */
+/* Vuetify overlay surfaces share the glass panel skin. */
 .v-overlay__scrim {
-  background: rgba(16, 18, 17, 0.4);
+  background: var(--app-scrim);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
 }

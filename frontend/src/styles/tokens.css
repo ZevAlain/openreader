@@ -1,37 +1,40 @@
-/* OpenReader design tokens — Liquid Glass baseline (2026-10 redesign).
+/* OpenReader design tokens — MoviePilot-style glass (2026-10-25 restyle).
    Light values live on :root; the dark set rides the same html.dark-reader
    class that has always driven the app-level theme, so reader content themes
    stay fully independent. Component code keeps consuming the same --app-*
-   names; only the values moved. */
+   names; only the values moved.
+   Dark palette: deep navy surfaces with white-alpha borders and a violet
+   accent (MoviePilot glass). Light palette: iOS system greys/colors. */
 
 :root {
   color-scheme: light;
-  --app-bg: #f2f1ec;
-  --app-bg-soft: #f7f6f1;
-  --app-surface: #fbfaf7;
-  --app-surface-muted: #eeede6;
-  --app-border: #e3e1d8;
-  --app-border-strong: #c9c7bc;
-  --app-text: #1d1c18;
-  --app-text-muted: #6d6a60;
-  --app-text-subtle: #9b978a;
-  --app-primary: #2f6f6d;
-  --app-primary-strong: #255957;
-  --app-primary-soft: #ddeee9;
+  --app-bg: #f2f2f7;
+  --app-bg-soft: #e9e9ee;
+  --app-surface: #ffffff;
+  --app-surface-muted: #e5e5ea;
+  --app-border: rgba(60, 60, 67, 0.16);
+  --app-border-strong: rgba(60, 60, 67, 0.3);
+  --app-text: #1c1c1e;
+  --app-text-muted: rgba(60, 60, 67, 0.72);
+  --app-text-subtle: rgba(60, 60, 67, 0.45);
+  --app-primary: #8d51f9;
+  --app-primary-strong: #7a3ef2;
+  --app-primary-soft: rgba(141, 81, 249, 0.14);
   --app-on-primary: #ffffff;
-  --app-accent: #9c5b34;
-  --app-warning: #b07a1c;
-  --app-danger: #c4453a;
-  --app-success: #35824b;
-  --app-nav-bg: rgba(251, 250, 247, 0.82);
-  --app-nav-active: #ddeee9;
-  --app-nav-muted: #6d6a60;
+  --app-accent: #8d51f9;
+  --app-warning: #ff9500;
+  --app-danger: #ff3b30;
+  --app-success: #248a3d;
+  --app-on-danger: #ffffff;
+  --app-nav-bg: rgba(242, 242, 247, 0.82);
+  --app-nav-active: rgba(141, 81, 249, 0.14);
+  --app-nav-muted: rgba(60, 60, 67, 0.72);
   --app-radius-sm: 10px;
   --app-radius-md: 14px;
   --app-radius-lg: 20px;
   --app-radius-xl: 26px;
-  --app-shadow-sm: 0 1px 2px rgba(29, 28, 24, 0.06);
-  --app-shadow-md: 0 18px 44px rgba(29, 28, 24, 0.14);
+  --app-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --app-shadow-md: 0 18px 44px rgba(0, 0, 0, 0.12);
   --app-sidebar-width: 260px;
   --app-content-max: 1320px;
   --app-header-height: 72px;
@@ -41,58 +44,54 @@
      low-power NAS/Raspberry Pi clients stay responsive. */
   --glass-blur-chrome: 22px;
   --glass-blur-panel: 30px;
-  --glass-chrome-bg: rgba(252, 251, 248, 0.74);
-  --glass-chrome-border: rgba(255, 255, 255, 0.55);
-  --glass-panel-bg: rgba(252, 251, 248, 0.86);
-  --glass-panel-border: rgba(255, 255, 255, 0.6);
-  --glass-shadow: 0 12px 32px rgba(29, 28, 24, 0.12);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --glass-chrome-bg: rgba(255, 255, 255, 0.72);
+  --glass-chrome-border: rgba(255, 255, 255, 0.6);
+  --glass-panel-bg: rgba(255, 255, 255, 0.86);
+  --glass-panel-border: rgba(60, 60, 67, 0.12);
+  --glass-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --glass-saturate: 1.5;
+  --app-scrim: rgba(0, 0, 0, 0.4);
 
   --reader-page-bg: #f7ecd0;
   --reader-page-text: #26211b;
   --reader-page-width: 760px;
-  --reader-toolbar-bg: rgba(252, 251, 248, 0.9);
-
+  --reader-toolbar-bg: rgba(255, 255, 255, 0.9);
 }
 
 html.dark-reader {
   color-scheme: dark;
-  --app-bg: #101211;
-  --app-bg-soft: #171918;
-  --app-surface: #1a1c1b;
-  --app-surface-muted: #242625;
-  --app-border: #2f322f;
-  --app-border-strong: #4a4e4a;
-  --app-text: #e6e4de;
-  --app-text-muted: #a3a097;
-  --app-text-subtle: #77746c;
-  --app-primary: #7fbdb2;
-  --app-primary-strong: #a3d2c9;
-  --app-primary-soft: #22403c;
-  --app-on-primary: #14201f;
-  --app-accent: #d1a171;
-  --app-warning: #d39d3d;
-  --app-danger: #e07a70;
-  --app-success: #86c28f;
-  --app-nav-bg: rgba(24, 26, 25, 0.82);
-  --app-nav-active: #22403c;
-  --app-nav-muted: #a3a097;
-  --app-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --app-shadow-md: 0 18px 44px rgba(0, 0, 0, 0.5);
+  --app-bg: #0b1322;
+  --app-bg-soft: #111b2b;
+  --app-surface: #182235;
+  --app-surface-muted: #202c42;
+  --app-border: rgba(255, 255, 255, 0.1);
+  --app-border-strong: rgba(255, 255, 255, 0.2);
+  --app-text: #f2f5fa;
+  --app-text-muted: rgba(242, 245, 250, 0.72);
+  --app-text-subtle: rgba(242, 245, 250, 0.48);
+  --app-primary: #8d51f9;
+  --app-primary-strong: #a87bff;
+  --app-primary-soft: rgba(141, 81, 249, 0.18);
+  --app-on-primary: #ffffff;
+  --app-accent: #7c9cc4;
+  --app-warning: #e4b863;
+  --app-danger: #ff7b7b;
+  --app-on-danger: #07150f;
+  --app-success: #69c59a;
+  --app-nav-bg: rgba(11, 19, 34, 0.82);
+  --app-nav-active: rgba(141, 81, 249, 0.18);
+  --app-nav-muted: rgba(242, 245, 250, 0.72);
+  --app-shadow-sm: 0 1px 2px rgba(3, 7, 18, 0.4);
+  --app-shadow-md: 0 18px 44px rgba(3, 7, 18, 0.5);
 
-  --glass-chrome-bg: rgba(21, 24, 23, 0.7);
+  --glass-chrome-bg: rgba(17, 27, 43, 0.7);
   --glass-chrome-border: rgba(255, 255, 255, 0.1);
-  --glass-panel-bg: rgba(26, 28, 27, 0.86);
+  --glass-panel-bg: rgba(24, 34, 53, 0.86);
   --glass-panel-border: rgba(255, 255, 255, 0.12);
-  --glass-shadow: 0 12px 32px rgba(0, 0, 0, 0.42);
+  --glass-shadow: 0 12px 32px rgba(3, 7, 18, 0.42);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --app-scrim: rgba(3, 7, 18, 0.66);
 
-  --reader-toolbar-bg: rgba(24, 26, 25, 0.9);
-
-  /* Re-assert the whole EP bridge: the official dark css-vars file targets
-     html.dark with equal specificity, so the dark block must own every
-
-  /* Deep EP tiers derive from the app palette so tags, alerts, fills, and
-     card surfaces follow the theme instead of EP's static dark values. */
+  --reader-toolbar-bg: rgba(17, 27, 43, 0.9);
 }

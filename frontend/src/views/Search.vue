@@ -318,6 +318,13 @@ async function runSearchStreamSSE(serial, requestToken, workspaceStamp) {
       }),
       signal: controller.signal,
     })
+    if (response.status === 401) {
+      // Native fetch bypasses the axios interceptor; mirror its session
+      // expiry handling so the app-wide re-login flow takes over.
+      localStorage.removeItem('openreader_token')
+      window.dispatchEvent(new CustomEvent('openreader:auth-required', { detail: { reason: 'session' } }))
+      return
+    }
     if (!response.ok || !response.body) {
       const detail = await response.text().catch(() => '')
       let message_ = `搜索失败 (HTTP ${response.status})`
@@ -327,6 +334,9 @@ async function runSearchStreamSSE(serial, requestToken, workspaceStamp) {
       } catch { /* keep the HTTP fallback */ }
       throw new Error(message_)
     }
+    // A superseded stream must not re-light the results surface the newer
+    // search just cleared.
+    if (serial !== searchStreamSerial) return
     searched.value = true
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
@@ -632,6 +642,10 @@ onBeforeUnmount(() => {
   }
   window.removeEventListener('resize', updateResultViewport)
   window.removeEventListener('orientationchange', updateResultViewport)
+  if (searchStreamAbort) {
+    searchStreamAbort.abort()
+    searchStreamAbort = null
+  }
   remoteRequestGate.invalidate()
   resultEditor.reset()
   searchSessionOperations.reset()
@@ -736,6 +750,10 @@ async function doSearch() {
   resetRemotePagination()
   lastSearchStats.value = { attempted: 0, failed: 0 }
   searchStreamSerial += 1
+  if (searchStreamAbort) {
+    searchStreamAbort.abort()
+    searchStreamAbort = null
+  }
   streamingMore.value = false
   const requestToken = remoteRequestGate.begin()
   const workspaceStamp = captureWorkspaceRequest(workspace, 'search')
@@ -766,9 +784,9 @@ async function doSearch() {
       message.error(readError(err, '搜索失败'))
     }
   } finally {
-    // Clear unconditionally: the streaming continuation rotates the gate
-    // token on its first window, and a stale check here would leave the
-    // search button latched in its loading state after the stream ends.
+    // Clear unconditionally: the SSE stream keeps this token for its whole
+    // life, and a stale check here would leave the search button latched in
+    // its loading state after the stream ends.
     searching.value = false
     if (isActiveRemoteRequest(requestToken, workspaceStamp)) {
       workspace.setResultLoading(false)

@@ -74,7 +74,7 @@
             size="small"
             color="success"
             class="result-add-book setting-connect"
-            :class="{ loading: addingBookKey === bookKey(group.book) }"
+            :class="{ loading: group.sources.some(source => bookKey(source) === addingBookKey) }"
             role="button"
             tabindex="0"
             @click.stop="$emit('add', group.book)"
