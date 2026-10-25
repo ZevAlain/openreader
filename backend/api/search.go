@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -36,6 +37,150 @@ type searchResponse struct {
 	// source errored" so users see why a search came back empty.
 	Attempted int `json:"attempted,omitempty"`
 	Failed    int `json:"failed,omitempty"`
+}
+
+type searchStreamEvent struct {
+	List      []engine.SearchResult `json:"list"`
+	Attempted int                   `json:"attempted"`
+	Failed    int                   `json:"failed"`
+	Done      bool                  `json:"done,omitempty"`
+}
+
+// searchStream is the reader-dev-style SSE search: one pass over every
+// source with the full concurrency budget, flushing each source's results
+// the moment it answers. A dead source burns only its own timeout instead
+// of holding a whole window hostage, so first results paint as fast as the
+// fastest source.
+func (s *Server) searchStream(c *gin.Context) {
+	userID, _ := middleware.UserID(c)
+	request, ok := decodeRemoteWorkRequest[searchRequest](c, maxRemoteSearchRequestBytes, "keyword is required")
+	if !ok {
+		return
+	}
+	req := *request
+	req.Keyword = strings.TrimSpace(req.Keyword)
+	if req.Keyword == "" || len(req.Keyword) > maxRemoteSearchKeywordBytes {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "keyword is required"})
+		return
+	}
+	if len(req.SourceIDs) > maxRemoteSearchSourceIDs {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "too many sources"})
+		return
+	}
+	sources, err := s.bookSources.ListActiveByIDs(userID, req.SourceIDs, true)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load sources"})
+		return
+	}
+	sources = orderSearchSources(sources, req.SourceIDs)
+	sortSearchSourcesByRespondTime(sources)
+	if len(sources) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "未配置书源"})
+		return
+	}
+	activeFailures, err := s.activeSourceFailures(userID, sources)
+	if err != nil {
+		activeFailures = nil
+	}
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("X-Accel-Buffering", "no")
+	flusher, canFlush := c.Writer.(http.Flusher)
+	writeEvent := func(event searchStreamEvent) bool {
+		payload, err := json.Marshal(event)
+		if err != nil {
+			return false
+		}
+		if _, err := c.Writer.Write([]byte("data: " + string(payload) + "\n\n")); err != nil {
+			return false
+		}
+		if canFlush {
+			flusher.Flush()
+		}
+		return c.Writer.Status() != http.StatusInternalServerError
+	}
+
+	ctx := c.Request.Context()
+	limit := normalizedConcurrentCount(req.ConcurrentCount, len(sources))
+	gate := make(chan struct{}, limit)
+	type streamOutcome struct {
+		results []engine.SearchResult
+		err     error
+	}
+	outcomes := make(chan streamOutcome, limit)
+	var wg sync.WaitGroup
+
+	for _, source := range sources {
+		wg.Add(1)
+		source := source
+		go func() {
+			defer wg.Done()
+			if _, suppressed := activeFailures[source.ID]; suppressed {
+				return
+			}
+			select {
+			case gate <- struct{}{}:
+			case <-ctx.Done():
+				return
+			}
+			defer func() { <-gate }()
+			searchCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+			results, err := engine.SearchBooksContext(searchCtx, source, req.Keyword)
+			cancel()
+			if err != nil && !errors.Is(err, context.Canceled) {
+				s.recordSourceFailure(userID, source, err)
+			}
+			select {
+			case outcomes <- streamOutcome{results: results, err: err}:
+			case <-ctx.Done():
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(outcomes)
+	}()
+
+	// Junk/keyword filtering and per-source dedupe run on this single
+	// collector goroutine, so the seen map needs no lock.
+	attempted, failed := 0, 0
+	seen := make(map[string]bool)
+	for outcome := range outcomes {
+		attempted++
+		event := searchStreamEvent{List: []engine.SearchResult{}, Attempted: attempted}
+		if outcome.err != nil {
+			failed++
+			event.Failed = failed
+			if !writeEvent(event) {
+				return
+			}
+			continue
+		}
+		for _, result := range outcome.results {
+			if isJunkSearchResult(result.Title) {
+				continue
+			}
+			if !resultMentionsKeyword(result, req.Keyword) {
+				continue
+			}
+			key := fmt.Sprintf("%d|%s|%s", result.SourceID, result.Title, result.Author)
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			event.List = append(event.List, result)
+		}
+		event.Failed = failed
+		if len(event.List) > 0 {
+			event.List = s.projectSearchResultCovers(userID, event.List)
+		}
+		if !writeEvent(event) {
+			return
+		}
+	}
+	writeEvent(searchStreamEvent{List: []engine.SearchResult{}, Attempted: attempted, Failed: failed, Done: true})
 }
 
 func (s *Server) search(c *gin.Context) {

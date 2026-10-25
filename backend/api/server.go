@@ -172,6 +172,7 @@ func RegisterRoutes(router *gin.Engine, cfg config.Config, database *gorm.DB, hu
 	protected.POST("/reader3/getInvalidBookSources", server.legacyInvalidBookSources)
 	protected.GET("/books/:id/chapters", server.listChapters)
 	protected.POST("/search", server.search)
+	protected.POST("/search/stream", server.searchStream)
 	protected.GET("/books/:id/chapters/:index/content", server.chapterContent)
 	protected.GET("/books/:id/bookmarks", server.listBookmarks)
 	protected.POST("/books/:id/bookmarks", server.createBookmark)

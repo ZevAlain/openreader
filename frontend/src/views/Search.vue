@@ -277,22 +277,102 @@ function finishSearchFeedback(added) {
   }
 }
 
-async function runSearchStream(serial) {
+let searchStreamAbort = null
+
+function stopSearchStream() {
+  // Supersede the stream and abort the live SSE connection so late server
+  // events cannot mutate the list the user just stopped on.
+  searchStreamSerial += 1
+  remoteRequestGate.invalidate()
+  if (searchStreamAbort) {
+    searchStreamAbort.abort()
+    searchStreamAbort = null
+  }
+  streamingMore.value = false
+  loadingMore.value = false
+  remoteHasMore.value = false
+  workspace.setResultLoading(false)
+  message.info(`已停止搜索，保留当前 ${results.value.length} 条结果`)
+}
+
+// One SSE connection sweeps every source; each event is a single source's
+// answer, so results paint at the speed of the fastest source instead of
+// waiting for whole batches.
+async function runSearchStreamSSE(serial, requestToken, workspaceStamp) {
   streamingMore.value = true
+  workspace.setResultLoading(true)
+  const controller = new AbortController()
+  searchStreamAbort = controller
   try {
-    // The cap is a belt-and-braces guard: one window per iteration and at
-    // most this many windows can exist for the source-count ceiling.
-    for (let window = 0; window < 50 && remoteHasMore.value; window += 1) {
-      if (serial !== searchStreamSerial) return
-      const outcome = await loadMoreRemote({ auto: true })
-      // busy/skipped mean no request ran — retrying synchronously would spin
-      // the microtask queue, so stop and leave the manual pill as the way on.
-      if (outcome === 'busy' || outcome === 'skipped' || outcome === 'error') return
-      if (serial !== searchStreamSerial) return
+    const token = localStorage.getItem('openreader_token')
+    const response = await fetch('/api/search/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        keyword: activeSearchKeyword.value,
+        sourceIds: activeSourceIds.value,
+        concurrentCount: activeConcurrentCount.value,
+      }),
+      signal: controller.signal,
+    })
+    if (!response.ok || !response.body) {
+      const detail = await response.text().catch(() => '')
+      let message_ = `搜索失败 (HTTP ${response.status})`
+      try {
+        const parsed = JSON.parse(detail)
+        message_ = parsed?.error || message_
+      } catch { /* keep the HTTP fallback */ }
+      throw new Error(message_)
     }
-    finishSearchFeedback(results.value.length > 0)
+    searched.value = true
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let streamDone = false
+    while (!streamDone) {
+      if (serial !== searchStreamSerial) return
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      let frameEnd
+      while ((frameEnd = buffer.indexOf('\n\n')) >= 0) {
+        const frame = buffer.slice(0, frameEnd)
+        buffer = buffer.slice(frameEnd + 2)
+        const dataLine = frame.split('\n').find(line => line.startsWith('data: '))
+        if (!dataLine) continue
+        let event
+        try {
+          event = JSON.parse(dataLine.slice(6))
+        } catch {
+          continue
+        }
+        if (!isActiveRemoteRequest(requestToken, workspaceStamp)) return
+        lastSearchStats.value.attempted = Number(event.attempted || 0)
+        lastSearchStats.value.failed = Number(event.failed || 0)
+        if (Array.isArray(event.list) && event.list.length) {
+          applyRemoteRows(event.list, true)
+        }
+        if (event.done) streamDone = true
+      }
+    }
+    remoteHasMore.value = false
+    if (isActiveRemoteRequest(requestToken, workspaceStamp)) {
+      finishSearchFeedback(results.value.length > 0)
+    }
+  } catch (err) {
+    if (err?.name === 'AbortError') return
+    if (serial === searchStreamSerial && isActiveRemoteRequest(requestToken, workspaceStamp)) {
+      message.error(err?.message || readError(err, '搜索失败'))
+    }
   } finally {
-    if (serial === searchStreamSerial) streamingMore.value = false
+    if (serial === searchStreamSerial) {
+      streamingMore.value = false
+      workspace.setResultLoading(false)
+    }
+    if (searchStreamAbort === controller) searchStreamAbort = null
   }
 }
 // The hot-rank board is temporarily retired from the UI; flip this flag to
@@ -388,16 +468,7 @@ function searchHotTitle(title) {
   doSearch()
 }
 
-function stopSearchStream() {
-  // Supersede the stream and drop any in-flight window so its late response
-  // cannot mutate the list the user just stopped on.
-  searchStreamSerial += 1
-  remoteRequestGate.invalidate()
-  streamingMore.value = false
-  loadingMore.value = false
-  workspace.setResultLoading(false)
-  message.info(`已停止搜索，保留当前 ${results.value.length} 条结果`)
-}
+
 const searchMode = ref('remote')
 const sources = ref([])
 const mobileGroupChips = computed(() => {
@@ -674,6 +745,12 @@ async function doSearch() {
   activeConcurrentCount.value = searchType.value === 'single' ? 1 : concurrentCount.value
   activeSearchIsSingleSource.value = activeSourceIds.value.length === 1
   try {
+    if (!activeSearchIsSingleSource.value) {
+      // The whole multi-source sweep runs over one SSE connection; each
+      // source's hits render the moment that source answers.
+      runSearchStreamSSE(searchStreamSerial, requestToken, workspaceStamp)
+      return
+    }
     const { added, current } = await requestRemoteSearch({
       append: false,
       page: 1,
@@ -683,13 +760,6 @@ async function doSearch() {
     })
     if (!current) return
     searched.value = true
-    if (remoteHasMore.value && !activeSearchIsSingleSource.value) {
-      // First window is in — keep streaming the remaining windows in the
-      // background so results appear progressively instead of after every
-      // source has finished.
-      runSearchStream(searchStreamSerial)
-      return
-    }
     finishSearchFeedback(added)
   } catch (err) {
     if (isActiveRemoteRequest(requestToken, workspaceStamp)) {
@@ -749,6 +819,16 @@ async function loadMoreRemote(options = {}) {
   }
 }
 
+function applyRemoteRows(incoming, append) {
+  const { rows, added } = mergeRemoteSearchResults(append ? results.value : [], incoming)
+  const ranked = rankSearchResults(rows, activeSearchKeyword.value)
+  results.value = matchMode.value === 'strict'
+    ? ranked.filter(item => String(item?.title || '').trim().toLowerCase() === String(activeSearchKeyword.value || '').trim().toLowerCase())
+    : ranked
+  workspace.replaceResultRows(results.value, remoteWorkspaceContinuation())
+  return added
+}
+
 function isActiveRemoteRequest(requestToken, workspaceStamp) {
   return remoteRequestGate.isCurrent(requestToken)
     && isWorkspaceRequestCurrent(workspace, workspaceStamp)
@@ -803,11 +883,7 @@ async function requestRemoteSearch({ append, page, lastIndex, requestToken, work
     return { added: 0, current: false }
   }
   const incoming = Array.isArray(data) ? data : (data?.list || [])
-  const { rows, added } = mergeRemoteSearchResults(append ? results.value : [], incoming)
-  const ranked = rankSearchResults(rows, activeSearchKeyword.value)
-  results.value = matchMode.value === 'strict'
-    ? ranked.filter(item => String(item?.title || '').trim().toLowerCase() === String(activeSearchKeyword.value || '').trim().toLowerCase())
-    : ranked
+  const added = applyRemoteRows(incoming, append)
   if (activeSearchIsSingleSource.value) {
     searchPage.value = Number(data?.page || page)
     searchLastIndex.value = -1

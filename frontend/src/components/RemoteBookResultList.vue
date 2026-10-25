@@ -43,7 +43,34 @@
               />
             </v-list>
           </v-menu>
+          <v-menu v-if="group.sources.length > 1">
+            <template #activator="{ props: menuProps }">
+              <v-chip
+                v-bind="menuProps"
+                size="small"
+                color="success"
+                class="result-add-book setting-connect"
+                :class="{ loading: addingBookKey === bookKey(group.book) }"
+                @click.stop
+                @keydown.enter.prevent.stop
+              >加入书架</v-chip>
+            </template>
+            <v-list density="compact" class="result-source-list">
+              <v-list-item
+                v-for="source in group.sources"
+                :key="bookKey(source)"
+                :title="sourceName(source)"
+                :subtitle="remoteBookLatestChapter(source) ? `最新：${remoteBookLatestChapter(source)}` : ''"
+                @click="$emit('add', source)"
+              >
+                <template #append>
+                  <v-icon :icon="mdiPlusCircleOutline" size="16" color="success" />
+                </template>
+              </v-list-item>
+            </v-list>
+          </v-menu>
           <v-chip
+            v-else
             size="small"
             color="success"
             class="result-add-book setting-connect"
@@ -62,7 +89,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { mdiLayers, mdiPencilOutline } from '@mdi/js'
+import { mdiLayers, mdiPencilOutline, mdiPlusCircleOutline } from '@mdi/js'
 import BookCover from './BookCover.vue'
 import {
   groupRemoteResultsByBook,
