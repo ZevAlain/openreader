@@ -54,7 +54,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { message } from '../composables/useAppFeedback.js'
 import { useUserStore } from '../stores/user'
 
 defineProps({
@@ -81,7 +81,7 @@ async function submit() {
     const result = await user.login(username.value, password.value, mode.value)
     emit('success', result)
   } catch (err) {
-    ElMessage.error(err?.response?.data?.error?.message || err?.response?.data?.error || '请求失败')
+    message.error(err?.response?.data?.error?.message || err?.response?.data?.error || '请求失败')
   } finally {
     loading.value = false
   }

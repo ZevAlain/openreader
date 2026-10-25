@@ -40,7 +40,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { message } from '../composables/useAppFeedback.js'
 import { uploadAsset } from '../api/uploads'
 import { useReaderStore } from '../stores/reader'
 import { currentViewportWidth, shouldUseMiniInterface } from '../utils/responsive'
@@ -103,9 +103,9 @@ async function uploadCover(data) {
   try {
     const { data: result } = await uploadAsset({ file, type: 'cover' })
     draft.customCoverUrl = result.url
-    ElMessage.success('封面已上传')
+    message.success('封面已上传')
   } catch (err) {
-    ElMessage.error(readError(err, '上传封面失败'))
+    message.error(readError(err, '上传封面失败'))
   } finally {
     uploadingCover.value = false
   }
@@ -114,7 +114,7 @@ async function uploadCover(data) {
 function submit() {
   const title = draft.title.trim()
   if (!title) {
-    ElMessage.warning('书名不能为空')
+    message.warning('书名不能为空')
     return
   }
   emit('save', {

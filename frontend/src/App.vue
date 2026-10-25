@@ -27,6 +27,7 @@
     正在进入登录页面…
   </div>
   <AuthDialog />
+  <AppFeedbackHost />
 </template>
 
 <script setup>
@@ -34,6 +35,7 @@ import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from './layouts/AppLayout.vue'
 import AuthDialog from './components/AuthDialog.vue'
+import AppFeedbackHost from './components/AppFeedbackHost.vue'
 import GlobalOverlayHost from './components/GlobalOverlayHost.vue'
 import { useUserStore } from './stores/user'
 import { useReaderStore } from './stores/reader'
