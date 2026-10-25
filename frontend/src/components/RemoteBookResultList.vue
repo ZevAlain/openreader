@@ -15,7 +15,7 @@
       <span class="list-main info">
         <span class="book-operation">
           <button class="operation-icon" type="button" title="编辑" @click.stop="$emit('edit', book)">
-            <el-icon><Edit /></el-icon>
+            <v-icon :icon="mdiPencilOutline" />
           </button>
         </span>
         <strong class="name edit">{{ remoteBookTitle(book) }}</strong>
@@ -23,9 +23,9 @@
           {{ latestChapterLabel(book) }}：{{ remoteBookLatestChapter(book) }}
         </span>
         <span class="result-add-zone">
-          <el-tag
-            type="success"
-            :effect="isNight ? 'dark' : 'light'"
+          <v-chip
+            size="small"
+            color="success"
             class="result-add-book setting-connect"
             :class="{ loading: addingBookKey === bookKey(book) }"
             role="button"
@@ -33,7 +33,7 @@
             @click.stop="$emit('add', book)"
             @keydown.enter.prevent.stop="$emit('add', book)"
             @keydown.space.prevent.stop="$emit('add', book)"
-          >加入书架</el-tag>
+          >加入书架</v-chip>
         </span>
       </span>
     </article>
@@ -41,7 +41,7 @@
 </template>
 
 <script setup>
-import { Edit } from '@element-plus/icons-vue'
+import { mdiPencilOutline } from '@mdi/js'
 import BookCover from './BookCover.vue'
 import {
   remoteBookAuthor,

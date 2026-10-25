@@ -30,7 +30,7 @@ test('result cards confirm groups while BookInfo keeps the upstream direct add a
   assert.match(overlay, /finishBookAddCategories\(categoryIds = null\)/)
   assert.match(results, /\$emit\('add', book\)/)
   assert.match(results, /加入书架/)
-  assert.match(results, /:effect="isNight \? 'dark' : 'light'"/)
+  assert.match(results, /<v-chip[\s\S]*?加入书架<\/v-chip>/)
   assert.match(bookInfoOverlay, /useRemoteBookAddToShelf/)
   assert.match(bookInfoOverlay, /addToShelf\.addRemoteBook\(/)
   assert.doesNotMatch(bookInfoOverlay, /overlay\.selectBookAddCategories/)
