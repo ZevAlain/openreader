@@ -43,12 +43,13 @@
         <span class="latest-title">最新： {{ latestChapterLabel }}</span>
         <span v-if="inShelf" class="book-prop-btn inline-update-switch">
           追更
-          <el-switch
+          <v-switch
             :model-value="canUpdateValue"
             :loading="updateSwitchLoading"
-           
-           
-            @change="value => emit('can-update-change', value)"
+            color="primary"
+            density="compact"
+            hide-details
+            @update:model-value="value => emit('can-update-change', value)"
           />
         </span>
       </div>
@@ -59,9 +60,9 @@
       </div>
 
       <div v-else-if="showAddAction" class="book-prop book-operate-zone">
-        <el-tag
-          type="success"
-          :effect="isNight ? 'dark' : 'light'"
+        <v-chip
+          size="small"
+          color="success"
           class="book-operate-btn"
           :class="{ loading: addLoading }"
           role="button"
@@ -69,7 +70,7 @@
           @click.stop="emitAdd"
           @keydown.enter.prevent="emitAdd"
           @keydown.space.prevent="emitAdd"
-        >加入书架</el-tag>
+        >加入书架</v-chip>
       </div>
     </div>
 
@@ -236,7 +237,7 @@ function emitAdd() {
   float: right;
   height: 19px;
   padding: 0;
-  color: var(--el-color-primary);
+  color: var(--app-primary);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -273,7 +274,7 @@ function emitAdd() {
 }
 
 .book-operate-btn:focus-visible {
-  outline: 2px solid var(--el-color-success-light-5);
+  outline: 2px solid var(--app-success);
   outline-offset: 2px;
 }
 
