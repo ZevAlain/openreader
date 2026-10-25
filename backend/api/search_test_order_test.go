@@ -3,6 +3,7 @@ package api
 import (
 	"testing"
 
+	"openreader/backend/engine"
 	"openreader/backend/models"
 )
 
@@ -40,4 +41,19 @@ func TestIsJunkSearchResult(t *testing.T) {
 			t.Fatalf("good result filtered: %q", title)
 		}
 	}
+}
+
+func TestResultMentionsKeyword(t *testing.T) {
+	assert := func(title, author, keyword string, want bool) {
+		t.Helper()
+		if got := resultMentionsKeyword(engine.SearchResult{Title: title, Author: author}, keyword); got != want {
+			t.Fatalf("mentions(%q,%q,%q) = %v, want %v", title, author, keyword, got, want)
+		}
+	}
+	assert("遮天", "辰东", "遮天", true)
+	assert("医手遮天：皇叔请自重", "", "遮天", true)
+	assert("", "辰东", "遮天", false)
+	assert("称霸异世界", "", "遮天", false)
+	assert("末日的虫族", "遮天作者", "遮天", true)
+	assert("任何书", "任何作者", "", true)
 }

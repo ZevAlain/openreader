@@ -202,6 +202,12 @@ func (s *Server) concurrentSearchFrom(parent context.Context, userID uint, sourc
 				if isJunkSearchResult(result.Title) {
 					continue
 				}
+				// Some sources answer a miss with their whole recommendation
+				// list; a loose search still requires the keyword to appear in
+				// the title or author so unrelated books never surface.
+				if !resultMentionsKeyword(result, keyword) {
+					continue
+				}
 				key := result.Title + "|" + result.Author
 				if seen[key] {
 					continue
@@ -223,6 +229,15 @@ func (s *Server) concurrentSearchFrom(parent context.Context, userID uint, sourc
 		start = end
 	}
 	return aggregated, nextIndex, attempted, failed
+}
+
+func resultMentionsKeyword(result engine.SearchResult, keyword string) bool {
+	needle := strings.TrimSpace(strings.ToLower(keyword))
+	if needle == "" {
+		return true
+	}
+	return strings.Contains(strings.ToLower(result.Title), needle) ||
+		strings.Contains(strings.ToLower(result.Author), needle)
 }
 
 // Some community sources' rules capture the search page's own heading (e.g.

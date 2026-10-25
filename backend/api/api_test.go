@@ -358,10 +358,15 @@ func TestSearchPaginationUsesPageForSingleSourceAndCursorForMultipleSources(t *t
 			if page == "" {
 				page = "1"
 			}
+			keyword := request.URL.Query().Get("q")
+			if keyword == "" {
+				keyword = sourceName
+			}
 			body := fmt.Sprintf(
-				`<article class="book"><a class="name" href="/book/%s/%s">%s 第%s页</a><span class="author">%s作者</span><span class="updated">刚刚更新</span></article>`,
+				`<article class="book"><a class="name" href="/book/%s/%s">%s%s 第%s页</a><span class="author">%s作者</span><span class="updated">刚刚更新</span></article>`,
 				sourceName,
 				page,
+				keyword,
 				sourceName,
 				page,
 				sourceName,
@@ -412,7 +417,7 @@ func TestSearchPaginationUsesPageForSingleSourceAndCursorForMultipleSources(t *t
 		t.Fatal(err)
 	}
 	if singleResp.Page != 2 || !singleResp.HasMore || singleResp.LastIndex != -1 ||
-		len(singleResp.List) != 1 || singleResp.List[0].Title != "source-a 第2页" ||
+		len(singleResp.List) != 1 || singleResp.List[0].Title != "分页source-a 第2页" ||
 		singleResp.List[0].UpdateTime != "刚刚更新" {
 		t.Fatalf("unexpected single source response: %+v", singleResp)
 	}
@@ -517,7 +522,7 @@ func TestBookSourceCustomOrderIsStableAcrossListsAndConcurrentSearch(t *testing.
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body: io.NopCloser(strings.NewReader(
-					`<article class="book"><a class="name" href="/book/` + name + `">` + name + `</a></article>`,
+					`<article class="book"><a class="name" href="/book/` + name + `">排序` + name + `</a></article>`,
 				)),
 				Header:  make(http.Header),
 				Request: request,
@@ -9658,7 +9663,7 @@ func TestEnabledExploreDisablesOnlyDiscovery(t *testing.T) {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body: io.NopCloser(strings.NewReader(`<html><body>
-					<div class="book"><a class="link" href="/book"><span class="title">仍可搜索</span></a></div>
+					<div class="book"><a class="link" href="/book"><span class="title">测试仍可搜索</span></a></div>
 				</body></html>`)),
 				Header:  make(http.Header),
 				Request: req,

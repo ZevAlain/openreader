@@ -71,7 +71,7 @@ func TestSearchMultiCursorKeepsOriginalSourceOrdinalsAcrossFailureSuppression(t 
 		Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(strings.NewReader(`<div class="book"><span class="name">` + request.URL.Host + `</span></div>`)),
+				Body:       io.NopCloser(strings.NewReader(`<div class="book"><span class="name">游标` + request.URL.Host + `</span></div>`)),
 				Header:     make(http.Header),
 				Request:    request,
 			}, nil
@@ -99,7 +99,7 @@ func TestSearchMultiCursorKeepsOriginalSourceOrdinalsAcrossFailureSuppression(t 
 	if second.LastIndex != 2 || second.HasMore {
 		t.Fatalf("failure-suppressed source must not renumber the cursor: %#v", second)
 	}
-	if len(second.List) != 1 || second.List[0].Title != "cursor-three.example" {
+	if len(second.List) != 1 || second.List[0].Title != "游标cursor-three.example" {
 		t.Fatalf("second multi cursor result = %#v, want only the third source", second.List)
 	}
 }
