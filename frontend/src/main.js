@@ -5,6 +5,12 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
+// Vuetify 4 migration: coexists with Element Plus view-by-view until the
+// final phase removes EP entirely.
+import { createVuetify } from 'vuetify'
+import * as vuetifyComponents from 'vuetify/components'
+import * as vuetifyDirectives from 'vuetify/directives'
+import 'vuetify/styles'
 
 import App from './App.vue'
 import router from './router'
@@ -15,6 +21,7 @@ const pinia = createPinia()
 pinia.use(persistedState)
 
 app.use(pinia)
+app.use(createVuetify({ components: vuetifyComponents, directives: vuetifyDirectives }))
 app.use(router)
 app.use(ElementPlus, { locale: zhCn })
 

@@ -1,38 +1,53 @@
 <template>
-  <div>
-    <el-alert
+  <div class="auth-form">
+    <v-alert
       v-if="reason === 'session'"
-      title="登录状态已失效，请重新登录"
       type="warning"
-      :closable="false"
-      show-icon
+      variant="tonal"
+      icon="$warning"
+      density="comfortable"
       class="auth-alert"
-    />
+    >
+      登录状态已失效，请重新登录
+    </v-alert>
 
-    <el-form @submit.prevent="submit" label-position="top" size="large">
-      <el-form-item label="用户名">
-        <el-input v-model="username" placeholder="请输入用户名" autocomplete="username" />
-      </el-form-item>
-      <el-form-item label="密码">
-        <el-input
-          v-model="password"
-          type="password"
-          placeholder="请输入密码"
-          autocomplete="current-password"
-          show-password
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" :loading="loading" native-type="submit" class="auth-btn">
-          {{ mode === 'login' ? '登录' : '注册' }}
-        </el-button>
-      </el-form-item>
-    </el-form>
+    <form class="auth-fields" @submit.prevent="submit">
+      <v-text-field
+        v-model="username"
+        label="用户名"
+        placeholder="请输入用户名"
+        autocomplete="username"
+        variant="filled"
+        rounded="lg"
+        hide-details="auto"
+      />
+      <v-text-field
+        v-model="password"
+        label="密码"
+        type="password"
+        placeholder="请输入密码"
+        autocomplete="current-password"
+        variant="filled"
+        rounded="lg"
+        hide-details="auto"
+      />
+      <v-btn
+        type="submit"
+        color="primary"
+        size="large"
+        rounded="pill"
+        block
+        :loading="loading"
+        class="auth-btn"
+      >
+        {{ mode === 'login' ? '登录' : '注册' }}
+      </v-btn>
+    </form>
 
     <div class="auth-switch">
-      <el-button link type="primary" @click="toggleMode">
+      <v-btn variant="text" color="primary" @click="toggleMode">
         {{ mode === 'login' ? '创建新账号' : '已有账号，去登录' }}
-      </el-button>
+      </v-btn>
     </div>
   </div>
 </template>

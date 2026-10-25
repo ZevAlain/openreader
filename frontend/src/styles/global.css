@@ -251,3 +251,14 @@ html.dark-reader .el-button--primary {
     -webkit-user-select: text;
   }
 }
+
+/* Vuetify login form (migration pilot). */
+.auth-form .auth-fields {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-form .auth-switch {
+  margin-top: 4px;
+  text-align: center;
+}
