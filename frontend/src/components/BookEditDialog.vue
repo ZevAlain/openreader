@@ -1,41 +1,40 @@
 <template>
-  <el-dialog
+  <v-dialog
     :model-value="modelValue"
-    title="编辑书籍"
-    width="540px"
+    max-width="540px"
     :fullscreen="isMobile"
     @update:model-value="emit('update:modelValue', $event)"
-    @open="resetDraft"
   >
-    <el-form label-position="top" class="book-editor">
-      <el-form-item label="书名">
-        <el-input v-model="draft.title" />
-      </el-form-item>
-      <el-form-item label="作者">
-        <el-input v-model="draft.author" />
-      </el-form-item>
-      <el-form-item label="自定义封面（上传）">
-        <div class="cover-upload-row">
-          <el-input v-model="draft.customCoverUrl" placeholder="请上传 JPG/PNG 封面" readonly />
-          <el-upload
-            accept="image/jpg,image/png,image/jpeg"
-            :show-file-list="false"
-            :auto-upload="false"
-            @change="uploadCover"
-          >
-            <el-button :loading="uploadingCover">上传</el-button>
-          </el-upload>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">编辑书籍</h2>
+      </header>
+      <div class="app-dialog-body">
+        <div class="book-editor">
+          <v-text-field v-model="draft.title" label="书名" variant="outlined" density="compact" hide-details />
+          <v-text-field v-model="draft.author" label="作者" variant="outlined" density="compact" hide-details />
+          <div class="cover-field">
+            <div class="cover-upload-row">
+              <v-text-field v-model="draft.customCoverUrl" label="自定义封面（上传）" placeholder="请上传 JPG/PNG 封面" readonly variant="outlined" density="compact" hide-details />
+              <v-btn :loading="uploadingCover" @click="pickCover">上传</v-btn>
+              <input
+                ref="coverInput"
+                class="cover-file-input"
+                type="file"
+                accept="image/jpg,image/png,image/jpeg"
+                @change="onCoverChange"
+              >
+            </div>
+          </div>
+          <v-textarea v-model="draft.intro" label="简介" :rows="5" variant="outlined" hide-details />
         </div>
-      </el-form-item>
-      <el-form-item label="简介">
-        <el-input v-model="draft.intro" type="textarea" :rows="5" />
-      </el-form-item>
-    </el-form>
-    <template #footer>
-      <el-button @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button type="primary" :loading="saving" @click="submit">保存</el-button>
-    </template>
-  </el-dialog>
+      </div>
+      <footer class="app-dialog-actions">
+        <v-btn variant="text" @click="emit('update:modelValue', false)">取消</v-btn>
+        <v-btn color="primary" :loading="saving" @click="submit">保存</v-btn>
+      </footer>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
@@ -64,6 +63,7 @@ const emit = defineEmits(['update:modelValue', 'save'])
 const reader = useReaderStore()
 const windowWidth = ref(currentViewportWidth())
 const uploadingCover = ref(false)
+const coverInput = ref(null)
 const draft = reactive({
   title: '',
   author: '',
@@ -94,6 +94,16 @@ function resetDraft() {
     customCoverUrl: props.book?.customCoverUrl || '',
     intro: props.book?.intro || '',
   })
+}
+
+function pickCover() {
+  coverInput.value?.click()
+}
+
+function onCoverChange(event) {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (file) uploadCover({ file })
 }
 
 async function uploadCover(data) {
@@ -133,17 +143,23 @@ function readError(err, fallback) {
 <style scoped>
 .book-editor {
   display: grid;
+  gap: 12px;
 }
 
 .cover-upload-row {
   display: flex;
   width: 100%;
+  align-items: center;
   gap: 8px;
 }
 
-.cover-upload-row .el-input {
+.cover-upload-row .v-text-field {
   min-width: 0;
   flex: 1;
+}
+
+.cover-file-input {
+  display: none;
 }
 
 @media (max-width: 750px) {
