@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
@@ -159,6 +160,9 @@ func (s *Server) concurrentSearchFrom(parent context.Context, userID uint, sourc
 	if start >= len(sources) {
 		return []engine.SearchResult{}, len(sources) - 1, 0, 0
 	}
+	// Same book from different sources must all reach the client: the search
+	// UI groups them per book and offers a per-source picker. Only duplicates
+	// inside one source's own response collapse here.
 	seen := make(map[string]bool)
 	aggregated := make([]engine.SearchResult, 0)
 	nextIndex := lastIndex
@@ -208,7 +212,7 @@ func (s *Server) concurrentSearchFrom(parent context.Context, userID uint, sourc
 				if !resultMentionsKeyword(result, keyword) {
 					continue
 				}
-				key := result.Title + "|" + result.Author
+				key := fmt.Sprintf("%d|%s|%s", result.SourceID, result.Title, result.Author)
 				if seen[key] {
 					continue
 				}

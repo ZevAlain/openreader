@@ -62,6 +62,26 @@ export function remoteBookKey(book = {}, fallbackSourceId = '') {
   return `${remoteBookSourceId(book, fallbackSourceId)}-${remoteBookUrl(book)}`
 }
 
+// Multi-source search returns one row per source bookUrl; readers think in
+// books. Group rows by trimmed title+author (first ranked row is the card
+// face) so the UI can offer a "found in these sources" picker.
+export function groupRemoteResultsByBook(books = []) {
+  const groups = []
+  const indexByKey = new Map()
+  for (const book of Array.isArray(books) ? books : []) {
+    const key = `${String(remoteBookTitle(book) || '').trim().toLowerCase()}|${String(remoteBookAuthor(book) || '').trim().toLowerCase()}`
+    const existing = indexByKey.get(key)
+    if (existing) {
+      existing.sources.push(book)
+      continue
+    }
+    const group = { book, sources: [book] }
+    indexByKey.set(key, group)
+    groups.push(group)
+  }
+  return groups
+}
+
 export function remoteBookCreatePayload(book = {}, categoryIds = [], options = {}) {
   return {
     title: remoteBookTitle(book),

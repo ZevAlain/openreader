@@ -68,13 +68,13 @@ test('search and explore share one flat upstream result list and result editor',
   const editor = read('src/components/RemoteBookJsonEditorDialog.vue')
 
   assert.match(result, /class="book-list wrapper remote-result-list"/)
-  assert.match(result, /v-for="book in books"/)
+  assert.match(result, /v-for="group in groupedBooks"/)
   assert.match(result, /class="book-row book remote-result-book"/)
   assert.match(result, /fallbackSourceId/)
   assert.match(result, /cover-img[\s\S]*book-operation[\s\S]*class="name edit"[\s\S]*class="last-chapter"[\s\S]*result-add-book/)
   assert.doesNotMatch(result, /class="sub"/, 'the metadata sub-line under the title is retired')
-  assert.match(result, /@click\.stop="\$emit\('edit', book\)"/)
-  assert.match(result, /@click\.stop="\$emit\('add', book\)"/)
+  assert.match(result, /@click\.stop="\$emit\('edit', group\.book\)"/)
+  assert.match(result, /@click\.stop="\$emit\('add', group\.book\)"/)
   assert.doesNotMatch(result, /source-result-group|source-result-head|result-intro|remoteBookKind|remoteBookWordCount|remoteBookUpdateTime/)
 
   for (const source of [search, discover]) {

@@ -73,12 +73,12 @@ function submitItem(item) {
 
 .app-toast-stack {
   position: fixed;
-  left: 50%;
-  top: calc(16px + env(safe-area-inset-top));
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
   display: grid;
   gap: 8px;
-  width: min(92vw, 420px);
-  transform: translateX(-50%);
+  width: min(92vw, 380px);
+  justify-items: end;
 }
 
 .app-toast {
@@ -118,13 +118,22 @@ function submitItem(item) {
 
 .app-toast-enter-active,
 .app-toast-leave-active {
-  transition: opacity 180ms ease, transform 220ms cubic-bezier(0.34, 1.3, 0.64, 1);
+  transition: opacity 180ms ease, transform 260ms cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
 .app-toast-enter-from,
 .app-toast-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translate(28px, 20px);
+}
+
+/* Mobile toasts stay above the floating glass tab bar. */
+@media (max-width: 750px) {
+  .app-toast-stack {
+    right: 12px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    width: min(88vw, 340px);
+  }
 }
 
 .app-confirm-scrim {
