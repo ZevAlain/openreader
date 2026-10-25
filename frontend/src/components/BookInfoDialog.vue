@@ -2,7 +2,7 @@
   <v-dialog
     :model-value="modelValue"
     :fullscreen="isMiniInterface"
-    max-width="500px"
+    max-width="min(500px, calc(100vw - 48px))"
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <div class="app-dialog-card">

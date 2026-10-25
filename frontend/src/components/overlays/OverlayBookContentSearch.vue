@@ -2,7 +2,7 @@
   <v-dialog
     v-if="isNormalPage"
     v-model="overlay.searchBookContentVisible"
-    width="min(1000px, max(750px, 70vw))"
+    width="min(1000px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     class="global-content-search-dialog"
     @after-enter="handleOpened"
@@ -207,10 +207,7 @@ function readError(error, fallback) {
 }
 
 .content-search-title-input {
-  display: inline-block;
-  width: 75%;
-  margin: 0 auto;
-  transform: translateX(20%);
+  width: 100%;
 }
 
 @media (max-width: 750px) {

@@ -2,7 +2,7 @@
   <v-dialog
     v-model="overlay.bookAddCategoryVisible"
     :fullscreen="isMobile"
-    max-width="440px"
+    max-width="min(440px, calc(100vw - 48px))"
     @after-leave="overlay.finishBookAddCategories()"
   >
     <div class="app-dialog-card">

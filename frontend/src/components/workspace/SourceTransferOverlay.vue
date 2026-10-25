@@ -10,7 +10,7 @@
 
   <v-dialog
     :model-value="visible && intent === 'remote'"
-    width="min(1000px, max(750px, 70vw))"
+    width="min(1000px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     class="source-remote-manage-dialog"
     @update:model-value="value => !value && requestClose()"
@@ -70,7 +70,7 @@
 
   <v-dialog
     v-model="showImportPreview"
-    width="min(1000px, max(750px, 70vw))"
+    width="min(1000px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     class="source-import-preview-dialog"
     @after-leave="handlePreviewClosed"

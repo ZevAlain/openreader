@@ -3,7 +3,7 @@
     :model-value="visible"
     :fullscreen="isMobile"
     :persistent="saving"
-    max-width="500px"
+    max-width="min(500px, calc(100vw - 48px))"
     @update:model-value="handleVisibilityChange"
   >
     <div class="app-dialog-card">

@@ -16,7 +16,7 @@ test('BookInfo uses the one fixed-upstream dialog structure and geometry', () =>
   const panel = read('../src/components/BookInfoPanel.vue')
   const cover = read('../src/components/BookCover.vue')
 
-  assert.match(dialog, /width="500px"/)
+  assert.match(dialog, /width="min\(500px, calc\(100vw - 48px\)\)"/)
   assert.match(dialog, /:fullscreen="isMiniInterface"/)
   assert.doesNotMatch(dialog, /progress|chapters|statusLabel|statusType|browserCacheCount/)
 

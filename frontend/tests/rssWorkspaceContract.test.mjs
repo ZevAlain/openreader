@@ -8,7 +8,7 @@ const overlay = readFileSync(new URL('../src/components/overlays/OverlayRSS.vue'
 test('RSS root is the fixed-baseline 500px/fullscreen source dialog', () => {
   assert.doesNotMatch(overlay, /<el-dialog|<el-drawer/, 'OverlayRSS must not add a second shell around the sibling RSS dialogs')
   assert.match(manager, /class="global-rss-dialog"/)
-  assert.match(manager, /width="500px"/)
+  assert.match(manager, /width="min\(500px, calc\(100vw - 48px\)\)"/)
   assert.match(manager, /:fullscreen="isMobile"/)
   assert.match(manager, /RSS订阅\(\{\{ sources\.length \}\}\)/)
   assert.match(manager, />新增</)

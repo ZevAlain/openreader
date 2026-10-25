@@ -27,7 +27,7 @@ test('owns normal/failure source management as one fixed-baseline dialog without
   assert.doesNotMatch(overlay, /<el-dialog/, 'the owner must not wrap import/remote in a second manager dialog')
 
   assert.match(manager, /isFailureMode \? '失效书源管理' : '书源管理'/)
-  assert.match(manager, /width="min\(1000px, max\(750px, 70vw\)\)"/)
+  assert.match(manager, /width="min\(1000px, calc\(100vw - 48px\)\)"/)
   assert.match(manager, /:fullscreen="isMobile"/)
   assert.match(manager, /v-if="isNormalPage"/)
   assert.doesNotMatch(manager, /\beager\b/)

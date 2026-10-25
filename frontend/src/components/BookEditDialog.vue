@@ -1,7 +1,7 @@
 <template>
   <v-dialog
     :model-value="modelValue"
-    max-width="540px"
+    max-width="min(540px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     @update:model-value="emit('update:modelValue', $event)"
   >

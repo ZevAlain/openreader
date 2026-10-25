@@ -10,7 +10,7 @@ const manager = overlay.split('<v-dialog\n    v-model="replaceRuleDialog"')[0]
 
 test('replace-rule manager keeps the fixed upstream dialog, table, and footer structure', () => {
   assert.match(manager, /app-dialog-title">\s*替换规则管理\s*</)
-  assert.match(manager, /width="min\(1000px, max\(750px, 70vw\)\)"/)
+  assert.match(manager, /width="min\(1000px, calc\(100vw - 48px\)\)"/)
   assert.match(manager, /:fullscreen="isMobile"/)
   assert.match(manager, />\s*导入\s*</)
   assert.match(
@@ -37,7 +37,7 @@ test('replace-rule manager keeps the fixed upstream dialog, table, and footer st
 
 test('replace-rule editor is the fixed sibling form without a competing test surface', () => {
   assert.match(overlay, /v-model="replaceRuleDialog"[\s\S]*?app-dialog-title">\s*替换规则\s*</)
-  assert.match(overlay, /v-model="replaceRuleDialog"[\s\S]*?width="min\(1000px, max\(750px, 70vw\)\)"/)
+  assert.match(overlay, /v-model="replaceRuleDialog"[\s\S]*?width="min\(1000px, calc\(100vw - 48px\)\)"/)
 
   for (const label of ['名称', '规则', '替换为', '替换范围']) {
     assert.match(overlay, new RegExp(`label="${label}"`))

@@ -28,7 +28,7 @@ test('global bookmark form preserves upstream readonly context and mobile dialog
   const form = read('../src/components/overlays/OverlayBookmarkForm.vue')
 
   assert.match(form, /<v-dialog/)
-  assert.match(form, /width="min\(1000px, max\(750px, 70vw\)\)"/)
+  assert.match(form, /width="min\(1000px, calc\(100vw - 48px\)\)"/)
   assert.match(form, /:fullscreen="isMobile"/)
   assert.match(form, /label="书名"/)
   assert.match(form, /label="作者"/)
@@ -47,7 +47,7 @@ test('global bookmark form preserves upstream readonly context and mobile dialog
 test('bookmark manager restores the fixed-upstream dialog geometry, columns, and direct field rendering', () => {
   const bookmarks = read('../src/components/overlays/OverlayBookmarks.vue')
 
-  assert.match(bookmarks, /width="min\(1000px, max\(750px, 70vw\)\)"/)
+  assert.match(bookmarks, /width="min\(1000px, calc\(100vw - 48px\)\)"/)
   assert.match(
     bookmarks,
     /:height="isMobile \? 'calc\(100dvh - 184px\)' : 'min\(400px, calc\(70dvh - 184px\)\)'"/,

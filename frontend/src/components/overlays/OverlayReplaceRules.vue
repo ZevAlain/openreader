@@ -1,7 +1,7 @@
 <template>
   <v-dialog
     v-model="overlay.replaceRulesVisible"
-    width="min(1000px, max(750px, 70vw))"
+    width="min(1000px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     class="global-replace-dialog"
     @after-leave="resetManager"
@@ -75,7 +75,7 @@
 
   <v-dialog
     v-model="replaceRuleDialog"
-    width="min(1000px, max(750px, 70vw))"
+    width="min(1000px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     class="replace-rule-editor-dialog"
     @after-leave="overlay.clearReplaceRuleEditor()"

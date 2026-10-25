@@ -1,7 +1,7 @@
 <template>
   <v-dialog
     :model-value="phase === 'preflight'"
-    width="760px"
+    width="min(760px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     class="storage-import-preflight-dialog"
     @update:model-value="handlePreflightVisible"
@@ -62,7 +62,7 @@
 
   <v-dialog
     :model-value="phase === 'choose-mode'"
-    width="440px"
+    width="min(440px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     persistent
     class="storage-import-mode-dialog"
@@ -84,7 +84,7 @@
 
   <v-dialog
     :model-value="phase === 'batch-groups'"
-    width="440px"
+    width="min(440px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     class="storage-import-groups-dialog"
     @update:model-value="handleBatchGroupsVisible"

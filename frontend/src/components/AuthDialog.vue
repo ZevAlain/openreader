@@ -2,7 +2,7 @@
   <v-dialog
     v-model="user.authDialogVisible"
     :persistent="user.authReason === 'session'"
-    max-width="420px"
+    max-width="min(420px, calc(100vw - 48px))"
   >
     <div class="auth-dialog-card">
       <h2 class="auth-dialog-title">{{ user.authReason === 'session' ? '重新登录' : '登录' }}</h2>

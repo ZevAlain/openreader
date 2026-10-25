@@ -2,7 +2,7 @@
   <v-dialog
     v-if="isNormalPage"
     :model-value="visible"
-    width="min(1000px, max(750px, 70vw))"
+    width="min(1000px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     class="global-source-manage-dialog"
     @update:model-value="handleDialogModel"
@@ -130,7 +130,7 @@
 
   <v-dialog
     v-model="showEditor"
-    width="min(1000px, max(750px, 70vw))"
+    width="min(1000px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     class="source-json-editor-dialog"
   >

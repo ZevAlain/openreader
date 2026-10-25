@@ -34,7 +34,7 @@ test('shared bookmarks and content search use upstream-style dialogs, including 
   assert.match(search, /<v-dialog/)
   assert.match(search, /:fullscreen="isMobile"/)
   assert.doesNotMatch(search, /<el-drawer/)
-  assert.match(search, /width="min\(1000px, max\(750px, 70vw\)\)"/)
+  assert.match(search, /width="min\(1000px, calc\(100vw - 48px\)\)"/)
   assert.match(search, /:height="isMobile \? 'calc\(100dvh - 184px\)' : 'min\(400px, calc\(70dvh - 184px\)\)'"/)
   assert.match(search, /density="compact"/)
   assert.match(search, /:prepend-inner-icon="mdiMagnify"/)

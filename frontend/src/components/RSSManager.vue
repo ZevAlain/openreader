@@ -2,7 +2,7 @@
   <section class="rss-manager">
     <v-dialog
       :model-value="visible"
-      width="500px"
+      width="min(500px, calc(100vw - 48px))"
       :fullscreen="isMobile"
       class="global-rss-dialog"
       @update:model-value="handleRootVisibleChange"

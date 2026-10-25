@@ -95,6 +95,13 @@ a {
   -webkit-backdrop-filter: blur(2px);
 }
 
+/* No dialog may outgrow the viewport, whatever its width prop says.
+   Fullscreen (mobile) dialogs are exempt. */
+.v-dialog:not(.v-dialog--fullscreen) > .v-overlay__content {
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+}
+
 /* Shared glass card chrome for every v-dialog overlay root. */
 .app-dialog-card {
   display: flex;

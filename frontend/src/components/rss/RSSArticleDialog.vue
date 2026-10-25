@@ -1,7 +1,7 @@
 <template>
   <v-dialog
     :model-value="modelValue"
-    width="500px"
+    width="min(500px, calc(100vw - 48px))"
     :fullscreen="isMobile"
     class="rss-article-content-dialog"
     @update:model-value="handleVisibleChange"

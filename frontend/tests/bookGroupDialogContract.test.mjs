@@ -19,7 +19,7 @@ test('hosts BookGroup set and manage modes in one fixed-upstream table dialog', 
   assert.match(groups, /v-if="isNormalPage"/)
   assert.match(groups, /v-model="overlay\.bookGroupVisible"/)
   assert.match(groups, /overlay\.bookGroupMode === 'set' \? '设置分组' : '分组管理'/)
-  assert.match(groups, /width="min\(1000px, max\(750px, 70vw\)\)"/)
+  assert.match(groups, /width="min\(1000px, calc\(100vw - 48px\)\)"/)
   assert.match(groups, /:fullscreen="isMobile"/)
   assert.match(groups, /class="global-book-group-dialog"/)
   assert.equal((groups.match(/<v-data-table(?:\s|>)/g) || []).length, 1, 'BookGroup must render one table for both modes')
