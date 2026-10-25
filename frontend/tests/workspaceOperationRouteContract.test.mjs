@@ -63,13 +63,13 @@ test('keeps ReplaceRule and UserManage manager roots in upstream-style dialogs',
     ['ReplaceRule', replaceOverlaySource, 'replaceRulesVisible', 'loadReplaceRules'],
     ['UserManage', userOverlaySource, 'userManageVisible', 'loadUsers'],
   ]) {
-    assert.match(source, /<el-dialog/, `${name} manager must use the upstream root dialog shell`)
-    assert.doesNotMatch(source, /<el-drawer/, `${name} manager must not retain a side/bottom drawer shell`)
+    assert.match(source, /<(el|v)-dialog/, `${name} manager must use the upstream root dialog shell`)
+    assert.doesNotMatch(source, /<el-drawer|<v-navigation-drawer/, `${name} manager must not retain a side/bottom drawer shell`)
     assert.match(source, new RegExp(`v-model="overlay\\.${state}"`), `${name} must retain shared overlay state`)
     assert.match(source, /:fullscreen="isMobile"/, `${name} manager must be fullscreen on the compact interface`)
-    assert.match(source, /destroy-on-close/, `${name} manager must reset its closed surface`)
-    assert.match(source, new RegExp(`@open="${loader}"`), `${name} must freshly load when its root dialog opens`)
-    assert.match(source, /@closed="resetManager"/, `${name} must clear only manager state when it closes`)
+    assert.match(source, /destroy-on-close|@after-leave="resetManager"/, `${name} manager must reset its closed surface`)
+    assert.match(source, new RegExp(`@open="${loader}"|visible => \\{[\\s\\S]*?${loader}\\(\\)`), `${name} must freshly load when its root dialog opens`)
+    assert.match(source, /@closed="resetManager"|@after-leave="resetManager"/, `${name} must clear only manager state when it closes`)
   }
   assert.match(hostSource, /<OverlayReplaceRules\s+:is-mobile="isMobileOverlay"/, 'ReplaceRule must receive compact-interface state without drawer dimensions')
   assert.match(hostSource, /<OverlayUserManagement\s+:is-mobile="isMobileOverlay"/, 'UserManage must receive compact-interface state without drawer dimensions')
