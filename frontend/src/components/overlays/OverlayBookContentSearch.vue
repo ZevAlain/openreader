@@ -1,66 +1,67 @@
 <template>
-  <el-dialog
+  <v-dialog
     v-if="isNormalPage"
     v-model="overlay.searchBookContentVisible"
     width="min(1000px, max(750px, 70vw))"
-    top="max(15dvh, calc((100dvh - 584px) / 2))"
     :fullscreen="isMobile"
     class="global-content-search-dialog"
-    @opened="handleOpened"
+    @after-enter="handleOpened"
   >
-    <template #header>
-      <el-input
-        v-model="keyword"
-        class="content-search-title-input"
-        size="small"
-        :prefix-icon="Search"
-        placeholder="搜索书籍内容"
-        @keyup.enter="search"
-      />
-    </template>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <v-text-field
+          v-model="keyword"
+          class="content-search-title-input"
+          density="compact"
+          variant="outlined"
+          :prepend-inner-icon="mdiMagnify"
+          placeholder="搜索书籍内容"
+          hide-details
+          @keyup.enter="search"
+        />
+      </header>
 
-    <div class="reader-dialog-table">
-      <el-table
-        ref="resultTableRef"
-        :data="results"
-        :height="isMobile ? 'calc(100dvh - 184px)' : 'min(400px, calc(70dvh - 184px))'"
-        @row-click="jumpToResult"
-      >
-        <el-table-column property="chapterTitle" label="章节" min-width="100" />
-        <el-table-column property="resultText" label="搜索结果" min-width="250" />
-      </el-table>
-      <el-alert
-        v-if="searchNotice"
-        class="reader-search-notice"
-        type="warning"
-        :closable="false"
-        :title="searchNotice"
-      />
-    </div>
-
-    <template #footer>
-      <div class="reader-dialog-footer">
-        <div class="reader-dialog-footer-left">
-          <el-button
-            type="primary"
-            :disabled="loading"
-            @click="loadMore"
-          >
-            {{ loading ? '加载中' : '加载更多' }}
-          </el-button>
-          <el-button v-if="!isMobile && hasMore" plain :disabled="loading" @click="loadAll">搜完全书</el-button>
-          <el-button v-if="lastScrollTop > 0" type="primary" @click="restoreScrollTop">跳转上次位置</el-button>
-        </div>
-        <el-button @click="overlay.searchBookContentVisible = false">取消</el-button>
+      <div class="app-dialog-body reader-dialog-table">
+        <v-data-table
+          ref="resultTableRef"
+          :headers="resultHeaders"
+          :items="results"
+          density="compact"
+          no-data-text="暂无数据"
+          :height="isMobile ? 'calc(100dvh - 184px)' : 'min(400px, calc(70dvh - 184px))'"
+          @click:row="(_, { item }) => jumpToResult(item)"
+        />
+        <v-alert
+          v-if="searchNotice"
+          class="reader-search-notice"
+          type="warning"
+          variant="tonal"
+          density="compact"
+        >
+          {{ searchNotice }}
+        </v-alert>
       </div>
-    </template>
-  </el-dialog>
+
+      <footer class="app-dialog-actions">
+        <div class="reader-dialog-footer">
+          <div class="reader-dialog-footer-left">
+            <v-btn color="primary" :disabled="loading" @click="loadMore">
+              {{ loading ? '加载中' : '加载更多' }}
+            </v-btn>
+            <v-btn v-if="!isMobile && hasMore" variant="outlined" :disabled="loading" @click="loadAll">搜完全书</v-btn>
+            <v-btn v-if="lastScrollTop > 0" color="primary" @click="restoreScrollTop">跳转上次位置</v-btn>
+          </div>
+          <v-btn variant="text" @click="overlay.searchBookContentVisible = false">取消</v-btn>
+        </div>
+      </footer>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
-import { Search } from '@element-plus/icons-vue'
+import { mdiMagnify } from '@mdi/js'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { message } from '../../composables/useAppFeedback.js'
 import { useAuthenticatedOperationGuard } from '../../composables/useAuthenticatedOperationGuard'
 import { useBookContentSearch } from '../../composables/useBookContentSearch'
 import { useOverlayStore } from '../../stores/overlay'
@@ -83,6 +84,10 @@ const book = computed(() => overlay.searchBook)
 const bookId = computed(() => overlay.searchBook?.id)
 const isNormalPage = computed(() => reader.pageType === 'normal')
 const activeBookKey = ref('')
+const resultHeaders = [
+  { title: '章节', key: 'chapterTitle', width: '30%' },
+  { title: '搜索结果', key: 'resultText' },
+]
 
 const {
   keyword,
@@ -103,7 +108,7 @@ const {
   bookId,
   book,
   chapters: [],
-  onError: error => ElMessage.error(readError(error, '搜索正文失败')),
+  onError: error => message.error(readError(error, '搜索正文失败')),
 })
 
 watch(
@@ -149,7 +154,7 @@ function jumpToResult(result) {
 }
 
 function getResultScrollElement() {
-  return resultTableRef.value?.$el?.querySelector('.el-scrollbar__wrap') || null
+  return resultTableRef.value?.$el?.querySelector('.v-table__wrapper') || null
 }
 
 function captureScrollTop() {
@@ -181,6 +186,7 @@ function readError(error, fallback) {
 
 .reader-dialog-footer {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
