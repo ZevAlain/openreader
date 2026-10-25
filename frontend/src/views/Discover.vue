@@ -43,7 +43,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { confirm, message } from '../composables/useAppFeedback.js'
 import { exploreBooks } from '../api/explore'
 import { createRemoteBook } from '../api/books'
 import { createRemoteReaderSession } from '../api/remoteReader'
@@ -88,17 +88,20 @@ const resultAddToShelf = useRemoteBookAddToShelf({
   buildPayload: (book, categoryIds, context) => remoteBookCreatePayload(book, categoryIds, context),
   createRemoteBook,
   upsertBook: book => bookshelf.upsertBook(book),
-  onSuccess: message => ElMessage.success(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onSuccess: text => message.success(text),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
 const addingRemoteBookKey = resultAddToShelf.addingBookKey
 const resultEditor = useRemoteBookResultEditor({
   operationGuard: discoverSessionOperations,
-  confirm: (...args) => ElMessageBox.confirm(...args),
+  confirm: (text, title, config = {}) =>
+    confirm({ message: text, title, tone: config.type === 'warning' ? 'warning' : 'primary' }).then(action => {
+      if (action !== 'confirm') return Promise.reject('cancel')
+    }),
   createRemoteBook,
   upsertBook: book => bookshelf.upsertBook(book),
-  onSuccess: message => ElMessage.success(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onSuccess: text => message.success(text),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
 const {
   visible: resultEditorVisible,
@@ -133,7 +136,7 @@ async function loadMoreBooks() {
   const url = workspace.explore.url
   if (!workspace.isExploreResult || !sourceId || !url || loadingMore.value) return
   if (!hasMore.value) {
-    ElMessage.info('没有更多了')
+    message.info('没有更多了')
     return
   }
   const requestToken = exploreRequestGate.begin()
@@ -158,10 +161,10 @@ async function loadMoreBooks() {
       page: result.page || nextPage,
       hasMore: result.hasMore,
     })
-    if (!added) ElMessage.info(result.hasMore ? '本批没有新增结果，仍可继续加载' : '没有更多了')
+    if (!added) message.info(result.hasMore ? '本批没有新增结果，仍可继续加载' : '没有更多了')
   } catch (error) {
     if (isActiveExploreRequest(requestToken, workspaceStamp)) {
-      ElMessage.error(readError(error, '加载更多失败'))
+      message.error(readError(error, '加载更多失败'))
     }
   } finally {
     if (isActiveExploreRequest(requestToken, workspaceStamp)) {
@@ -242,7 +245,7 @@ async function openRemoteReader(book) {
     router.push({ name: 'remote-reader', params: { sessionId: data.id }, query: { chapter: 0 } })
   } catch (error) {
     if (discoverSessionOperations.canCommit(operation)) {
-      ElMessage.error(readError(error, '打开临时阅读失败'))
+      message.error(readError(error, '打开临时阅读失败'))
     }
   }
 }
