@@ -8,20 +8,26 @@
     @cancel="requestClose"
   />
 
-  <el-dialog
+  <v-dialog
     :model-value="visible && intent === 'remote'"
-    title="远程书源管理"
     width="min(1000px, max(750px, 70vw))"
-    top="15vh"
     :fullscreen="isMobile"
     class="source-remote-manage-dialog"
     @update:model-value="value => !value && requestClose()"
   >
-    <section
-      v-loading="remoteLoading"
-      element-loading-text="正在读取远程书源文件…"
-      class="source-remote-list"
-    >
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">远程书源管理</h2>
+      </header>
+      <div class="app-dialog-body">
+        <v-progress-linear
+          v-if="remoteLoading"
+          indeterminate
+          color="primary"
+          class="source-remote-loading"
+        />
+        <p v-if="remoteLoading" class="source-remote-tip">正在读取远程书源文件…</p>
+        <section class="source-remote-list">
       <p v-if="!remoteEntries.length && !remoteLoading" class="source-remote-tip">
         暂无远程书源，点击“新增”填写名称和链接。
       </p>
@@ -33,89 +39,95 @@
           :value="entry.url"
           :disabled="remoteLoading || batchSyncing"
         >
-        <el-link type="primary" :href="entry.url" target="_blank" class="source-remote-url">
+        <a :href="entry.url" target="_blank" rel="noopener noreferrer" class="source-remote-url">
           {{ entry.name }}
-        </el-link>
+        </a>
         <span class="source-remote-actions">
-          <el-button link type="primary" :disabled="remoteLoading || batchSyncing" @click="syncRemoteEntry(entry.url)">
+          <v-btn variant="text" color="primary" size="small" :disabled="remoteLoading || batchSyncing" @click="syncRemoteEntry(entry.url)">
             同步
-          </el-button>
-          <el-button link type="danger" :disabled="remoteLoading || batchSyncing" @click="removeRemoteEntry(entry.url)">
+          </v-btn>
+          <v-btn variant="text" color="error" size="small" :disabled="remoteLoading || batchSyncing" @click="removeRemoteEntry(entry.url)">
             删除
-          </el-button>
+          </v-btn>
         </span>
       </label>
-    </section>
-    <template #footer>
-      <div class="source-import-footer">
-        <span class="check-tip">已选 {{ selectedRemoteUrls.length }}/{{ remoteEntries.length }}</span>
-        <el-button :disabled="remoteLoading || batchSyncing || !selectedRemoteUrls.length" @click="syncSelectedRemote">
-          {{ batchSyncing ? `同步中 ${batchSyncProgress.done}/${batchSyncProgress.total}` : '同步选中' }}
-        </el-button>
-        <el-button type="primary" :loading="remoteLoading" @click="addRemoteEntry">
-          新增
-        </el-button>
-        <el-button :disabled="remoteLoading || batchSyncing" @click="requestClose">关闭</el-button>
+        </section>
       </div>
-    </template>
-  </el-dialog>
+      <footer class="app-dialog-actions">
+        <div class="source-import-footer">
+          <span class="check-tip">已选 {{ selectedRemoteUrls.length }}/{{ remoteEntries.length }}</span>
+          <v-btn variant="outlined" :disabled="remoteLoading || batchSyncing || !selectedRemoteUrls.length" @click="syncSelectedRemote">
+            {{ batchSyncing ? `同步中 ${batchSyncProgress.done}/${batchSyncProgress.total}` : '同步选中' }}
+          </v-btn>
+          <v-btn color="primary" :loading="remoteLoading" @click="addRemoteEntry">
+            新增
+          </v-btn>
+          <v-btn variant="text" :disabled="remoteLoading || batchSyncing" @click="requestClose">关闭</v-btn>
+        </div>
+      </footer>
+    </div>
+  </v-dialog>
 
-  <el-dialog
+  <v-dialog
     v-model="showImportPreview"
-    title="导入书源"
     width="min(1000px, max(750px, 70vw))"
-    top="15vh"
     :fullscreen="isMobile"
-    append-to-body
     class="source-import-preview-dialog"
-    @closed="handlePreviewClosed"
+    @after-leave="handlePreviewClosed"
   >
-    <el-checkbox-group
-      v-model="checkedImportSourceIndexes"
-      class="source-import-list"
-      @change="handleImportSelectionChange"
-    >
-      <el-checkbox
-        v-for="(source, index) in importPreviewSources"
-        :key="index"
-        :label="index"
-        class="source-import-item"
-      >
-        <strong>{{ importSourceName(source) || '未命名书源' }}</strong>
-        <span>{{ importSourceURL(source) || '未设置地址' }}</span>
-        <em v-if="importSourceTags(source)">{{ importSourceTags(source) }}</em>
-        <small
-          v-if="importSourceCompatibilityHint(source)"
-          class="source-compatibility-hint"
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">导入书源</h2>
+      </header>
+      <div class="app-dialog-body">
+        <label
+          v-for="(source, index) in importPreviewSources"
+          :key="index"
+          class="source-import-item"
         >
-          {{ importSourceCompatibilityHint(source) }}
-        </small>
-      </el-checkbox>
-    </el-checkbox-group>
-
-    <template #footer>
-      <div class="source-import-footer">
-        <el-checkbox
-          v-model="importCheckAll"
-          :indeterminate="importCheckIndeterminate"
-          border
-          @change="toggleImportCheckAll"
-        >
-          全选
-        </el-checkbox>
-        <span class="check-tip">已选择 {{ checkedImportSourceIndexes.length }} 个</span>
-        <el-button @click="cancelImportPreview">取消</el-button>
-        <el-button type="primary" :loading="importPreviewSaving" @click="confirmImport">
-          确定
-        </el-button>
+          <input
+            type="checkbox"
+            class="source-import-check"
+            :checked="checkedImportSourceIndexes.includes(index)"
+            @change="toggleImportIndex(index, $event.target.checked)"
+          >
+          <span class="source-import-meta">
+            <strong>{{ importSourceName(source) || '未命名书源' }}</strong>
+            <span>{{ importSourceURL(source) || '未设置地址' }}</span>
+            <em v-if="importSourceTags(source)">{{ importSourceTags(source) }}</em>
+            <small
+              v-if="importSourceCompatibilityHint(source)"
+              class="source-compatibility-hint"
+            >
+              {{ importSourceCompatibilityHint(source) }}
+            </small>
+          </span>
+        </label>
       </div>
-    </template>
-  </el-dialog>
+      <footer class="app-dialog-actions">
+        <div class="source-import-footer">
+          <label class="source-import-all">
+            <input
+              type="checkbox"
+              :checked="importCheckAll"
+              @change="toggleImportCheckAll($event.target.checked)"
+            >
+            全选
+          </label>
+          <span class="check-tip">已选择 {{ checkedImportSourceIndexes.length }} 个</span>
+          <v-btn variant="text" @click="cancelImportPreview">取消</v-btn>
+          <v-btn color="primary" :loading="importPreviewSaving" @click="confirmImport">
+            确定
+          </v-btn>
+        </div>
+      </footer>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
 import { nextTick, ref, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { confirm, message, prompt } from '../../composables/useAppFeedback.js'
 import {
   exportSources,
   importRemoteSource,
@@ -172,12 +184,12 @@ const {
   reloadSources: async () => {},
   getSelection: () => [],
   download: () => {},
-  onInfo: message => ElMessage.info(message),
-  onWarning: message => ElMessage.warning(message),
-  onSuccess: message => ElMessage.success(message),
+  onInfo: message => message.info(message),
+  onWarning: message => message.warning(message),
+  onSuccess: message => message.success(message),
   onError: (error, fallback) => {
     const detail = readError(error, '')
-    ElMessage.error(detail ? `${fallback} ${detail}` : fallback)
+    message.error(detail ? `${fallback} ${detail}` : fallback)
   },
 })
 
@@ -305,7 +317,7 @@ async function persistRemoteEntries() {
     await saveRemoteEntries(snapshot)
   } catch (error) {
     remoteEntries.value = snapshot.length ? remoteEntries.value : snapshot
-    ElMessage.error(readError(error, '保存远程书源列表失败'))
+    message.error(readError(error, '保存远程书源列表失败'))
     return false
   }
   selectedRemoteUrls.value = selectedRemoteUrls.value.filter(url =>
@@ -323,14 +335,18 @@ async function addRemoteEntry() {
   let nameResult
   let urlResult
   try {
-    nameResult = await ElMessageBox.prompt('为这个书源起个名字', '新增远程书源 · 名称', {
-      confirmButtonText: '下一步',
-      cancelButtonText: '取消',
-      inputValuePlaceholder: '例如：我的书源合集',
+    nameResult = await prompt({
+      title: '新增远程书源 · 名称',
+      message: '为这个书源起个名字',
+      confirmText: '下一步',
+      cancelText: '取消',
+      placeholder: '例如：我的书源合集',
     })
-    urlResult = await ElMessageBox.prompt('输入远程书源链接（JSON 地址）', '新增远程书源 · 链接', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+    urlResult = await prompt({
+      title: '新增远程书源 · 链接',
+      message: '输入远程书源链接（JSON 地址）',
+      confirmText: '确定',
+      cancelText: '取消',
     })
   } catch {
     return
@@ -339,7 +355,7 @@ async function addRemoteEntry() {
   const url = String(urlResult?.value || '').trim()
   if (!url || !props.visible) return
   if (remoteEntries.value.some(entry => entry.url === url)) {
-    ElMessage.warning('该链接已存在')
+    message.warning('该链接已存在')
     return
   }
   remoteEntries.value = [{ name: name || remoteEntryName(url), url }, ...remoteEntries.value]
@@ -364,8 +380,8 @@ async function syncSelectedRemote() {
   }
   batchSyncing.value = false
   const failed = targets.length - succeeded
-  if (failed) ElMessage.warning(`同步完成：${succeeded} 成功，${failed} 失败`)
-  else ElMessage.success(`同步完成：${succeeded} 个远程书源已更新`)
+  if (failed) message.warning(`同步完成：${succeeded} 成功，${failed} 失败`)
+  else message.success(`同步完成：${succeeded} 个远程书源已更新`)
 }
 
 async function syncRemoteEntry(url) {
@@ -391,28 +407,30 @@ async function removeRemoteEntry(url) {
   let cleanup = false
   if (importedCount > 0) {
     try {
-      await ElMessageBox.confirm(
-        `该链接曾导入 ${importedCount} 个书源。是否连同这些书源一起删除？`,
-        '移除远程书源',
-        {
-          confirmButtonText: '删除并清理书源',
-          cancelButtonText: '仅删除链接',
-          distinguishCancelAndClose: true,
-          type: 'warning',
-        },
-      )
-      cleanup = true
+      const action = await confirm({
+        title: '移除远程书源',
+        message: `该链接曾导入 ${importedCount} 个书源。是否连同这些书源一起删除？`,
+        confirmText: '删除并清理书源',
+        cancelText: '仅删除链接',
+        distinguishCancelAndClose: true,
+        tone: 'warning',
+      })
+      if (action === 'close') throw 'close'
+      cleanup = action === 'confirm'
     } catch (action) {
       // 'close' (X) means abort; 'cancel' means keep the imported sources.
       if (action === 'close') return
     }
   } else {
     try {
-      await ElMessageBox.confirm(
-        '确认要移除该远程书源链接吗？没有从该链接导入的书源。',
-        '移除远程书源',
-        { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
-      )
+      const action = await confirm({
+        title: '移除远程书源',
+        message: '确认要移除该远程书源链接吗？没有从该链接导入的书源。',
+        confirmText: '确定',
+        cancelText: '取消',
+        tone: 'warning',
+      })
+      if (action !== 'confirm') throw 'cancel'
     } catch {
       return
     }
@@ -422,10 +440,10 @@ async function removeRemoteEntry(url) {
       const { data } = await api.delete('/sources/origin', { params: { url } })
       const deleted = Number(data?.deleted || 0)
       const skipped = Number(data?.skippedInUse || 0)
-      if (skipped) ElMessage.warning(`已清理 ${deleted} 个书源，${skipped} 个因在用保留`)
-      else ElMessage.success(`已清理 ${deleted} 个书源`)
+      if (skipped) message.warning(`已清理 ${deleted} 个书源，${skipped} 个因在用保留`)
+      else message.success(`已清理 ${deleted} 个书源`)
     } catch (error) {
-      ElMessage.error(readError(error, '清理书源失败，链接未删除'))
+      message.error(readError(error, '清理书源失败，链接未删除'))
       return
     }
   }
@@ -435,8 +453,16 @@ async function removeRemoteEntry(url) {
     remoteEntries.value = next
     selectedRemoteUrls.value = selectedRemoteUrls.value.filter(item => item !== url)
   } catch (error) {
-    ElMessage.error(readError(error, '保存远程书源列表失败'))
+    message.error(readError(error, '保存远程书源列表失败'))
   }
+}
+
+function toggleImportIndex(index, checked) {
+  const next = new Set(checkedImportSourceIndexes.value)
+  if (checked) next.add(index)
+  else next.delete(index)
+  checkedImportSourceIndexes.value = [...next].sort((a, b) => a - b)
+  handleImportSelectionChange()
 }
 
 async function confirmImport() {
@@ -514,7 +540,9 @@ function readError(error, fallback) {
 }
 
 .source-import-item {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   min-width: 0;
   margin-right: 0;
   padding: 9px 10px;
@@ -617,4 +645,29 @@ function readError(error, fallback) {
     flex-wrap: wrap;
   }
 }
+
+.source-import-check {
+  flex: 0 0 auto;
+  margin-top: 3px;
+}
+
+.source-import-meta {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.source-import-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.source-remote-loading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 </style>

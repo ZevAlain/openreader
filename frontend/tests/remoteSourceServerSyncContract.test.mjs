@@ -29,6 +29,6 @@ test('deleting a remote entry offers to clean up its imported sources', () => {
 })
 
 test('server failures keep the authoritative list', () => {
-  assert.match(overlay, /function persistRemoteEntries[\s\S]*?ElMessage\.error\(readError\(error, '保存远程书源列表失败'\)\)/, 'a failed save reports instead of silently diverging')
+  assert.match(overlay, /function persistRemoteEntries[\s\S]*?message\.error\(readError\(error, '保存远程书源列表失败'\)\)/, 'a failed save reports instead of silently diverging')
   assert.match(overlay, /removeRemoteEntry[\s\S]*?await saveRemoteEntries\(next\)[\s\S]*?remoteEntries\.value = next/, 'removal must only apply after the server accepts it')
 })

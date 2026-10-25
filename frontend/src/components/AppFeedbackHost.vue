@@ -12,6 +12,13 @@
         <div class="app-confirm-sheet">
           <span class="app-confirm-grabber" />
         </div>
+        <button
+          v-if="item.distinguishCancelAndClose"
+          class="app-confirm-close"
+          type="button"
+          aria-label="关闭"
+          @click="resolveConfirm(item.id, item.kind === 'prompt' ? null : 'close')"
+        >×</button>
         <h2 class="app-confirm-title">{{ item.title }}</h2>
         <p v-if="item.message" class="app-confirm-message">{{ item.message }}</p>
         <input
@@ -149,6 +156,18 @@ function submitItem(item) {
   height: 5px;
   border-radius: 999px;
   background: var(--app-border-strong);
+}
+
+.app-confirm-close {
+  justify-self: end;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--app-text-muted);
+  font-size: 20px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
 }
 
 .app-confirm-title {

@@ -52,6 +52,7 @@ export function confirm(options = {}) {
       confirmText: options.confirmText || '确定',
       cancelText: options.cancelText || '取消',
       tone: options.tone || 'primary',
+      distinguishCancelAndClose: options.distinguishCancelAndClose || false,
       resolve,
     })
   })
