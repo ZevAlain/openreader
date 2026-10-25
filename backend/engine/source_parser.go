@@ -867,24 +867,28 @@ func parseRemoteBookInfoWithEvaluatorWithRuntime(document *sourceRuleDocument, r
 		return RemoteBookInfo{}, err
 	}
 	intro, err := sourceRuleString(scope, rule.BookInfoIntroRule)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrUnsupportedSourceRule) {
 		return RemoteBookInfo{}, err
 	}
 	intro = formatSourceBookIntro(intro)
+	// Decorative fields (kind, latest chapter, update time, word count) may
+	// carry community @js:/template rules the evaluator deliberately rejects.
+	// Skipping them must not kill the fetch — the chapters and the request's
+	// own metadata still make a usable shelf entry.
 	kinds, err := sourceRuleStrings(scope, rule.BookInfoKindRule)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrUnsupportedSourceRule) {
 		return RemoteBookInfo{}, err
 	}
 	latestChapter, err := sourceRuleString(scope, rule.BookInfoLatestChapterRule)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrUnsupportedSourceRule) {
 		return RemoteBookInfo{}, err
 	}
 	updateTime, err := sourceRuleString(scope, rule.BookInfoUpdateTimeRule)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrUnsupportedSourceRule) {
 		return RemoteBookInfo{}, err
 	}
 	wordCount, err := sourceRuleString(scope, rule.BookInfoWordCountRule)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrUnsupportedSourceRule) {
 		return RemoteBookInfo{}, err
 	}
 	return RemoteBookInfo{

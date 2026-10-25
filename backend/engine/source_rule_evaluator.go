@@ -351,6 +351,12 @@ func sourceRuleElements(value sourceRuleValue, rule string) ([]sourceRuleValue, 
 		}
 		return combineSourceRuleValueLists(lists, operator), nil
 	}
+	// Bare keywords read the selected item itself (community chapter rules
+	// like chapterUrlRule "value" on option elements).
+	switch rule {
+	case "text", "ownText", "html", "value":
+		return []sourceRuleValue{value}, nil
+	}
 	if strings.HasPrefix(rule, ":") {
 		return sourceRuleRegexElements(value, strings.TrimSpace(rule[1:]))
 	}
@@ -503,13 +509,15 @@ func prepareSourceRule(value *sourceRuleValue, rawRule string) (preparedSourceRu
 	if err != nil {
 		return preparedSourceRule{}, err
 	}
-	if err := sourceRuleUnsupportedError(rule); err != nil {
+	// The unsupported gate applies to the extract segment only; ## templates
+	// are runtime variable substitutions resolved by parseSourceRuleTransform.
+	if err := sourceRuleUnsupportedError(strings.SplitN(rule, "##", 2)[0]); err != nil {
 		return preparedSourceRule{}, err
 	}
 	if err := sourceRuleApplyPuts(*value, runtime, putRules); err != nil {
 		return preparedSourceRule{}, err
 	}
-	transform, err := parseSourceRuleTransform(rule)
+	transform, err := parseSourceRuleTransform(rule, runtime)
 	if err != nil {
 		return preparedSourceRule{}, err
 	}
@@ -701,20 +709,23 @@ func sourceRuleInterpolateGets(rule string, runtime *sourceRuleRuntime) (string,
 	return result.String(), nil
 }
 
-func parseSourceRuleTransform(rule string) (sourceRuleTransform, error) {
+func parseSourceRuleTransform(rule string, runtime *sourceRuleRuntime) (sourceRuleTransform, error) {
 	rawRule := strings.TrimSpace(rule)
-	if err := sourceRuleUnsupportedError(rawRule); err != nil {
+	parts := strings.Split(rawRule, "##")
+	// Only the extract segment is subject to the JS/template gate; templates
+	// in the replacement segment are Legado variable substitutions that are
+	// resolved against the runtime before the regex compiles.
+	if err := sourceRuleUnsupportedError(parts[0]); err != nil {
 		return sourceRuleTransform{}, err
 	}
-	parts := strings.Split(rawRule, "##")
 	transform := sourceRuleTransform{rule: strings.TrimSpace(parts[0])}
 	if len(parts) < 2 {
 		return transform, nil
 	}
 	transform.hasTransform = true
-	transform.pattern = parts[1]
+	transform.pattern = substituteSourceRuleVariables(parts[1], runtime)
 	if len(parts) > 2 {
-		transform.replacement = parts[2]
+		transform.replacement = substituteSourceRuleVariables(parts[2], runtime)
 	}
 	transform.replaceFirst = len(parts) > 3
 	if transform.pattern == "" {
@@ -773,8 +784,17 @@ func sourceRuleValueString(value sourceRuleValue, rule string) (string, error) {
 		return strings.TrimSpace(sourceRuleJSONText(value.jsonData)), nil
 	}
 	operation := sourceRuleCSSOperation(rule)
+	if strings.TrimSpace(rule) == "value" {
+		operation = "value"
+	}
 	if value.selection != nil {
 		switch {
+		case operation == "value":
+			matched, found := value.selection.Attr("value")
+			if !found {
+				return "", nil
+			}
+			return strings.TrimSpace(matched), nil
 		case operation == "html":
 			htmlValue, err := value.selection.Html()
 			if err != nil {
@@ -1047,6 +1067,68 @@ func sourceRuleUsesVariables(rule string) bool {
 	return strings.Contains(lower, "@put:") ||
 		strings.Contains(lower, "@get:") ||
 		sourceRuleUsesTemplate(rule)
+}
+
+// substituteSourceRuleVariables resolves the safe Legado variable subset that
+// community sources use inside ## replacement patterns ({{title}}, {{book}},
+// {{book.name}}, ...). Unknown templates return the rule untouched — the
+// regexp compile then fails on the braces and the rule is rejected as
+// invalid rather than silently misfiltering content.
+func substituteSourceRuleVariables(pattern string, runtime *sourceRuleRuntime) string {
+	if !strings.Contains(pattern, "{{") {
+		return pattern
+	}
+	resolve := func(name string) (string, bool) {
+		switch strings.TrimSpace(name) {
+		case "title", "chapter.title", "chapterTitle":
+			if runtime != nil && runtime.chapterTitle != "" {
+				return regexp.QuoteMeta(runtime.chapterTitle), true
+			}
+			return "\\A\\z", true
+		case "book", "book.name", "bookName":
+			if runtime != nil && runtime.bookName != "" {
+				return regexp.QuoteMeta(runtime.bookName), true
+			}
+			return "\\A\\z", true
+		case "author", "book.author":
+			if runtime != nil {
+				if value := strings.TrimSpace(runtime.bookVariables["author"]); value != "" {
+					return regexp.QuoteMeta(value), true
+				}
+			}
+			return "\\A\\z", true
+		case "index", "chapter.index":
+			return "\\d+", true
+		}
+		return "", false
+	}
+	var builder strings.Builder
+	for {
+		start := strings.Index(pattern, "{{")
+		if start < 0 {
+			builder.WriteString(pattern)
+			break
+		}
+		end := strings.Index(pattern[start:], "}}")
+		if end < 0 {
+			// Unterminated template — leave the rest verbatim.
+			builder.WriteString(pattern)
+			break
+		}
+		name := pattern[start+2 : start+end]
+		value, ok := resolve(name)
+		if !ok {
+			// Unknown template (JS expressions like {{"《"+book.name+"》"}}):
+			// keep the braces so the compile fails and the rule reports
+			// invalid instead of filtering the wrong thing.
+			builder.WriteString(pattern[:start+end+2])
+		} else {
+			builder.WriteString(pattern[:start])
+			builder.WriteString(value)
+		}
+		pattern = pattern[start+end+2:]
+	}
+	return builder.String()
 }
 
 func sourceRuleUsesTemplate(rule string) bool {
