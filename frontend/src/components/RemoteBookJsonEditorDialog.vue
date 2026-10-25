@@ -1,28 +1,32 @@
 <template>
-  <el-dialog
+  <v-dialog
     :model-value="visible"
-    title="保存书籍"
-    width="500px"
     :fullscreen="isMobile"
-    :close-on-click-modal="!saving"
-    :close-on-press-escape="!saving"
-    append-to-body
-    class="remote-book-json-editor"
+    :persistent="saving"
+    max-width="500px"
     @update:model-value="handleVisibilityChange"
   >
-    <el-input
-      :model-value="content"
-      type="textarea"
-      :rows="18"
-      resize="vertical"
-      aria-label="书籍 JSON"
-      @update:model-value="$emit('update:content', $event)"
-    />
-    <template #footer>
-      <el-button :disabled="saving" @click="$emit('close')">取 消</el-button>
-      <el-button type="primary" :loading="saving" @click="$emit('save')">保 存</el-button>
-    </template>
-  </el-dialog>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">保存书籍</h2>
+      </header>
+      <div class="app-dialog-body">
+        <v-textarea
+          :model-value="content"
+          :rows="18"
+          aria-label="书籍 JSON"
+          class="json-editor-field"
+          variant="outlined"
+          hide-details
+          @update:model-value="$emit('update:content', $event)"
+        />
+      </div>
+      <footer class="app-dialog-actions">
+        <v-btn :disabled="saving" variant="text" @click="$emit('close')">取 消</v-btn>
+        <v-btn color="primary" :loading="saving" @click="$emit('save')">保 存</v-btn>
+      </footer>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
@@ -40,8 +44,8 @@ function handleVisibilityChange(value) {
 }
 </script>
 
-<style>
-.remote-book-json-editor .el-textarea__inner {
+<style scoped>
+.json-editor-field :deep(textarea) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   line-height: 1.55;
 }

@@ -133,6 +133,15 @@ a {
   padding: 4px 22px 22px;
 }
 
+.app-dialog-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 22px 18px;
+}
+
 .v-dialog--fullscreen .app-dialog-card {
   max-height: 100dvh;
   border-radius: 0;
@@ -144,7 +153,16 @@ a {
 }
 
 .v-dialog--fullscreen .app-dialog-body {
-  padding-bottom: calc(22px + env(safe-area-inset-bottom));
+  padding-bottom: 22px;
+}
+
+.v-dialog--fullscreen .app-dialog-head,
+.v-dialog--fullscreen .app-dialog-actions {
+  padding-bottom: 18px;
+}
+
+.v-dialog--fullscreen .app-dialog-actions {
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
 }
 
 .v-overlay__content .v-list {

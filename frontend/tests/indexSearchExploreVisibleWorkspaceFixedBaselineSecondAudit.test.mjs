@@ -84,8 +84,8 @@ test('search and explore share one flat upstream result list and result editor',
     assert.match(source, /class="app-page shelf-page result-shelf-page/)
     assert.doesNotMatch(source, /workspace-result-subtitle|el-empty[^>]+没有找到相关书籍|groupedResults|exploreResultGroups/)
   }
-  assert.match(editor, /title="保存书籍"/)
-  assert.match(editor, /type="textarea"/)
+  assert.match(editor, /app-dialog-title">\s*保存书籍\s*</)
+  assert.match(editor, /<v-textarea/)
   assert.match(editor, />取 消</)
   assert.match(editor, />保 存</)
 })
