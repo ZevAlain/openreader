@@ -1,51 +1,36 @@
 <template>
-  <el-dialog
+  <v-dialog
     :model-value="overlay.bookmarkFormVisible"
-    title="书签"
     width="min(1000px, max(750px, 70vw))"
-    top="max(15dvh, calc((100dvh - 584px) / 2))"
     :fullscreen="isMobile"
     class="global-bookmark-form-dialog"
     @update:model-value="handleVisibleChange"
-    @closed="overlay.clearBookmarkForm()"
+    @after-leave="overlay.clearBookmarkForm()"
   >
-    <el-form v-if="draft" label-width="64px" class="bookmark-form">
-      <el-form-item label="书名">
-        <el-input :model-value="bookTitle" readonly />
-      </el-form-item>
-      <el-form-item label="作者">
-        <el-input :model-value="bookAuthor" readonly />
-      </el-form-item>
-      <el-form-item label="章节">
-        <el-input :model-value="draft.title || ''" readonly />
-      </el-form-item>
-      <el-form-item label="内容">
-        <el-input
-          :model-value="draft.excerpt || ''"
-          type="textarea"
-          :rows="5"
-          readonly
-        />
-      </el-form-item>
-      <el-form-item label="备注">
-        <el-input
-          v-model="draft.note"
-          type="textarea"
-          :rows="3"
-        />
-      </el-form-item>
-    </el-form>
-
-    <template #footer>
-      <el-button @click="overlay.finishBookmarkForm({ saved: false, reason: 'cancel' })">取消</el-button>
-      <el-button type="primary" :loading="saving" @click="save">确定</el-button>
-    </template>
-  </el-dialog>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">书签</h2>
+      </header>
+      <div class="app-dialog-body">
+        <div v-if="draft" class="bookmark-form">
+          <v-text-field :model-value="bookTitle" label="书名" readonly variant="outlined" density="compact" hide-details />
+          <v-text-field :model-value="bookAuthor" label="作者" readonly variant="outlined" density="compact" hide-details />
+          <v-text-field :model-value="draft.title || ''" label="章节" readonly variant="outlined" density="compact" hide-details />
+          <v-textarea :model-value="draft.excerpt || ''" label="内容" :rows="5" readonly variant="outlined" hide-details />
+          <v-textarea v-model="draft.note" label="备注" :rows="3" variant="outlined" hide-details />
+        </div>
+      </div>
+      <footer class="app-dialog-actions">
+        <v-btn variant="text" @click="overlay.finishBookmarkForm({ saved: false, reason: 'cancel' })">取消</v-btn>
+        <v-btn color="primary" :loading="saving" @click="save">确定</v-btn>
+      </footer>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { message } from '../../composables/useAppFeedback.js'
 import { createBookmark, updateBookmark } from '../../api/books'
 import { useAuthenticatedOperationGuard } from '../../composables/useAuthenticatedOperationGuard'
 import { useOverlayStore } from '../../stores/overlay'
@@ -73,11 +58,11 @@ async function save() {
   const currentBook = book.value
   const currentDraft = draft.value
   if (!currentBook?.id) {
-    ElMessage.error('书籍信息错误')
+    message.error('书籍信息错误')
     return
   }
   if (!String(currentDraft?.excerpt || '').trim()) {
-    ElMessage.error('书签内容不能为空')
+    message.error('书签内容不能为空')
     return
   }
 
@@ -90,12 +75,12 @@ async function save() {
       const { data } = await updateBookmark(currentDraft.id, { note: payload.note })
       bookmark = data
       if (!operations.canCommit(operation)) return
-      ElMessage.success('编辑书签成功')
+      message.success('编辑书签成功')
     } else {
       const { data } = await createBookmark(currentBook.id, payload)
       bookmark = data
       if (!operations.canCommit(operation)) return
-      ElMessage.success('新增书签成功')
+      message.success('新增书签成功')
     }
     dispatchBookmarksUpdated(currentBook.id)
     overlay.finishBookmarkForm({
@@ -104,7 +89,7 @@ async function save() {
     })
   } catch (error) {
     if (operations.canCommit(operation)) {
-      ElMessage.error(readError(error, `${overlay.bookmarkFormMode === 'edit' ? '编辑' : '新增'}书签失败`))
+      message.error(readError(error, `${overlay.bookmarkFormMode === 'edit' ? '编辑' : '新增'}书签失败`))
     }
   } finally {
     if (operations.canCommit(operation)) saving.value = false
@@ -138,7 +123,8 @@ function readError(error, fallback) {
 </script>
 
 <style scoped>
-.bookmark-form :deep(.el-textarea__inner) {
-  resize: vertical;
+.bookmark-form {
+  display: grid;
+  gap: 12px;
 }
 </style>

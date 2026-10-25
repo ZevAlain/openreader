@@ -27,9 +27,8 @@ test('moves BookmarkForm ownership to the global overlay host', () => {
 test('global bookmark form preserves upstream readonly context and mobile dialog behavior', () => {
   const form = read('../src/components/overlays/OverlayBookmarkForm.vue')
 
-  assert.match(form, /<el-dialog/)
+  assert.match(form, /<v-dialog/)
   assert.match(form, /width="min\(1000px, max\(750px, 70vw\)\)"/)
-  assert.match(form, /top="max\(15dvh, calc\(\(100dvh - 584px\) \/ 2\)\)"/)
   assert.match(form, /:fullscreen="isMobile"/)
   assert.match(form, /label="书名"/)
   assert.match(form, /label="作者"/)
