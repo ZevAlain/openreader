@@ -37,7 +37,7 @@
           @click="selectCustomConfig(config.name)"
         >
           <span>{{ config.name }}</span>
-          <el-icon v-if="index > 1 && !config.builtin && reader.customConfigName !== config.name" @click.stop="deleteCustomConfig(config.name)"><Close /></el-icon>
+          <v-icon v-if="index > 1 && !config.builtin && reader.customConfigName !== config.name" :icon="mdiClose" @click.stop="deleteCustomConfig(config.name)" />
         </button>
         <button class="selection-button config-scheme add" type="button" @click="addCustomConfig">新增方案</button>
         <button class="selection-button config-scheme" :class="{ active: reader.autoTheme }" type="button" @click="reader.setAutoTheme(!reader.autoTheme)">自动切换</button>
@@ -101,13 +101,13 @@
             </button>
           </span>
           <span class="custom-theme-title">页面背景颜色
-            <el-color-picker v-model="bodyColorModel" size="small" />
+            <input v-model="bodyColorModel" class="reader-color-input" type="color">
           </span>
           <span class="custom-theme-title">浮窗背景颜色
-            <el-color-picker v-model="popupColorModel" size="small" />
+            <input v-model="popupColorModel" class="reader-color-input" type="color">
           </span>
           <span class="custom-theme-title">阅读背景颜色
-            <el-color-picker v-model="localCustomBg" size="small" />
+            <input v-model="localCustomBg" class="reader-color-input" type="color">
           </span>
           <span class="custom-theme-title bg-image-title">阅读背景图片
             <span class="content-bg-preview-list">
@@ -137,13 +137,12 @@
               >
                 <img :src="image" alt="" />
                 <button class="delete-bg-icon" type="button" title="删除背景图" @click.stop="$emit('clearBgImage', image)">
-                  <el-icon><Close /></el-icon>
+                  <v-icon :icon="mdiClose" size="14" />
                 </button>
               </span>
             </span>
-            <el-upload class="upload-bg-upload" accept="image/*" :show-file-list="false" :auto-upload="false" @change="$emit('pickBgImage', $event)">
-              <span class="upload-bg-btn">上传</span>
-            </el-upload>
+            <input ref="bgImageInput" class="visually-hidden-input" type="file" accept="image/*" @change="onBgImageChange">
+            <button class="upload-bg-btn" type="button" @click="bgImageInput?.click()">上传</button>
           </span>
         </div>
       </div>
@@ -182,7 +181,7 @@
             :title="hasCustomFont(font.value) ? '管理自定义字体' : '上传字体'"
             @click.stop="manageFont(font)"
           >
-            <el-icon><Upload /></el-icon>
+            <v-icon :icon="mdiUpload" size="18" />
           </button>
         </div>
       </div>
@@ -275,7 +274,7 @@
 
     <div class="setting-row">
       <label class="setting-label">字体颜色</label>
-      <el-color-picker v-model="fontColorModel" size="small" />
+      <input v-model="fontColorModel" class="reader-color-input" type="color">
     </div>
 
     <div class="setting-row">
@@ -418,8 +417,8 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Close, Upload } from '@element-plus/icons-vue'
+import { confirm, message, prompt } from '../../composables/useAppFeedback.js'
+import { mdiClose, mdiUpload } from '@mdi/js'
 import { readerBuiltInBackgrounds } from '../../stores/reader'
 import ReaderSettingStepper from './ReaderSettingStepper.vue'
 
@@ -476,6 +475,7 @@ const clickMethodOptions = [
 ]
 const selectionActionOptions = ['操作弹窗', '忽略']
 const fontFileInput = ref(null)
+const bgImageInput = ref(null)
 const pendingFont = ref(null)
 
 const fontPreviewStyle = computed(() => ({
@@ -530,45 +530,50 @@ function selectCustomConfig(name) {
 }
 
 async function addCustomConfig() {
-  const res = await ElMessageBox.prompt('请输入方案名称', '添加配置方案', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    inputPattern: /\S+/,
-    inputErrorMessage: '方案名不能为空',
+  const res = await prompt({
+    title: '添加配置方案',
+    message: '请输入方案名称',
+    confirmText: '确定',
+    cancelText: '取消',
+    validator: value => (/\S+/.test(value) ? true : '方案名不能为空'),
   }).catch(() => null)
   if (!res) return
   const result = props.reader.createCustomConfig(res.value)
   if (!result.ok) {
-    ElMessage.error(result.message || '新增方案失败')
+    message.error(result.message || '新增方案失败')
     return
   }
-  ElMessage.success('新增方案成功')
+  message.success('新增方案成功')
 }
 
 async function deleteCustomConfig(name) {
-  const confirmed = await ElMessageBox.confirm(`确认要删除${name}方案吗？`, '提示', { type: 'warning' }).catch(() => false)
-  if (!confirmed) return
+  const action = await confirm({
+    title: '提示',
+    message: `确认要删除${name}方案吗？`,
+    tone: 'warning',
+  }).catch(() => 'cancel')
+  if (action !== 'confirm') return
   const result = props.reader.deleteCustomConfig(name)
   if (!result.ok) {
-    ElMessage.error(result.message || '删除方案失败')
+    message.error(result.message || '删除方案失败')
     return
   }
-  ElMessage.success('已删除配置方案')
+  message.success('已删除配置方案')
 }
 
 async function setConfigDefaultType(type) {
-  const confirmed = await ElMessageBox.confirm(
-    `确认要设置当前方案为${type}吗？继续操作将替换现有的${type}方案`,
-    '提示',
-    { type: 'warning' },
-  ).catch(() => false)
-  if (!confirmed) return
+  const action = await confirm({
+    title: '提示',
+    message: `确认要设置当前方案为${type}吗？继续操作将替换现有的${type}方案`,
+    tone: 'warning',
+  }).catch(() => 'cancel')
+  if (action !== 'confirm') return
   const result = props.reader.setCustomConfigDefaultType(type)
   if (!result.ok) {
-    ElMessage.error(result.message || '设置方案类型失败')
+    message.error(result.message || '设置方案类型失败')
     return
   }
-  ElMessage.success(`已设为${type}`)
+  message.success(`已设为${type}`)
 }
 
 const readerModeModel = computed({
@@ -690,18 +695,14 @@ function hasCustomFont(value) {
 
 async function manageFont(font) {
   if (hasCustomFont(font.value)) {
-    const action = await ElMessageBox.confirm(
-      `已上传自定义的${font.label}字体?`,
-      '提示',
-      {
-        confirmButtonText: '继续上传',
-        cancelButtonText: '恢复默认',
-        type: 'warning',
-        closeOnClickModal: false,
-        closeOnPressEscape: false,
-        distinguishCancelAndClose: true,
-      },
-    ).then(() => 'confirm').catch(result => result)
+    const action = await confirm({
+      title: '提示',
+      message: `已上传自定义的${font.label}字体?`,
+      confirmText: '继续上传',
+      cancelText: '恢复默认',
+      tone: 'warning',
+      distinguishCancelAndClose: true,
+    }).catch(result => result)
     if (action === 'close') return
     if (action === 'cancel') {
       emit('clearFontFile', font)
@@ -711,6 +712,12 @@ async function manageFont(font) {
   }
   pendingFont.value = font
   fontFileInput.value?.click()
+}
+
+function onBgImageChange(event) {
+  const file = event.target?.files?.[0]
+  if (event.target) event.target.value = ''
+  if (file) emit('pickBgImage', { raw: file })
 }
 
 function onFontFileChange(event) {
@@ -823,7 +830,7 @@ function resetReaderSettings() {
   white-space: nowrap;
 }
 
-.config-scheme .el-icon {
+.config-scheme .v-icon {
   position: absolute;
   top: -10px;
   right: -10px;
@@ -992,10 +999,6 @@ function resetReaderSettings() {
   line-height: 1;
 }
 
-.upload-bg-upload {
-  display: inline-block;
-}
-
 .upload-bg-btn {
   display: inline-block;
   margin-left: 10px;
@@ -1006,18 +1009,14 @@ function resetReaderSettings() {
   cursor: pointer;
 }
 
-.upload-bg-upload :deep(.upload-bg-btn) {
-  display: inline-block;
-  margin-left: 10px;
+.reader-color-input {
+  width: 34px;
+  height: 24px;
   padding: 0;
-  color: var(--reader-accent, #ed4259);
   background: transparent;
-  border: 0;
+  border: 1px solid var(--reader-control-border);
+  border-radius: 4px;
   cursor: pointer;
-}
-
-:global(.upload-bg-btn) {
-  display: inline-block !important;
 }
 
 .font-family-grid {
