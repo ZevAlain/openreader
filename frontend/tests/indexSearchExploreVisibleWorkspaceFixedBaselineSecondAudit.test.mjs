@@ -122,6 +122,16 @@ test('the search header stays clean; load-more lives at the list tail', () => {
   assert.match(search, /runSearchStream/, 'remaining windows stream in automatically after the first paint')
 })
 
+test('the search bar exposes the concurrency picker', () => {
+  const search = read('src/views/Search.vue')
+  const css = read('src/styles/home-shelf.css')
+  assert.match(search, /search-concurrent-toggle/, 'the entry bar shows the current thread count')
+  assert.match(search, /v-model="concurrentPickerVisible"/, 'the picker opens a dialog')
+  assert.match(search, /SEARCH_CONCURRENT_OPTIONS/, 'the picker lists the shared option set')
+  assert.match(search, /applyConcurrentCount\(count\)[\s\S]*?saveSearchPreference/, 'choosing a count persists the preference')
+  assert.match(css, /\.search-concurrent-option\s*\{[\s\S]*?border-radius:\s*999px/, 'options render as pills')
+})
+
 test('a fully failed search explains itself instead of looking empty', () => {
   const search = read('src/views/Search.vue')
   assert.match(search, /全部搜索失败/, 'the toast distinguishes total source failure from no hits')

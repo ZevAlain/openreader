@@ -37,6 +37,12 @@
         :title="matchMode === 'strict' ? '严格匹配：书名必须完全一致' : '宽松匹配：书名包含关键词即可'"
         @click="toggleMatchMode"
       >{{ matchMode === 'strict' ? '严格' : '宽松' }}</button>
+      <button
+        class="search-concurrent-toggle"
+        type="button"
+        title="同时搜索的书源数量"
+        @click="openConcurrentPicker"
+      >{{ concurrentCount }}线程</button>
       <el-button
         type="primary"
         class="search-entry-go"
@@ -45,6 +51,25 @@
         @click="doSearch"
       >搜索</el-button>
     </div>
+
+    <el-dialog
+      v-model="concurrentPickerVisible"
+      title="搜索线程数"
+      width="min(360px, calc(100vw - 48px))"
+      append-to-body
+    >
+      <p class="search-concurrent-hint">多源搜索时同时请求的书源数量。线程越多出结果越快，但也更容易被书站限流。</p>
+      <div class="search-concurrent-options">
+        <button
+          v-for="count in concurrentOptions"
+          :key="count"
+          class="search-concurrent-option"
+          :class="{ active: count === concurrentCount }"
+          type="button"
+          @click="applyConcurrentCount(count)"
+        >{{ count }}</button>
+      </div>
+    </el-dialog>
 
     <section v-if="showRecentSearches && recentSearches.length" class="search-rank-board" aria-label="最近搜索">
       <div class="search-rank-header">
@@ -178,6 +203,7 @@ import { readerRouteQueryFromBook } from '../utils/readerRoute'
 import { createAuthenticatedOperationGuard } from '../utils/authenticatedOperation'
 import {
   DEFAULT_SEARCH,
+  SEARCH_CONCURRENT_OPTIONS,
   normalizeSearchConcurrent,
 } from '../utils/searchPreference.js'
 import {
@@ -288,6 +314,19 @@ async function loadHotRank() {
 }
 
 const RECENT_SEARCH_LIMIT = 8
+const concurrentPickerVisible = ref(false)
+const concurrentOptions = SEARCH_CONCURRENT_OPTIONS
+
+function openConcurrentPicker() {
+  concurrentPickerVisible.value = true
+}
+
+function applyConcurrentCount(count) {
+  concurrentCount.value = count
+  concurrentPickerVisible.value = false
+  saveSearchPreference()
+}
+
 const recentSearches = ref([])
 const showRecentSearches = computed(() => (
   !HOT_RANK_ENABLED
