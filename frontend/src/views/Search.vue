@@ -24,10 +24,14 @@
     </div>
 
     <div class="search-entry-bar">
-      <el-input
+      <v-text-field
         v-model="keyword"
+        class="search-entry-field"
         placeholder="搜索书籍 / 作者"
         clearable
+        density="compact"
+        variant="outlined"
+        hide-details
         :disabled="searchMode !== 'remote'"
         @keyup.enter="doSearch"
       />
@@ -43,33 +47,38 @@
         title="同时搜索的书源数量"
         @click="openConcurrentPicker"
       >{{ concurrentCount }}线程</button>
-      <el-button
-        type="primary"
+      <v-btn
+        color="primary"
         class="search-entry-go"
         :loading="searchStarting || searching"
         :disabled="searchMode === 'remote' && !keyword.trim()"
         @click="doSearch"
-      >搜索</el-button>
+      >搜索</v-btn>
     </div>
 
-    <el-dialog
+    <v-dialog
       v-model="concurrentPickerVisible"
-      title="搜索线程数"
       width="min(360px, calc(100vw - 48px))"
-      append-to-body
     >
-      <p class="search-concurrent-hint">多源搜索时同时请求的书源数量。线程越多出结果越快，但也更容易被书站限流。</p>
-      <div class="search-concurrent-options">
-        <button
-          v-for="count in concurrentOptions"
-          :key="count"
-          class="search-concurrent-option"
-          :class="{ active: count === concurrentCount }"
-          type="button"
-          @click="applyConcurrentCount(count)"
-        >{{ count }}</button>
+      <div class="app-dialog-card">
+        <header class="app-dialog-head">
+          <h2 class="app-dialog-title">搜索线程数</h2>
+        </header>
+        <div class="app-dialog-body">
+          <p class="search-concurrent-hint">多源搜索时同时请求的书源数量。线程越多出结果越快，但也更容易被书站限流。</p>
+          <div class="search-concurrent-options">
+            <button
+              v-for="count in concurrentOptions"
+              :key="count"
+              class="search-concurrent-option"
+              :class="{ active: count === concurrentCount }"
+              type="button"
+              @click="applyConcurrentCount(count)"
+            >{{ count }}</button>
+          </div>
+        </div>
       </div>
-    </el-dialog>
+    </v-dialog>
 
     <section v-if="showRecentSearches && recentSearches.length" class="search-rank-board" aria-label="最近搜索">
       <div class="search-rank-header">
@@ -82,7 +91,7 @@
             <span class="search-rank-info">
               <strong>{{ term }}</strong>
             </span>
-            <el-icon><Search /></el-icon>
+            <v-icon :icon="mdiMagnify" />
           </button>
         </li>
       </ol>
@@ -104,7 +113,7 @@
               <strong>{{ item.title }}</strong>
               <small>{{ item.author || '—' }}</small>
             </span>
-            <el-icon><Search /></el-icon>
+            <v-icon :icon="mdiMagnify" />
           </button>
         </li>
       </ol>
@@ -141,27 +150,27 @@
             :key="localResultKey(item)"
             class="local-result-card app-panel"
           >
-            <el-icon class="local-file-icon"><Document /></el-icon>
+            <v-icon class="local-file-icon" :icon="mdiFileDocumentOutline" />
             <div class="result-main">
               <div class="result-title">
                 <h3>{{ localBookTitle(item) }}</h3>
-                <el-tag size="small" :type="item.book ? 'success' : 'info'" effect="plain">{{ item.book ? '已在书架' : (item.extension || '文件') }}</el-tag>
+                <v-chip size="x-small" :color="item.book ? 'success' : 'primary'" variant="tonal">{{ item.book ? '已在书架' : (item.extension || '文件') }}</v-chip>
               </div>
               <p>{{ localBookSubline(item) }}</p>
               <p class="latest-chapter">{{ localBookMeta(item) }}</p>
             </div>
             <div class="result-actions" @click.stop>
               <template v-if="item.book">
-                <el-button type="primary" size="small" @click="readLocalShelfBook(item.book)">阅读</el-button>
-                <el-button size="small" @click="openLocalShelfDetail(item.book)">详情</el-button>
+                <v-btn color="primary" size="small" @click="readLocalShelfBook(item.book)">阅读</v-btn>
+                <v-btn variant="outlined" size="small" @click="openLocalShelfDetail(item.book)">详情</v-btn>
               </template>
-              <el-button v-else type="primary" size="small" :loading="importingLocal" @click="importLocalOne(item)">导入书架</el-button>
+              <v-btn v-else color="primary" size="small" :loading="importingLocal" @click="importLocalOne(item)">导入书架</v-btn>
             </div>
           </article>
         </div>
 
-        <el-empty v-else-if="searched && !searching" description="没有找到本地书籍文件" />
-        <el-empty v-else-if="searchMode === 'local'" description="输入关键词搜索本地书仓，或直接搜索显示全部可导入文件" />
+        <p v-else-if="searched && !searching" class="search-empty-tip">没有找到本地书籍文件</p>
+        <p v-else-if="searchMode === 'local'" class="search-empty-tip">输入关键词搜索本地书仓，或直接搜索显示全部可导入文件</p>
       </div>
     </main>
 
@@ -180,8 +189,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Document, Search } from '@element-plus/icons-vue'
+import { confirm, message } from '../composables/useAppFeedback.js'
+import { mdiFileDocumentOutline, mdiMagnify } from '@mdi/js'
 import { createRemoteReaderSession } from '../api/remoteReader'
 import { createRemoteBook } from '../api/books'
 import { importFromLocalStore, listLocalStore } from '../api/localStore'
@@ -258,13 +267,13 @@ let searchStreamSerial = 0
 function finishSearchFeedback(added) {
   const stats = lastSearchStats.value
   if (added) {
-    if (stats.failed) ElMessage.success(`共找到 ${results.value.length} 条结果（${stats.failed} 个书源失败）`)
-    else ElMessage.success(`共找到 ${results.value.length} 条结果`)
+    if (stats.failed) message.success(`共找到 ${results.value.length} 条结果（${stats.failed} 个书源失败）`)
+    else message.success(`共找到 ${results.value.length} 条结果`)
   } else if (stats.failed && stats.attempted && stats.failed >= stats.attempted) {
-    ElMessage.error(`${stats.failed} 个书源全部搜索失败，请检查网络或书源可用性`)
+    message.error(`${stats.failed} 个书源全部搜索失败，请检查网络或书源可用性`)
     searchFailed.value = true
   } else {
-    ElMessage.info('没有找到相关书籍')
+    message.info('没有找到相关书籍')
   }
 }
 
@@ -387,7 +396,7 @@ function stopSearchStream() {
   streamingMore.value = false
   loadingMore.value = false
   workspace.setResultLoading(false)
-  ElMessage.info(`已停止搜索，保留当前 ${results.value.length} 条结果`)
+  message.info(`已停止搜索，保留当前 ${results.value.length} 条结果`)
 }
 const searchMode = ref('remote')
 const sources = ref([])
@@ -449,17 +458,20 @@ const resultAddToShelf = useRemoteBookAddToShelf({
   buildPayload: (book, categoryIds, context) => remoteBookCreatePayload(book, categoryIds, context),
   createRemoteBook,
   upsertBook: book => bookshelf.upsertBook(book),
-  onSuccess: message => ElMessage.success(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onSuccess: message => message.success(message),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
 const addingRemoteBookKey = resultAddToShelf.addingBookKey
 const resultEditor = useRemoteBookResultEditor({
   operationGuard: searchSessionOperations,
-  confirm: (...args) => ElMessageBox.confirm(...args),
+  confirm: (text, title, config = {}) =>
+    confirm({ message: text, title, tone: config.type === 'warning' ? 'warning' : 'primary' }).then(action => {
+      if (action !== 'confirm') return Promise.reject('cancel')
+    }),
   createRemoteBook,
   upsertBook: book => bookshelf.upsertBook(book),
-  onSuccess: message => ElMessage.success(message),
-  onError: (error, fallback) => ElMessage.error(readError(error, fallback)),
+  onSuccess: message => message.success(message),
+  onError: (error, fallback) => message.error(readError(error, fallback)),
 })
 const {
   visible: resultEditorVisible,
@@ -518,7 +530,7 @@ onMounted(async () => {
       if (!sourcesReady || !searchSessionOperations.canCommit(mountOperation)) return
     } catch (err) {
       if (!searchSessionOperations.canCommit(mountOperation)) return
-      ElMessage.warning(readError(err, '加载书源失败'))
+      message.warning(readError(err, '加载书源失败'))
     }
   } else {
     loadSources().catch(() => {})
@@ -566,9 +578,9 @@ async function warmSearchShelf() {
     if (result.status !== 'rejected') return
     const type = jobs[index][0]
     if (type === 'books') {
-      ElMessage.warning(readError(result.reason, '加载书架失败，部分已入架状态可能暂不可用'))
+      message.warning(readError(result.reason, '加载书架失败，部分已入架状态可能暂不可用'))
     } else {
-      ElMessage.warning(readError(result.reason, '分组加载失败，部分筛选状态可能暂不可用'))
+      message.warning(readError(result.reason, '分组加载失败，部分筛选状态可能暂不可用'))
     }
   })
   return true
@@ -641,7 +653,7 @@ async function doSearch() {
   if (!selectedIds.value.length) {
     searchStarting.value = false
     searching.value = false
-    ElMessage.warning('未配置书源')
+    message.warning('未配置书源')
     return
   }
   workspace.setResultLoading(true)
@@ -681,7 +693,7 @@ async function doSearch() {
     finishSearchFeedback(added)
   } catch (err) {
     if (isActiveRemoteRequest(requestToken, workspaceStamp)) {
-      ElMessage.error(readError(err, '搜索失败'))
+      message.error(readError(err, '搜索失败'))
     }
   } finally {
     // Clear unconditionally: the streaming continuation rotates the gate
@@ -699,7 +711,7 @@ async function doSearch() {
 async function loadMoreRemote(options = {}) {
   if (loadingMore.value) return 'busy'
   if (!remoteHasMore.value) {
-    if (!options.auto) ElMessage.info('没有更多了')
+    if (!options.auto) message.info('没有更多了')
     return 'skipped'
   }
   const requestToken = remoteRequestGate.begin()
@@ -719,12 +731,12 @@ async function loadMoreRemote(options = {}) {
     })
     if (!current) return 'skipped'
     if (!options.auto && !added) {
-      ElMessage.info(remoteHasMore.value ? '本批没有新增结果，仍可继续加载' : '没有更多了')
+      message.info(remoteHasMore.value ? '本批没有新增结果，仍可继续加载' : '没有更多了')
     }
     return 'done'
   } catch (err) {
     if (isActiveRemoteRequest(requestToken, workspaceStamp)) {
-      ElMessage.error(readError(err, options.auto ? '继续搜索失败，可点击列表尾部继续' : '加载更多失败'))
+      message.error(readError(err, options.auto ? '继续搜索失败，可点击列表尾部继续' : '加载更多失败'))
     }
     return 'error'
   } finally {
@@ -847,16 +859,16 @@ async function searchLocalBooks() {
       hasMore: false,
     })
     if (shelfResult.status === 'rejected') {
-      ElMessage.warning(`书架本地书加载失败，已仅搜索本地书仓：${readError(shelfResult.reason, '加载失败')}`)
+      message.warning(`书架本地书加载失败，已仅搜索本地书仓：${readError(shelfResult.reason, '加载失败')}`)
     }
     if (storeResult.status === 'rejected') {
-      ElMessage.warning(`本地书仓扫描失败，已仅搜索书架本地书：${readError(storeResult.reason, '扫描失败')}`)
+      message.warning(`本地书仓扫描失败，已仅搜索书架本地书：${readError(storeResult.reason, '扫描失败')}`)
       return
     }
-    ElMessage.success(shownLocalResults.value.length ? `找到 ${shownLocalResults.value.length} 条本地结果` : '没有找到本地书籍')
+    message.success(shownLocalResults.value.length ? `找到 ${shownLocalResults.value.length} 条本地结果` : '没有找到本地书籍')
   } catch (err) {
     if (isActiveLocalSearch(operation, workspaceStamp)) {
-      ElMessage.error(readError(err, '搜索本地书仓失败'))
+      message.error(readError(err, '搜索本地书仓失败'))
     }
   } finally {
     if (isActiveLocalSearch(operation, workspaceStamp)) {
@@ -920,10 +932,10 @@ async function importLocalPaths(paths) {
     markImportedLocalItems(imported)
     const success = imported.filter(item => item.book).length
     const failed = imported.filter(item => item.error).length
-    ElMessage.success(`导入 ${success} 本` + (failed ? `，${failed} 本失败` : ''))
+    message.success(`导入 ${success} 本` + (failed ? `，${failed} 本失败` : ''))
   } catch (err) {
     if (searchSessionOperations.canCommit(operation)) {
-      ElMessage.error(readError(err, '导入本地书失败'))
+      message.error(readError(err, '导入本地书失败'))
     }
   } finally {
     if (searchSessionOperations.canCommit(operation)) importingLocal.value = false
@@ -1030,7 +1042,7 @@ async function openRemoteReader(item) {
     router.push({ name: 'remote-reader', params: { sessionId: data.id }, query: { chapter: 0 } })
   } catch (error) {
     if (searchSessionOperations.canCommit(operation)) {
-      ElMessage.error(readError(error, '打开临时阅读失败'))
+      message.error(readError(error, '打开临时阅读失败'))
     }
   }
 }

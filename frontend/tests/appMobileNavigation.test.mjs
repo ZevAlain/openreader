@@ -82,7 +82,7 @@ test('the mobile search workspace owns a visible search entry', () => {
   assert.match(search, /@click="doSearch"/, 'the go button submits the search')
   assert.match(shelfCss, /\.search-entry-bar\s*\{[\s\S]*?display:\s*none/, 'the bar stays hidden on desktop where the sidebar owns quick-search')
   assert.match(shelfCss, /@media \(max-width:\s*750px\)\s*\{[\s\S]*?\.search-entry-bar\s*\{[\s\S]*?display:\s*flex/, 'the bar appears on the mobile shell')
-  assert.match(shelfCss, /\.search-entry-bar \.el-input__inner\s*\{[\s\S]*?font-size:\s*16px/, 'the input keeps iOS from zooming on focus')
+  assert.match(shelfCss, /\.search-entry-bar \.v-field__input\s*\{[\s\S]*?font-size:\s*16px/, 'the input keeps iOS from zooming on focus')
 })
 
 test('the profile view is a full page, not a bottom sheet', () => {
