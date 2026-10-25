@@ -50,8 +50,8 @@ test('Home restores the upstream card metadata DOM and click ownership', () => {
 })
 
 test('Home uses the upstream loading owner and blank result instead of synthetic cards', () => {
-  assert.match(home, /v-loading="shelfLoading"[\s\S]*class="books-wrapper"/)
-  assert.match(home, /:element-loading-text="shelfLoadingText"/)
+  assert.match(home, /v-if="shelfLoading"[\s\S]*class="shelf-loading"/)
+  assert.match(home, /\{\{ shelfLoadingText \}\}/)
   assert.match(home, /正在刷新书籍信息/)
   assert.match(home, /正在获取书籍信息/)
   assert.match(home, /<div class="book-list wrapper">[\s\S]*v-for="book in displayedBooks"/)

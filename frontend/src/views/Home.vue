@@ -17,9 +17,15 @@
     </div>
 
     <div v-if="showBookEditButton" class="shelf-search-wrapper">
-      <el-input v-model="shelfKeyword" placeholder="搜索书名或作者" clearable>
-        <template #prefix><el-icon><Search /></el-icon></template>
-      </el-input>
+      <v-text-field
+        v-model="shelfKeyword"
+        placeholder="搜索书名或作者"
+        :prepend-inner-icon="mdiMagnify"
+        clearable
+        density="compact"
+        variant="outlined"
+        hide-details
+      />
     </div>
 
     <div class="book-group-wrapper" role="tablist" aria-label="书架分组">
@@ -38,12 +44,11 @@
     </div>
 
     <main class="shelf-main">
-      <div
-        v-loading="shelfLoading"
-        class="books-wrapper"
-        :element-loading-text="shelfLoadingText"
-        :element-loading-background="shelfLoadingBackground"
-      >
+      <div class="books-wrapper">
+        <div v-if="shelfLoading" class="shelf-loading" :style="shelfLoadingBackground ? { background: shelfLoadingBackground } : {}">
+          <v-progress-circular indeterminate size="36" width="3" />
+          <span class="shelf-loading-text">{{ shelfLoadingText }}</span>
+        </div>
         <div class="book-list wrapper">
           <article
             v-for="book in displayedBooks"
@@ -64,17 +69,15 @@
             <span class="list-main info">
               <span class="book-operation">
                 <button v-if="showBookEditButton" class="operation-icon danger" type="button" title="删除" @click.stop="deleteManagedBook(book)">
-                  <el-icon><Close /></el-icon>
+                  <v-icon :icon="mdiClose" />
                 </button>
                 <button v-if="showBookEditButton" class="operation-icon" type="button" title="编辑" @click.stop="goEditBook(book)">
-                  <el-icon><Edit /></el-icon>
+                  <v-icon :icon="mdiPencilOutline" />
                 </button>
-                <el-badge
+                <span
                   v-if="!showBookEditButton && unreadCount(book) > 0"
                   class="unread-num-badge"
-                  :max="99"
-                  :value="unreadCount(book)"
-                />
+                >{{ unreadCount(book) > 99 ? '99+' : unreadCount(book) }}</span>
               </span>
               <strong class="name" :class="{ edit: showBookEditButton }">{{ book.title }}</strong>
               <span class="sub">
@@ -96,8 +99,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Close, Edit, Search } from '@element-plus/icons-vue'
+import { confirm, message } from '../composables/useAppFeedback.js'
+import { mdiClose, mdiMagnify, mdiPencilOutline } from '@mdi/js'
 import { useBookshelfStore } from '../stores/bookshelf'
 import { useOverlayStore } from '../stores/overlay'
 import { useReaderStore } from '../stores/reader'
@@ -177,12 +180,17 @@ watch(isNormalPage, (normal) => {
 
 async function deleteManagedBook(book) {
   try {
-    await ElMessageBox.confirm(`确定删除《${book.title}》吗？阅读进度和书签也会一并删除。`, '删除书籍', { type: 'warning' })
+    const action = await confirm({
+      title: '删除书籍',
+      message: `确定删除《${book.title}》吗？阅读进度和书签也会一并删除。`,
+      tone: 'warning',
+    })
+    if (action !== 'confirm') throw 'cancel'
     await bookshelf.removeBook(book.id)
-    ElMessage.success('书籍已删除')
+    message.success('书籍已删除')
   } catch (err) {
     if (err === 'cancel' || err === 'close') return
-    ElMessage.error(readError(err, '删除失败'))
+    message.error(readError(err, '删除失败'))
   }
 }
 
@@ -203,14 +211,14 @@ async function refreshShelf() {
     if (categoryResult.status === 'rejected' || bookGroupResult.status === 'rejected') {
       const groupError = categoryResult.status === 'rejected' ? categoryResult.reason : bookGroupResult.reason
       const groupWarning = readError(groupError, '书架已刷新，分组刷新失败')
-      ElMessage.warning(remoteWarning ? `${remoteWarning}；${groupWarning}` : groupWarning)
+      message.warning(remoteWarning ? `${remoteWarning}；${groupWarning}` : groupWarning)
     } else if (remoteWarning) {
-      ElMessage.warning(remoteWarning)
+      message.warning(remoteWarning)
     } else {
-      ElMessage.success('书架已刷新')
+      message.success('书架已刷新')
     }
   } catch (err) {
-    ElMessage.error(readError(err, '刷新书架失败'))
+    message.error(readError(err, '刷新书架失败'))
   } finally {
     refreshLoading.value = false
   }
@@ -335,9 +343,9 @@ async function warmHomeShelf() {
     if (result.status !== 'rejected') return
     const type = jobs[index][0]
     if (type === 'books') {
-      ElMessage.error(readError(result.reason, '加载书架失败'))
+      message.error(readError(result.reason, '加载书架失败'))
     } else {
-      ElMessage.warning(readError(result.reason, '分组加载失败，书架仍可使用'))
+      message.warning(readError(result.reason, '分组加载失败，书架仍可使用'))
     }
   })
 }

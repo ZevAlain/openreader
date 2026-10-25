@@ -313,22 +313,33 @@
   -webkit-line-clamp: 1;
 }
 
-.unread-num-badge .el-badge__content {
+.unread-num-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  padding: 1px 5px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  background: var(--app-danger);
   border: 0;
+  border-radius: 999px;
 }
 
-.shelf-page .el-loading-spinner .circular {
-  width: 36px;
-  height: 36px;
+.shelf-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-content: center;
+  gap: 10px;
+  justify-items: center;
 }
 
-.shelf-page .el-loading-spinner .path,
-.shelf-page .el-loading-spinner .el-loading-text {
+.shelf-loading-text {
   color: var(--app-text-subtle);
-  stroke: var(--app-text-subtle);
-}
-
-.shelf-page .el-loading-spinner .el-loading-text {
   font-weight: 500;
 }
 
