@@ -1,175 +1,174 @@
 <template>
-  <el-dialog
+  <v-dialog
     v-if="isNormalPage"
     :model-value="visible"
-    :title="isFailureMode ? '失效书源管理' : '书源管理'"
     width="min(1000px, max(750px, 70vw))"
-    top="max(15dvh, calc((100dvh - 584px) / 2))"
     :fullscreen="isMobile"
     class="global-source-manage-dialog"
     @update:model-value="handleDialogModel"
-    @open="handleOpen"
-    @closed="handleClosed"
+    @after-leave="handleClosed"
   >
-    <template #header>
-      <div class="source-dialog-title">
-        <span>{{ isFailureMode ? '失效书源管理' : '书源管理' }}</span>
-        <div v-if="!isFailureMode" class="source-title-actions">
-          <el-button link type="primary" @click="openEditor()">新增</el-button>
-          <el-button link type="primary" @click="exportAllSources">导出</el-button>
-          <el-button link type="primary" :loading="restoring" @click="restoreDefaults">恢复默认</el-button>
-          <el-button link type="danger" :loading="clearing" @click="clearAllSources">清空</el-button>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <div class="source-dialog-title">
+          <h2 class="app-dialog-title">{{ isFailureMode ? '失效书源管理' : '书源管理' }}</h2>
+          <div v-if="!isFailureMode" class="source-title-actions">
+            <v-btn variant="text" color="primary" size="small" @click="openEditor()">新增</v-btn>
+            <v-btn variant="text" color="primary" size="small" @click="exportAllSources">导出</v-btn>
+            <v-btn variant="text" color="primary" size="small" :loading="restoring" @click="restoreDefaults">恢复默认</v-btn>
+            <v-btn variant="text" color="error" size="small" :loading="clearing" @click="clearAllSources">清空</v-btn>
+          </div>
         </div>
+      </header>
+
+      <div class="app-dialog-body">
+        <section class="source-manager-body">
+          <div v-if="isFailureMode" class="source-check-form">
+            <span class="source-check-label">搜索词：</span>
+            <v-text-field v-model="checkConfig.keyword" density="compact" variant="outlined" hide-details class="source-check-input" />
+            <span class="source-check-label source-timeout-label">超时(ms)：</span>
+            <v-text-field
+              v-model.number="checkConfig.timeout"
+              type="number"
+              :min="1000"
+              :max="15000"
+              :step="500"
+              density="compact"
+              variant="outlined"
+              hide-details
+              class="source-check-number"
+            />
+            <span class="source-check-label">并发数：</span>
+            <v-text-field
+              v-model.number="checkConfig.concurrent"
+              type="number"
+              :min="3"
+              :max="15"
+              :step="1"
+              density="compact"
+              variant="outlined"
+              hide-details
+              class="source-check-number"
+            />
+          </div>
+
+          <div class="source-group-wrapper">
+            <button
+              v-for="group in sourceShowGroups"
+              :key="group"
+              type="button"
+              class="source-group-btn"
+              :class="{ selected: selectedGroup === group }"
+              @click="setSourceGroup(group)"
+            >
+              {{ group }}
+            </button>
+          </div>
+
+          <v-data-table
+            v-model:page="sourcePage"
+            v-model:items-per-page="sourcePageSize"
+            :headers="tableHeaders"
+            :items="filteredSources"
+            item-value="id"
+            density="compact"
+            :items-per-page-options="sourcePageSizeOptions"
+            :items-per-page-text="'每页'"
+            no-data-text="暂无数据"
+            :loading="listLoading"
+            class="source-table"
+            :height="tableHeight"
+          >
+            <template #header.data-table-select>
+              <v-checkbox-btn
+                :model-value="allSelectableSelected"
+                :indeterminate="someSelectableSelected && !allSelectableSelected"
+                @update:model-value="checked => toggleAllSelectable(checked)"
+              />
+            </template>
+            <template #item.data-table-select="{ item }">
+              <v-checkbox-btn
+                v-if="isSourceSelectable(item)"
+                :model-value="selectedSourceIds.includes(item.id)"
+                @update:model-value="checked => toggleSourceSelection(item, checked)"
+              />
+            </template>
+            <template #item.baseUrl="{ item }">
+              <a :href="item.baseUrl" target="_blank" rel="noopener noreferrer" class="source-base-url">
+                {{ item.baseUrl }}
+              </a>
+            </template>
+            <template #item.usedBookNames="{ item }">
+              <pre class="source-used-books">{{ (item.usedBookNames || []).join('\n') }}</pre>
+            </template>
+            <template #item.actions="{ item }">
+              <v-btn variant="text" color="primary" size="small" @click="openEditor(item)">编辑</v-btn>
+            </template>
+          </v-data-table>
+        </section>
       </div>
-    </template>
 
-    <section class="source-manager-body">
-      <div v-if="isFailureMode" class="source-check-form">
-        <span class="source-check-label">搜索词：</span>
-        <el-input v-model="checkConfig.keyword" size="small" />
-        <span class="source-check-label source-timeout-label">超时(ms)：</span>
-        <el-input-number
-          v-model="checkConfig.timeout"
-          :min="1000"
-          :max="15000"
-          :step="500"
-          size="small"
-        />
-        <span class="source-check-label">并发数：</span>
-        <el-input-number
-          v-model="checkConfig.concurrent"
-          :min="3"
-          :max="15"
-          :step="1"
-          size="small"
-        />
-      </div>
+      <footer class="app-dialog-actions">
+        <div class="source-dialog-footer">
+          <span class="check-tip">已选择 {{ selection.length }} 个</span>
+          <v-btn color="error" variant="outlined" :loading="deleting" @click="deleteSelectedSources">
+            批量删除
+          </v-btn>
+          <v-btn
+            v-if="isFailureMode"
+            variant="outlined"
+            :disabled="checking"
+            @click="checkInvalidSources"
+          >
+            {{ checking ? '正在' : '' }}检测书源 {{ checkProgress }}
+          </v-btn>
+          <v-btn variant="text" @click="requestClose">取消</v-btn>
+        </div>
+      </footer>
+    </div>
+  </v-dialog>
 
-      <div class="source-group-wrapper">
-        <el-tag
-          v-for="group in sourceShowGroups"
-          :key="group"
-          type="info"
-          class="source-group-btn"
-          :effect="selectedGroup === group ? 'dark' : 'light'"
-          :class="{ selected: selectedGroup === group }"
-          @click="setSourceGroup(group)"
-        >
-          {{ group }}
-        </el-tag>
-      </div>
-
-      <el-table
-        ref="tableRef"
-        :key="isFailureMode"
-        v-loading="listLoading"
-        :data="pagedSources"
-        :height="tableHeight"
-        class="source-table"
-        @selection-change="selection = $event"
-      >
-        <el-table-column
-          type="selection"
-          width="25"
-          :fixed="isMobile"
-          :selectable="isSourceSelectable"
-        />
-        <el-table-column
-          prop="name"
-          label="书源名称"
-          min-width="120"
-          :fixed="isMobile"
-        />
-        <el-table-column prop="baseUrl" label="书源链接" min-width="120">
-          <template #default="{ row }">
-            <el-link type="primary" :href="row.baseUrl" target="_blank">
-              {{ row.baseUrl }}
-            </el-link>
-          </template>
-        </el-table-column>
-        <el-table-column
-          v-if="isFailureMode"
-          prop="errorMessage"
-          label="错误信息"
-          min-width="120"
-        />
-        <el-table-column label="书架书籍" min-width="120">
-          <template #default="{ row }">
-            <pre class="source-used-books">{{ (row.usedBookNames || []).join('\n') }}</pre>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="!isFailureMode" label="操作" width="100px">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="openEditor(row)">编辑</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="source-pagination">
-        <el-pagination
-          v-model:current-page="sourcePage"
-          v-model:page-size="sourcePageSize"
-          :page-sizes="sourcePageSizes"
-          layout="total, sizes, prev, pager, next"
-          :pager-count="isMobile ? 5 : 7"
-          :total="filteredSources.length"
-        />
-      </div>
-    </section>
-
-    <template #footer>
-      <div class="source-dialog-footer">
-        <span class="check-tip">已选择 {{ selection.length }} 个</span>
-        <el-button type="danger" plain :loading="deleting" @click="deleteSelectedSources">
-          批量删除
-        </el-button>
-        <el-button
-          v-if="isFailureMode"
-          :disabled="checking"
-          @click="checkInvalidSources"
-        >
-          {{ checking ? '正在' : '' }}检测书源 {{ checkProgress }}
-        </el-button>
-        <el-button @click="requestClose">取消</el-button>
-      </div>
-    </template>
-  </el-dialog>
-
-  <el-dialog
+  <v-dialog
     v-model="showEditor"
-    title="编辑书源"
     width="min(1000px, max(750px, 70vw))"
-    top="10vh"
     :fullscreen="isMobile"
-    append-to-body
     class="source-json-editor-dialog"
   >
-    <el-alert
-      v-if="editorCompatibilityMessage"
-      class="source-json-compatibility-warning"
-      type="warning"
-      :closable="false"
-      show-icon
-      title="此书源包含当前服务不会执行或仅保留的配置"
-      :description="editorCompatibilityMessage"
-    />
-    <el-input
-      v-model="sourceJSON"
-      class="source-json-editor"
-      type="textarea"
-      :rows="isMobile ? 24 : 22"
-      spellcheck="false"
-    />
-    <template #footer>
-      <el-button @click="showEditor = false">取 消</el-button>
-      <el-button type="primary" :loading="saving" @click="saveSourceJSON">保 存</el-button>
-    </template>
-  </el-dialog>
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">编辑书源</h2>
+      </header>
+      <div class="app-dialog-body">
+        <v-alert
+          v-if="editorCompatibilityMessage"
+          class="source-json-compatibility-warning"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          title="此书源包含当前服务不会执行或仅保留的配置"
+        >
+          {{ editorCompatibilityMessage }}
+        </v-alert>
+        <v-textarea
+          v-model="sourceJSON"
+          class="source-json-editor"
+          :rows="isMobile ? 24 : 22"
+          variant="outlined"
+          hide-details
+          spellcheck="false"
+        />
+      </div>
+      <footer class="app-dialog-actions">
+        <v-btn variant="text" @click="showEditor = false">取 消</v-btn>
+        <v-btn color="primary" :loading="saving" @click="saveSourceJSON">保 存</v-btn>
+      </footer>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { confirm, message } from '../../composables/useAppFeedback.js'
 import {
   batchSources,
   batchTestSources,
@@ -203,11 +202,10 @@ const emit = defineEmits(['close'])
 
 const reader = useReaderStore()
 const operations = useAuthenticatedOperationGuard()
-const tableRef = ref(null)
 const sources = ref([])
 const failureSources = ref([])
 const listLoading = ref(false)
-const selection = ref([])
+const selectedSourceIds = ref([])
 const selectedGroup = ref('')
 const sourcePage = ref(1)
 const sourcePageSize = ref(25)
@@ -258,16 +256,34 @@ const filteredSources = computed(() => {
   }
   return sourceList.value.filter(source => source.group === selectedGroup.value)
 })
-const pagedSources = computed(() => {
-  const start = (sourcePage.value - 1) * sourcePageSize.value
-  if (start > filteredSources.value.length) return []
-  return filteredSources.value.slice(start, start + sourcePageSize.value)
-})
+const selectableSources = computed(() => filteredSources.value.filter(isSourceSelectable))
+const selection = computed(() => (
+  filteredSources.value.filter(source => selectedSourceIds.value.includes(source.id))
+))
+const allSelectableSelected = computed(() => (
+  selectableSources.value.length > 0 &&
+  selectableSources.value.every(source => selectedSourceIds.value.includes(source.id))
+))
+const someSelectableSelected = computed(() => (
+  selectableSources.value.some(source => selectedSourceIds.value.includes(source.id))
+))
+const sourcePageSizeOptions = computed(() => sourcePageSizes.map(size => ({ title: String(size), value: size })))
 const tableHeight = computed(() => {
   if (props.isMobile) {
     return `calc(100dvh - ${isFailureMode.value ? 300 : 268}px)`
   }
   return `calc(min(70dvh - 184px, 400px) - ${isFailureMode.value ? 116 : 84}px)`
+})
+const tableHeaders = computed(() => {
+  const headers = [
+    { key: 'data-table-select', fixed: props.isMobile ? 'start' : false, width: 44 },
+    { title: '书源名称', key: 'name', fixed: props.isMobile ? 'start' : false, minWidth: 120 },
+    { title: '书源链接', key: 'baseUrl', minWidth: 120 },
+  ]
+  if (isFailureMode.value) headers.push({ title: '错误信息', key: 'errorMessage', minWidth: 120 })
+  headers.push({ title: '书架书籍', key: 'usedBookNames', sortable: false, minWidth: 120 })
+  if (!isFailureMode.value) headers.push({ title: '操作', key: 'actions', sortable: false, width: 100 })
+  return headers
 })
 const editorCompatibilityMessage = computed(() => {
   try {
@@ -300,12 +316,13 @@ watch(isNormalPage, normal => {
 
 watch(
   () => [props.visible, props.failureMode],
-  async ([visible, failure], [wasVisible, wasFailure] = []) => {
+  async ([visible, failure], [wasVisible] = []) => {
     if (!visible) {
       showEditor.value = false
       return
     }
-    if (!wasVisible || !failure || wasFailure) return
+    await handleOpen()
+    if (!visible || !failure || wasVisible) return
     await loadInvalidSourceHealth()
   },
 )
@@ -334,7 +351,7 @@ async function handleOpen() {
     if (isFailureMode.value) await loadInvalidSourceHealth(operation)
   } catch (error) {
     if (operations.canCommit(operation)) {
-      ElMessage.error(readError(error, '加载书源失败'))
+      message.error(readError(error, '加载书源失败'))
     }
   }
 }
@@ -345,6 +362,7 @@ function handleDialogModel(value) {
 
 function handleClosed() {
   selectedGroup.value = ''
+  selectedSourceIds.value = []
   checkProgress.value = ''
   operations.reset()
 }
@@ -414,32 +432,56 @@ function isSourceSelectable(source) {
   return Number(source?.usedBookCount || 0) === 0
 }
 
+function toggleSourceSelection(source, checked) {
+  const current = new Set(selectedSourceIds.value)
+  if (checked) current.add(source.id)
+  else current.delete(source.id)
+  selectedSourceIds.value = [...current]
+}
+
+function toggleAllSelectable(checked) {
+  if (checked) {
+    const current = new Set(selectedSourceIds.value)
+    selectableSources.value.forEach(source => current.add(source.id))
+    selectedSourceIds.value = [...current]
+  } else {
+    const keep = new Set(selectedSourceIds.value)
+    selectableSources.value.forEach(source => keep.delete(source.id))
+    selectedSourceIds.value = [...keep]
+  }
+}
+
+function confirmDeletion(text) {
+  return confirm({
+    title: '提示',
+    message: text,
+    tone: 'warning',
+  }).then(action => {
+    if (action !== 'confirm') throw 'cancel'
+  })
+}
+
 async function deleteSelectedSources() {
   if (!selection.value.length) {
-    ElMessage.error('请选择需要删除的源')
+    message.error('请选择需要删除的源')
     return
   }
   const operation = operations.begin('delete-selected-sources')
   try {
-    await ElMessageBox.confirm('确认要删除所选择的书源吗?', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    })
+    await confirmDeletion('确认要删除所选择的书源吗?')
     if (!operations.canCommit(operation)) return
     deleting.value = true
     const sourceIds = selection.value.map(source => source.id).filter(Boolean)
     await batchSources({ action: 'delete', sourceIds })
     if (!operations.canCommit(operation)) return
-    selection.value = []
-    tableRef.value?.clearSelection()
+    selectedSourceIds.value = []
     await loadSources(operation)
     if (isFailureMode.value) await loadInvalidSourceHealth(operation)
     if (!operations.canCommit(operation)) return
-    ElMessage.success('删除书源成功')
+    message.success('删除书源成功')
   } catch (error) {
     if (!operations.canCommit(operation) || isCancel(error)) return
-    ElMessage.error(readError(error, '删除书源失败'))
+    message.error(readError(error, '删除书源失败'))
   } finally {
     if (operations.canCommit(operation)) deleting.value = false
   }
@@ -448,23 +490,18 @@ async function deleteSelectedSources() {
 async function clearAllSources() {
   const operation = operations.begin('clear-all-sources')
   try {
-    await ElMessageBox.confirm('确认要清空所有书源吗?', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    })
+    await confirmDeletion('确认要清空所有书源吗?')
     if (!operations.canCommit(operation)) return
     clearing.value = true
     await clearSources()
     if (!operations.canCommit(operation)) return
     sources.value = []
     failureSources.value = []
-    selection.value = []
-    tableRef.value?.clearSelection()
-    ElMessage.success('清空书源成功')
+    selectedSourceIds.value = []
+    message.success('清空书源成功')
   } catch (error) {
     if (!operations.canCommit(operation) || isCancel(error)) return
-    ElMessage.error(readError(error, '清空书源失败'))
+    message.error(readError(error, '清空书源失败'))
   } finally {
     if (operations.canCommit(operation)) clearing.value = false
   }
@@ -473,21 +510,17 @@ async function clearAllSources() {
 async function restoreDefaults() {
   const operation = operations.begin('restore-default-sources')
   try {
-    await ElMessageBox.confirm('确认要恢复默认书源吗?', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    })
+    await confirmDeletion('确认要恢复默认书源吗?')
     if (!operations.canCommit(operation)) return
     restoring.value = true
     await restoreDefaultSources()
     if (!operations.canCommit(operation)) return
     await loadSources(operation)
     if (!operations.canCommit(operation)) return
-    ElMessage.success('恢复默认书源成功')
+    message.success('恢复默认书源成功')
   } catch (error) {
     if (!operations.canCommit(operation) || isCancel(error)) return
-    ElMessage.error(`操作失败 ${readError(error, '')}`.trimEnd())
+    message.error(`操作失败 ${readError(error, '')}`.trimEnd())
   } finally {
     if (operations.canCommit(operation)) restoring.value = false
   }
@@ -501,7 +534,7 @@ async function exportAllSources() {
     downloadJSON(response.data, `reader书源-${currentDateTime()}.json`)
   } catch (error) {
     if (operations.canCommit(operation)) {
-      ElMessage.error(`导出书源失败 ${readError(error, '')}`.trimEnd())
+      message.error(`导出书源失败 ${readError(error, '')}`.trimEnd())
     }
   }
 }
@@ -524,7 +557,7 @@ async function openEditor(source = null) {
     showEditor.value = true
   } catch (error) {
     if (operations.canCommit(operation)) {
-      ElMessage.error(`加载书源信息失败 ${readError(error, '')}`.trimEnd())
+      message.error(`加载书源信息失败 ${readError(error, '')}`.trimEnd())
     }
   }
 }
@@ -534,17 +567,17 @@ async function saveSourceJSON() {
   try {
     parsed = JSON.parse(sourceJSON.value)
   } catch {
-    ElMessage.error('书源必须是JSON格式')
+    message.error('书源必须是JSON格式')
     return
   }
   const name = String(parsed.bookSourceName || parsed.name || '').trim()
   if (!name) {
-    ElMessage.error('书源名称不能为空')
+    message.error('书源名称不能为空')
     return
   }
   const url = String(parsed.bookSourceUrl || parsed.baseUrl || '').trim()
   if (!url) {
-    ElMessage.error('书源链接不能为空')
+    message.error('书源链接不能为空')
     return
   }
 
@@ -553,7 +586,7 @@ async function saveSourceJSON() {
     const snapshot = sourceToEditorSnapshot(parsed)
     payload = buildBookSourcePayload(snapshot.form, snapshot.rules)
   } catch {
-    ElMessage.error('书源必须是JSON格式')
+    message.error('书源必须是JSON格式')
     return
   }
 
@@ -567,10 +600,10 @@ async function saveSourceJSON() {
     showEditor.value = false
     await loadSources(operation)
     if (!operations.canCommit(operation)) return
-    ElMessage.success('保存书源成功')
+    message.success('保存书源成功')
   } catch (error) {
     if (operations.canCommit(operation)) {
-      ElMessage.error(`保存书源失败 ${readError(error, '')}`.trimEnd())
+      message.error(`保存书源失败 ${readError(error, '')}`.trimEnd())
     }
   } finally {
     if (operations.canCommit(operation)) saving.value = false
@@ -579,7 +612,7 @@ async function saveSourceJSON() {
 
 async function checkInvalidSources() {
   if (!String(checkConfig.keyword || '').trim()) {
-    ElMessage.error('请输入搜索关键词')
+    message.error('请输入搜索关键词')
     return
   }
   const sourceRows = [...sources.value]
@@ -608,7 +641,7 @@ async function checkInvalidSources() {
     }
   } catch (error) {
     if (operations.canCommit(operation)) {
-      ElMessage.error(readError(error, '检测书源失败'))
+      message.error(readError(error, '检测书源失败'))
     }
   } finally {
     if (operations.canCommit(operation)) checking.value = false
@@ -718,13 +751,13 @@ function readError(error, fallback) {
 .source-title-actions,
 .source-dialog-footer,
 .source-check-form,
-.source-group-wrapper,
-.source-pagination {
+.source-group-wrapper {
   display: flex;
   align-items: center;
 }
 
 .source-dialog-title {
+  flex: 1 1 auto;
   min-width: 0;
   justify-content: space-between;
   gap: 16px;
@@ -736,8 +769,7 @@ function readError(error, fallback) {
   gap: 4px;
 }
 
-.source-title-actions :deep(.el-button) {
-  margin-left: 0;
+.source-title-actions .v-btn {
   white-space: nowrap;
 }
 
@@ -752,13 +784,14 @@ function readError(error, fallback) {
   gap: 8px;
 }
 
-.source-check-form :deep(.el-input) {
+.source-check-form .source-check-input {
   min-width: 120px;
   flex: 1;
 }
 
-.source-check-form :deep(.el-input-number) {
+.source-check-form .source-check-number {
   width: 128px;
+  flex: 0 0 auto;
 }
 
 .source-check-label {
@@ -780,6 +813,12 @@ function readError(error, fallback) {
 
 .source-group-btn {
   flex: 0 0 auto;
+  padding: 4px 12px;
+  color: var(--app-text-muted);
+  font-size: 13px;
+  background: transparent;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
   cursor: pointer;
   user-select: none;
 }
@@ -787,10 +826,15 @@ function readError(error, fallback) {
 .source-group-btn.selected {
   border-color: var(--app-primary);
   color: var(--app-primary);
+  background: var(--app-primary-soft);
 }
 
 .source-table {
   width: 100%;
+}
+
+.source-base-url {
+  overflow-wrap: anywhere;
 }
 
 .source-used-books {
@@ -801,69 +845,16 @@ function readError(error, fallback) {
   white-space: pre-wrap;
 }
 
-.source-pagination {
-  min-width: 0;
-  justify-content: flex-end;
-  overflow-x: auto;
-}
-
 .source-dialog-footer {
-  min-width: 0;
-  justify-content: flex-end;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
-
-.source-dialog-footer .check-tip {
-  color: var(--app-text-muted);
-  white-space: nowrap;
-}
-
-.source-json-compatibility-warning {
-  margin-bottom: 12px;
-}
-
-.source-json-editor {
-  width: 100%;
-}
-
-.source-json-editor :deep(.el-textarea__inner) {
-  min-height: min(62dvh, 560px) !important;
+.source-json-editor :deep(textarea) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 13px;
   line-height: 1.55;
-  tab-size: 4;
-}
-
-@media (max-width: 750px) {
-  .source-dialog-title {
-    align-items: flex-start;
-  }
-
-  .source-title-actions {
-    max-width: calc(100vw - 110px);
-  }
-
-  .source-check-form {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .source-check-form :deep(.el-input),
-  .source-check-form :deep(.el-input-number) {
-    width: 100%;
-  }
-
-  .source-pagination {
-    justify-content: flex-start;
-  }
-
-  .source-dialog-footer {
-    flex-wrap: wrap;
-  }
-
-  .source-json-editor :deep(.el-textarea__inner) {
-    min-height: calc(100dvh - 168px) !important;
-  }
 }
 </style>
