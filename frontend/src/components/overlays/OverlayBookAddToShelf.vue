@@ -1,42 +1,39 @@
 <template>
-  <el-dialog
+  <v-dialog
     v-model="overlay.bookAddCategoryVisible"
-    title="设置分组"
-    width="440px"
     :fullscreen="isMobile"
-    class="book-add-category-dialog"
-    @closed="overlay.finishBookAddCategories()"
+    max-width="440px"
+    @after-leave="overlay.finishBookAddCategories()"
   >
-    <div class="book-add-category-body">
-      <span>请选择分组：</span>
-      <el-select
-        v-model="overlay.bookAddCategoryIds"
-        multiple
-        clearable
-        filterable
-        placeholder="未分组"
-      >
-        <el-option
-          v-for="category in bookshelf.categories"
-          :key="category.id"
-          :label="category.name"
-          :value="Number(category.id)"
+    <div class="app-dialog-card">
+      <header class="app-dialog-head">
+        <h2 class="app-dialog-title">设置分组</h2>
+      </header>
+      <div class="app-dialog-body book-add-category-body">
+        <span>请选择分组：</span>
+        <v-select
+          v-model="overlay.bookAddCategoryIds"
+          :items="categoryItems"
+          multiple
+          clearable
+          chips
+          placeholder="未分组"
+          variant="outlined"
+          density="compact"
+          hide-details
         />
-      </el-select>
+      </div>
+      <footer class="app-dialog-actions">
+        <v-btn variant="text" @click="overlay.finishBookAddCategories()">暂不加入</v-btn>
+        <v-btn color="primary" @click="overlay.finishBookAddCategories(overlay.bookAddCategoryIds)">确定</v-btn>
+      </footer>
     </div>
-
-    <template #footer>
-      <el-button @click="overlay.finishBookAddCategories()">暂不加入</el-button>
-      <el-button type="primary" @click="overlay.finishBookAddCategories(overlay.bookAddCategoryIds)">
-        确定
-      </el-button>
-    </template>
-  </el-dialog>
+  </v-dialog>
 </template>
 
 <script setup>
-import { watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { computed, watch } from 'vue'
+import { message } from '../../composables/useAppFeedback.js'
 import { useBookshelfStore } from '../../stores/bookshelf'
 import { useOverlayStore } from '../../stores/overlay'
 
@@ -50,12 +47,14 @@ defineProps({
 const bookshelf = useBookshelfStore()
 const overlay = useOverlayStore()
 
+const categoryItems = computed(() => bookshelf.categories.map(category => ({ title: category.name, value: Number(category.id) })))
+
 watch(
   () => overlay.bookAddCategoryVisible,
   visible => {
     if (!visible) return
     bookshelf.ensureCategoriesLoaded().catch(() => {
-      ElMessage.warning('分组加载失败，仍可选择未分组加入书架')
+      message.warning('分组加载失败，仍可选择未分组加入书架')
     })
   },
 )
@@ -63,10 +62,8 @@ watch(
 
 <style scoped>
 .book-add-category-body {
+  display: grid;
+  gap: 12px;
   text-align: center;
-}
-
-.book-add-category-body :deep(.el-select) {
-  width: 100%;
 }
 </style>
