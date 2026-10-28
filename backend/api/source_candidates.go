@@ -70,6 +70,11 @@ func (s *Server) searchBookSourceCandidates(c *gin.Context, userID uint, book mo
 		}
 		sources = filtered
 	}
+	// Fast sources first: the per-page budget only visits the first
+	// maxSourcesPerSearch sources, so dead sources at the head of the list
+	// would burn the whole budget on timeouts (that is what made the panel
+	// spin past the client timeout).
+	sortSearchSourcesByRespondTime(sources)
 	activeFailures, err := s.activeSourceFailures(userID, sources)
 	if err != nil {
 		activeFailures = nil

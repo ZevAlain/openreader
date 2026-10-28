@@ -18,7 +18,7 @@ import (
 const (
 	MaxCandidatesPerBook = 200
 	maxSourcesPerSearch  = 40
-	searchConcurrency    = 4
+	searchConcurrency    = 16
 	searchTimeout        = 12 * time.Second
 )
 

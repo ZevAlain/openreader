@@ -199,7 +199,9 @@ export function updateBookCategory(id, categoryIdOrIds) {
 }
 
 export function listBookSourceCandidates(id, params = {}) {
-  return api.get(`/books/${id}/source-candidates`, { params })
+  // Candidate search sweeps up to 40 live sources server-side; give it room
+  // past the default 12s client timeout instead of surfacing a fake error.
+  return api.get(`/books/${id}/source-candidates`, { params, timeout: 60000 })
 }
 
 export function changeBookSource(id, payload) {
